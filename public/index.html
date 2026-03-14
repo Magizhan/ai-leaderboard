@@ -538,12 +538,12 @@
 
   <div class="stats-bar">
     <div class="stat-card">
-      <div class="stat-value orange" id="statAvgUsage">0%</div>
-      <div class="stat-label" id="statAvgLabel">Avg Session Usage</div>
+      <div class="stat-value orange" id="statAvgUsage">0</div>
+      <div class="stat-label" id="statAvgLabel">Avg Session (plans)</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value purple" id="statAvgWeekly">0%</div>
-      <div class="stat-label">Avg Weekly Usage</div>
+      <div class="stat-value purple" id="statAvgWeekly">0</div>
+      <div class="stat-label">Avg Weekly (plans)</div>
     </div>
     <div class="stat-card">
       <div class="stat-value blue" id="statTotalBudget">$0</div>
@@ -686,11 +686,11 @@
   <div class="modal">
     <h3>Log Usage</h3>
     <div class="form-group"><label>User</label><select id="logUsageUser"></select></div>
-    <div class="form-group"><label>Session Usage %</label>
-      <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="100" step="0.1">
+    <div class="form-group"><label>Session Usage (decimal)</label>
+      <input type="number" id="logSessionPct" placeholder="e.g. 0.07" min="0" max="100" step="0.01">
     </div>
-    <div class="form-group"><label>Weekly Usage % (All Models)</label>
-      <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="100" step="0.1">
+    <div class="form-group"><label>Weekly Usage (decimal, All Models)</label>
+      <input type="number" id="logWeeklyPct" placeholder="e.g. 0.26" min="0" max="100" step="0.01">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
@@ -887,11 +887,11 @@
             </div>
           </div>
           <div class="lb-plans">
-            ${pct.toFixed(0)}% <span class="sub">(${otherLabel}: ${otherPct.toFixed(0)}%)</span>
+            ${(pct/100).toFixed(2)} <span class="sub">(${otherLabel}: ${(otherPct/100).toFixed(2)})</span>
             <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
           </div>
-          <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${barWidth}%"></div></div>
-          <div class="lb-pct" style="color:${pctColor(pct)}">${pct.toFixed(1)}%</div>
+          <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
+          <div class="lb-pct" style="color:${pctColor(pct)}">${(pct/100).toFixed(2)}</div>
         </div>
       `;
     }).join('');
@@ -906,8 +906,8 @@
     renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
 
     // Stats
-    document.getElementById('statAvgUsage').textContent = (stats.avgSessionPct || 0).toFixed(1) + '%';
-    document.getElementById('statAvgWeekly').textContent = (stats.avgWeeklyPct || 0).toFixed(1) + '%';
+    document.getElementById('statAvgUsage').textContent = ((stats.avgSessionPct || 0) / 100).toFixed(2);
+    document.getElementById('statAvgWeekly').textContent = ((stats.avgWeeklyPct || 0) / 100).toFixed(2);
     document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
@@ -923,13 +923,13 @@
       const sessionPct = teamData.avgSessionPct || 0;
 
       // Full team battle
-      document.getElementById(tid + 'Pct').textContent = weeklyPct.toFixed(1) + '%';
+      document.getElementById(tid + 'Pct').textContent = (weeklyPct / 100).toFixed(2);
       document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = weeklyPct.toFixed(1) + '%';
+      document.getElementById(tid + 'BarVal').textContent = (weeklyPct / 100).toFixed(2);
 
       // Mini team battle (show weekly)
-      document.getElementById(tid + 'MiniPct').textContent = weeklyPct.toFixed(1) + '%';
+      document.getElementById(tid + 'MiniPct').textContent = (weeklyPct / 100).toFixed(2);
     });
 
     document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
