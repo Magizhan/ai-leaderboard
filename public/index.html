@@ -99,6 +99,46 @@
   .stat-value.green { color: var(--accent-green); }
 
   /* Team Battle */
+  /* Leaderboard Section at Top */
+  .leaderboard-section { margin: 20px 0; }
+  .lb-section { margin-bottom: 24px; }
+  .lb-section-title {
+    font-size: 0.75rem; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lb-section-title::before {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .lb-section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Team Battle Mini (compact for top) */
+  .team-battle-mini {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 16px;
+  }
+  .team-mini-row {
+    display: flex; justify-content: space-around; gap: 8px;
+  }
+  .team-mini-ny, .team-mini-nc, .team-mini-xyne, .team-mini-hs {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    flex: 1; padding: 6px 4px; border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+  .team-mini-name {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .team-mini-ny .team-mini-name { color: var(--ny-color); }
+  .team-mini-nc .team-mini-name { color: var(--nc-color); }
+  .team-mini-xyne .team-mini-name { color: var(--xyne-color); }
+  .team-mini-hs .team-mini-name { color: var(--hs-color); }
+  .team-mini-pct {
+    font-size: 0.9rem; font-weight: 800; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+  }
+
   .team-battle {
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 28px; margin: 20px 0; position: relative; overflow: hidden;
@@ -229,7 +269,7 @@
   /* Leaderboard */
   .leaderboard { display: flex; flex-direction: column; gap: 6px; }
   .lb-row {
-    display: grid; grid-template-columns: 44px 1fr 80px 120px 90px 100px;
+    display: grid; grid-template-columns: 44px 1fr 120px 90px 100px;
     align-items: center; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 12px; padding: 14px 18px; transition: all 0.3s; cursor: default;
     animation: slideIn 0.4s ease backwards; gap: 8px;
@@ -265,10 +305,6 @@
   .rank-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); }
   .rank-silver { background: rgba(148, 163, 184, 0.15); color: var(--silver); border: 1px solid rgba(148, 163, 184, 0.2); }
   .rank-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze-color); border: 1px solid rgba(205, 127, 50, 0.2); }
-
-  .lb-sparkline { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .lb-sparkline svg { display: block; }
-  .lb-sparkline .lb-avg { font-size: 0.55rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
 
   .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
   .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
@@ -349,6 +385,14 @@
     .header h1 { font-size: 1.5rem; }
     .header .subtitle { font-size: 0.8rem; }
 
+    /* Leaderboard section at top - mobile */
+    .leaderboard-section { margin: 10px 0; }
+    .lb-section { margin-bottom: 16px; }
+    .lb-section-title { font-size: 0.65rem; margin-bottom: 8px; }
+    .team-battle-mini { padding: 8px 10px; margin-bottom: 12px; }
+    .team-mini-pct { font-size: 0.75rem; }
+    .team-mini-name { font-size: 0.55rem; }
+
     /* Compact stats: single row, 4 items */
     .stats-bar { grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 10px 0; }
     .stat-card { padding: 8px 4px; border-radius: 10px; }
@@ -412,7 +456,6 @@
       grid-template-columns: 28px 1fr 50px;
       padding: 10px 8px; gap: 4px;
     }
-    .lb-row .lb-sparkline { display: none; }
     .lb-row .lb-plans { display: none; }
     .lb-row .lb-usage-bar { display: none; }
     .lb-pct { font-size: 0.85rem; }
@@ -454,14 +497,53 @@
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
 
+  <!-- Leaderboard Section - Moved to Top -->
+  <div class="leaderboard-section" id="leaderboardSection">
+    <h2 style="text-align:center;font-size:0.8rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;">Leaderboard</h2>
+
+    <!-- Team Battle Mini -->
+    <div class="team-battle-mini">
+      <div class="team-mini-row">
+        <div class="team-mini-ny"><span class="team-mini-name">NY</span><span class="team-mini-pct" id="nyMiniPct">0%</span></div>
+        <div class="team-mini-nc"><span class="team-mini-name">NC</span><span class="team-mini-pct" id="ncMiniPct">0%</span></div>
+        <div class="team-mini-xyne"><span class="team-mini-name">XYNE</span><span class="team-mini-pct" id="xyneMiniPct">0%</span></div>
+        <div class="team-mini-hs"><span class="team-mini-name">HS</span><span class="team-mini-pct" id="hsMiniPct">0%</span></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('all',this)">All</button>
+      <button class="tab" onclick="setTab('ny',this)">NY</button>
+      <button class="tab" onclick="setTab('nc',this)">NC</button>
+      <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
+      <button class="tab" onclick="setTab('hs',this)">HS</button>
+      <button class="tab" onclick="setTab('top5',this)">Top 5</button>
+    </div>
+
+    <!-- Current Session Leaderboard -->
+    <div class="lb-section">
+      <h3 class="lb-section-title">Current Session</h3>
+      <div class="leaderboard" id="leaderboardSession"></div>
+    </div>
+
+    <!-- Weekly Leaderboard -->
+    <div class="lb-section">
+      <h3 class="lb-section-title">Weekly</h3>
+      <div class="leaderboard" id="leaderboardWeekly"></div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated">Last updated: --</div>
+  </div>
+
   <div class="stats-bar">
     <div class="stat-card">
-      <div class="stat-value orange" id="statAvgUsage">0%</div>
-      <div class="stat-label" id="statAvgLabel">Avg Session Usage</div>
+      <div class="stat-value orange" id="statAvgUsage">0</div>
+      <div class="stat-label" id="statAvgLabel">Avg Session (plans)</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value purple" id="statAvgWeekly">0%</div>
-      <div class="stat-label">Avg Weekly Usage</div>
+      <div class="stat-value purple" id="statAvgWeekly">0</div>
+      <div class="stat-label">Avg Weekly (plans)</div>
     </div>
     <div class="stat-card">
       <div class="stat-value blue" id="statTotalBudget">$0</div>
@@ -474,7 +556,7 @@
   </div>
 
   <div class="team-battle">
-    <h2>Team Battle <span id="teamBattleLabel" style="color:var(--text-dim);">(Session)</span></h2>
+    <h2>Team Battle</h2>
     <div class="team-vs">
       <div class="team-side">
         <div class="team-name ny">NY</div>
@@ -573,22 +655,6 @@
     <button class="btn danger mobile-hide" onclick="openModal('removeUser')">Remove</button>
   </div>
 
-  <div class="board-tabs">
-    <button class="board-tab active" onclick="setBoardType('session',this)">Current</button>
-    <button class="board-tab" onclick="setBoardType('weekly',this)">Weekly</button>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" onclick="setTab('all',this)">All</button>
-    <button class="tab" onclick="setTab('ny',this)">NY</button>
-    <button class="tab" onclick="setTab('nc',this)">NC</button>
-    <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
-    <button class="tab" onclick="setTab('hs',this)">HS</button>
-    <button class="tab" onclick="setTab('top5',this)">Top 5</button>
-  </div>
-
-  <div class="leaderboard" id="leaderboard"></div>
-  <div class="last-updated" id="lastUpdated">Last updated: --</div>
 </div>
 
 <!-- Mobile FAB -->
@@ -620,11 +686,11 @@
   <div class="modal">
     <h3>Log Usage</h3>
     <div class="form-group"><label>User</label><select id="logUsageUser"></select></div>
-    <div class="form-group"><label>Session Usage %</label>
-      <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="100" step="0.1">
+    <div class="form-group"><label>Session Usage (decimal)</label>
+      <input type="number" id="logSessionPct" placeholder="e.g. 0.07" min="0" max="100" step="0.01">
     </div>
-    <div class="form-group"><label>Weekly Usage % (All Models)</label>
-      <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="100" step="0.1">
+    <div class="form-group"><label>Weekly Usage (decimal, All Models)</label>
+      <input type="number" id="logWeeklyPct" placeholder="e.g. 0.26" min="0" max="100" step="0.01">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
@@ -741,15 +807,6 @@
 
   function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-  function buildSparkline(data, key, color) {
-    if (!data || data.length < 2) return '';
-    const vals = data.map(d => d[key] || 0);
-    const max = Math.max(...vals, 1);
-    const w = 60, h = 24;
-    const points = vals.map((v, i) => `${(i / (vals.length - 1)) * w},${h - (v / max) * h}`).join(' ');
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  }
-
   function timeAgo(ts) {
     if (!ts) return '';
     const diff = Date.now() - new Date(ts).getTime();
@@ -773,16 +830,6 @@
   }
 
   // ============================================================
-  // BOARD TYPE
-  // ============================================================
-  function setBoardType(type, el) {
-    boardType = type;
-    document.querySelectorAll('.board-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    if (cachedData) renderData(cachedData);
-  }
-
-  // ============================================================
   // RENDER
   // ============================================================
   async function render() {
@@ -792,16 +839,14 @@
       renderData(data);
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      document.getElementById('leaderboard').innerHTML =
+      document.getElementById('leaderboardSession').innerHTML =
+        '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
+      document.getElementById('leaderboardWeekly').innerHTML =
         '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
     }
   }
 
-  function renderData(data) {
-    const { users, stats, teams } = data;
-    const isSession = boardType === 'session';
-    const pctKey = isSession ? 'sessionPct' : 'weeklyPct';
-
+  function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sorted = [...users].sort((a, b) => (b[pctKey] || 0) - (a[pctKey] || 0));
 
     let filtered = sorted;
@@ -811,73 +856,80 @@
     else if (currentTab === 'hs') filtered = sorted.filter(u => u.team === 'HS');
     else if (currentTab === 'top5') filtered = sorted.slice(0, 5);
 
-    const lb = document.getElementById('leaderboard');
-    const scrollY = window.scrollY;
+    const lb = document.getElementById(containerId);
     if (filtered.length === 0) {
       lb.innerHTML = '<div class="empty-state"><div class="icon">&#128202;</div><p>No users yet. Click "+ Add User" to get started.</p></div>';
-    } else {
-      lb.innerHTML = filtered.map((u, i) => {
-        const pct = u[pctKey] || 0;
-        const otherPct = u[isSession ? 'weeklyPct' : 'sessionPct'] || 0;
-        const rank = getRank(pct);
-        const pos = i + 1;
-        const posClass = pos <= 3 ? 'p' + pos : 'px';
-        const rowClass = pos <= 3 ? 'rank-' + pos : '';
-        const barClass = getBarClass(pct);
-        const barWidth = Math.min(pct, 100);
-        const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
-        const ago = timeAgo(u.lastUpdated);
-        const otherLabel = isSession ? 'wk' : 'sess';
-        const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team.toLowerCase();
-
-        return `
-          <div class="lb-row ${rowClass}" style="animation-delay:${i * 0.05}s">
-            <div class="lb-position ${posClass}">#${pos}</div>
-            <div class="lb-user-info">
-              <div class="lb-name">${fire}${escHtml(u.name)}</div>
-              <div class="lb-meta">
-                <span class="lb-team-tag ${teamCls}">${u.team}</span>
-                <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
-                ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
-              </div>
-            </div>
-            <div class="lb-sparkline">
-              ${buildSparkline(u.sparkline, isSession ? 's' : 'w', pctColor(pct))}
-              <span class="lb-avg">avg ${(isSession ? u.avgSessionPct : u.avgWeeklyPct).toFixed(0)}%</span>
-            </div>
-            <div class="lb-plans">
-              ${pct.toFixed(0)}% <span class="sub">(${otherLabel}: ${otherPct.toFixed(0)}%)</span>
-              <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
-            </div>
-            <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${barWidth}%"></div></div>
-            <div class="lb-pct" style="color:${pctColor(pct)}">${pct.toFixed(1)}%</div>
-          </div>
-        `;
-      }).join('');
+      return;
     }
 
+    lb.innerHTML = filtered.map((u, i) => {
+      const pct = u[pctKey] || 0;
+      const otherPct = u[otherPctKey] || 0;
+      const rank = getRank(pct);
+      const pos = i + 1;
+      const posClass = pos <= 3 ? 'p' + pos : 'px';
+      const rowClass = pos <= 3 ? 'rank-' + pos : '';
+      const barClass = getBarClass(pct);
+      const barWidth = Math.min(pct, 100);
+      const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
+      const ago = timeAgo(u.lastUpdated);
+      const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team.toLowerCase();
+
+      return `
+        <div class="lb-row ${rowClass}" style="animation-delay:${i * 0.05}s">
+          <div class="lb-position ${posClass}">#${pos}</div>
+          <div class="lb-user-info">
+            <div class="lb-name">${fire}${escHtml(u.name)}</div>
+            <div class="lb-meta">
+              <span class="lb-team-tag ${teamCls}">${u.team}</span>
+              <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
+              ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+            </div>
+          </div>
+          <div class="lb-plans">
+            ${(pct/100).toFixed(2)} <span class="sub">(${otherLabel}: ${(otherPct/100).toFixed(2)})</span>
+            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
+          </div>
+          <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
+          <div class="lb-pct" style="color:${pctColor(pct)}">${(pct/100).toFixed(2)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderData(data) {
+    const { users, stats, teams } = data;
+    const scrollY = window.scrollY;
+
+    // Render both leaderboards
+    renderLeaderboard(users, 'leaderboardSession', 'sessionPct', 'weeklyPct', 'wk');
+    renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
+
     // Stats
-    document.getElementById('statAvgUsage').textContent = (stats.avgSessionPct || 0).toFixed(1) + '%';
-    document.getElementById('statAvgWeekly').textContent = (stats.avgWeeklyPct || 0).toFixed(1) + '%';
+    document.getElementById('statAvgUsage').textContent = ((stats.avgSessionPct || 0) / 100).toFixed(2);
+    document.getElementById('statAvgWeekly').textContent = ((stats.avgWeeklyPct || 0) / 100).toFixed(2);
     document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
-    // Teams
-    const teamPctKey = isSession ? 'avgSessionPct' : 'avgWeeklyPct';
-    document.getElementById('teamBattleLabel').textContent = '(' + (isSession ? 'Session' : 'Weekly') + ')';
-
+    // Teams - use weekly for team battle (or could use session)
     const teamNames = ['NY', 'NC', 'Xyne', 'HS'];
     const teamIds = ['ny', 'nc', 'xyne', 'hs'];
-    const maxTeamPct = Math.max(...teamNames.map(t => teams[t] ? teams[t][teamPctKey] || 0 : 0), 1);
+    const maxTeamPct = Math.max(...teamNames.map(t => teams[t] ? teams[t].avgWeeklyPct || 0 : 0), 1);
 
     teamNames.forEach((t, idx) => {
       const tid = teamIds[idx];
       const teamData = teams[t] || { members: 0, avgSessionPct: 0, avgWeeklyPct: 0 };
-      const pct = teamData[teamPctKey] || 0;
-      document.getElementById(tid + 'Pct').textContent = pct.toFixed(1) + '%';
+      const weeklyPct = teamData.avgWeeklyPct || 0;
+      const sessionPct = teamData.avgSessionPct || 0;
+
+      // Full team battle
+      document.getElementById(tid + 'Pct').textContent = (weeklyPct / 100).toFixed(2);
       document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
-      document.getElementById(tid + 'Bar').style.width = (pct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = pct.toFixed(1) + '%';
+      document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
+      document.getElementById(tid + 'BarVal').textContent = (weeklyPct / 100).toFixed(2);
+
+      // Mini team battle (show weekly)
+      document.getElementById(tid + 'MiniPct').textContent = (weeklyPct / 100).toFixed(2);
     });
 
     document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
