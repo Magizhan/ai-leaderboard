@@ -48,11 +48,21 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// On install/update — restore alarm if schedule was enabled
+// On install/update — enable auto-sync by default, or restore existing setting
 chrome.runtime.onInstalled.addListener(async () => {
-  const stored = await chrome.storage.local.get(['schedule_enabled', 'schedule_interval']);
-  if (stored.schedule_enabled) {
-    const mins = stored.schedule_interval || 60;
+  const stored = await chrome.storage.local.get(['schedule_enabled', 'schedule_interval', 'defaults_applied_v3']);
+
+  if (!stored.defaults_applied_v3) {
+    // First install or upgrade: default to ON at 5 min
+    await chrome.storage.local.set({
+      defaults_applied_v3: true,
+      schedule_enabled: true,
+      schedule_interval: 5,
+    });
+    chrome.alarms.create(ALARM_NAME, { periodInMinutes: 5 });
+  } else if (stored.schedule_enabled) {
+    // Existing user with sync enabled — restore their alarm
+    const mins = stored.schedule_interval || 5;
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: mins });
   }
 });
