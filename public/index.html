@@ -269,7 +269,7 @@
   /* Leaderboard */
   .leaderboard { display: flex; flex-direction: column; gap: 6px; }
   .lb-row {
-    display: grid; grid-template-columns: 44px 1fr 80px 120px 90px 100px;
+    display: grid; grid-template-columns: 44px 1fr 120px 90px 100px;
     align-items: center; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 12px; padding: 14px 18px; transition: all 0.3s; cursor: default;
     animation: slideIn 0.4s ease backwards; gap: 8px;
@@ -305,10 +305,6 @@
   .rank-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); }
   .rank-silver { background: rgba(148, 163, 184, 0.15); color: var(--silver); border: 1px solid rgba(148, 163, 184, 0.2); }
   .rank-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze-color); border: 1px solid rgba(205, 127, 50, 0.2); }
-
-  .lb-sparkline { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .lb-sparkline svg { display: block; }
-  .lb-sparkline .lb-avg { font-size: 0.55rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
 
   .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
   .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
@@ -460,7 +456,6 @@
       grid-template-columns: 28px 1fr 50px;
       padding: 10px 8px; gap: 4px;
     }
-    .lb-row .lb-sparkline { display: none; }
     .lb-row .lb-plans { display: none; }
     .lb-row .lb-usage-bar { display: none; }
     .lb-pct { font-size: 0.85rem; }
@@ -812,15 +807,6 @@
 
   function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-  function buildSparkline(data, key, color) {
-    if (!data || data.length < 2) return '';
-    const vals = data.map(d => d[key] || 0);
-    const max = Math.max(...vals, 0.01);
-    const w = 60, h = 24;
-    const points = vals.map((v, i) => `${(i / (vals.length - 1)) * w},${h - (v / max) * h}`).join(' ');
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  }
-
   function timeAgo(ts) {
     if (!ts) return '';
     const diff = Date.now() - new Date(ts).getTime();
@@ -899,10 +885,6 @@
               <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
               ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
             </div>
-          </div>
-          <div class="lb-sparkline">
-            ${buildSparkline(u.sparkline, isSession ? 's' : 'w', pctColor(pct))}
-            <span class="lb-avg">avg ${((isSession ? u.avgSessionPct : u.avgWeeklyPct) / 100).toFixed(2)}</span>
           </div>
           <div class="lb-plans">
             ${(pct/100).toFixed(2)} <span class="sub">(${otherLabel}: ${(otherPct/100).toFixed(2)})</span>
