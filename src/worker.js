@@ -2,9 +2,10 @@
  * Claude Usage Leaderboard - Cloudflare Worker
  *
  * KV Keys:
- *   users       -> JSON array of { id, name, team, numPlans }
- *   usage:{id}  -> JSON { sessionPct, weeklyPct, timestamp, source }
- *   config      -> JSON { planCost }
+ *   users         -> JSON array of { id, name, team, numPlans }
+ *   usage:{id}    -> JSON { sessionPct, weeklyPct, timestamp, source }
+ *   history:{id}  -> JSON array of { s: sessionPct, w: weeklyPct, t: timestamp } (max 288)
+ *   config        -> JSON { planCost }
  */
 
 export default {
@@ -90,6 +91,7 @@ async function deleteUser(id, env) {
   users = users.filter(u => u.id !== id);
   await kvPut(env, 'users', users);
   await env.LEADERBOARD_KV.delete(`usage:${id}`);
+  await env.LEADERBOARD_KV.delete(`history:${id}`);
   return jsonResponse({ ok: true, removed: user.name });
 }
 
@@ -128,6 +130,13 @@ async function logUsage(body, env) {
   }
 
   await kvPut(env, `usage:${user.id}`, usageData);
+
+  // Append to history (capped at 288 entries ≈ 24h at 5min intervals)
+  const history = await kvGet(env, `history:${user.id}`, []);
+  history.push({ s: usageData.sessionPct, w: usageData.weeklyPct, t: usageData.timestamp });
+  if (history.length > 288) history.splice(0, history.length - 288);
+  await kvPut(env, `history:${user.id}`, history);
+
   return jsonResponse({ ok: true, user: user.name, ...usageData });
 }
 
@@ -146,8 +155,14 @@ async function getLeaderboardData(env) {
   const planCost = parseInt(env.PLAN_COST || '200');
 
   const board = await Promise.all(users.map(async (u) => {
-    const usage = await kvGet(env, `usage:${u.id}`, null);
+    const [usage, history] = await Promise.all([
+      kvGet(env, `usage:${u.id}`, null),
+      kvGet(env, `history:${u.id}`, []),
+    ]);
     const budget = u.numPlans * planCost;
+    const sparkline = history.slice(-48);
+    const avgSessionPct = history.length ? history.reduce((s, e) => s + e.s, 0) / history.length : 0;
+    const avgWeeklyPct = history.length ? history.reduce((s, e) => s + e.w, 0) / history.length : 0;
     return {
       ...u,
       budget,
@@ -155,6 +170,9 @@ async function getLeaderboardData(env) {
       weeklyPct: usage ? (usage.weeklyPct || usage.pct || 0) : 0,
       lastUpdated: usage ? usage.timestamp : null,
       source: usage ? usage.source : null,
+      sparkline,
+      avgSessionPct,
+      avgWeeklyPct,
     };
   }));
 
@@ -185,7 +203,7 @@ async function getLeaderboardData(env) {
 }
 
 async function importData(body, env) {
-  const { users: importedUsers = [], usageLogs = [] } = body;
+  const { users: importedUsers = [], usageLogs = [], histories = {} } = body;
 
   // Merge: never remove existing users, only add/update
   const existing = await kvGet(env, 'users', []);
@@ -199,17 +217,23 @@ async function importData(body, env) {
   for (const log of usageLogs) {
     if (log.userId) await kvPut(env, `usage:${log.userId}`, log);
   }
+  for (const [userId, history] of Object.entries(histories)) {
+    await kvPut(env, `history:${userId}`, history);
+  }
   return jsonResponse({ ok: true, imported: importedUsers.length, total: merged.length });
 }
 
 async function exportData(env) {
   const users = await kvGet(env, 'users', []);
   const usageLogs = [];
+  const histories = {};
   for (const u of users) {
     const usage = await kvGet(env, `usage:${u.id}`, null);
     if (usage) usageLogs.push(usage);
+    const history = await kvGet(env, `history:${u.id}`, []);
+    if (history.length) histories[u.id] = history;
   }
-  return jsonResponse({ users, usageLogs });
+  return jsonResponse({ users, usageLogs, histories });
 }
 
 async function kvGet(env, key, defaultVal) {
