@@ -1,0 +1,26 @@
+name = "claude-leaderboard"
+main = "src/worker.js"
+compatibility_date = "2024-12-01"
+
+# Create this KV namespace with: wrangler kv namespace create LEADERBOARD_KV
+# Then paste the ID below
+[vars]
+PLAN_COST = "200"
+
+[[kv_namespaces]]
+binding = "LEADERBOARD_KV"
+id = "c3b88d3b977b44acaa4f4991d307fbb3"
+
+# For local development:
+# wrangler kv namespace create LEADERBOARD_KV --preview
+# [[kv_namespaces]]
+# binding = "LEADERBOARD_KV"
+# id = "REPLACE_WITH_PREVIEW_ID"
+# preview_id = "REPLACE_WITH_PREVIEW_ID"
+
+[assets]
+directory = "./public"
+
+# Custom domain — uncomment after adding DNS record in Cloudflare dashboard
+# Go to Workers & Pages > claude-leaderboard > Settings > Domains & Routes > Add > Custom Domain
+# Enter: leaderboard.magizhan.work (Cloudflare will auto-create the DNS record if the zone is on CF)

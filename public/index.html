@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Usage Leaderboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-card-hover: #22223a;
+    --accent-orange: #f97316;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+    --border-subtle: #161625;
+    --ny-color: #3b82f6;
+    --xyne-color: #a855f7;
+    --nc-color: #22c55e;
+    --hs-color: #f59e0b;
+    --gold: #fbbf24;
+    --silver: #94a3b8;
+    --bronze-color: #cd7f32;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    z-index: 0;
+    animation: bgPulse 10s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  .header { text-align: center; padding: 40px 0 24px; }
+  .header h1 {
+    font-size: 2.4rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+  }
+  .header .subtitle { color: var(--text-secondary); font-size: 0.95rem; font-weight: 400; }
+
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444; padding: 4px 14px; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 12px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; background: #ef4444; border-radius: 50%;
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
+
+  /* Stats */
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; text-align: center; transition: all 0.3s;
+  }
+  .stat-card:hover { border-color: rgba(168, 85, 247, 0.3); transform: translateY(-2px); }
+  .stat-value { font-size: 1.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .stat-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 6px; font-weight: 500; }
+  .stat-value.orange { color: var(--accent-orange); }
+  .stat-value.purple { color: var(--accent-purple); }
+  .stat-value.blue { color: var(--accent-blue); }
+  .stat-value.green { color: var(--accent-green); }
+
+  /* Team Battle */
+  .team-battle {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; margin: 20px 0; position: relative; overflow: hidden;
+  }
+  .team-battle::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--ny-color), var(--nc-color), var(--xyne-color), var(--hs-color)); }
+  .team-battle h2 { text-align: center; font-size: 0.8rem; font-weight: 700; margin-bottom: 20px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 3px; }
+  .team-vs { display: flex; align-items: center; justify-content: center; gap: 20px; }
+  .team-side { flex: 1; text-align: center; }
+  .team-name { font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px; }
+  .team-name.ny { color: var(--ny-color); }
+  .team-name.xyne { color: var(--xyne-color); }
+  .team-name.nc { color: var(--nc-color); }
+  .team-name.hs { color: var(--hs-color); }
+  .team-pct { font-size: 2rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+  .team-details { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+  .team-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; }
+  .team-bar-row { display: flex; align-items: center; gap: 10px; }
+  .team-bar-label { font-size: 0.65rem; font-weight: 700; min-width: 40px; width: 40px; text-align: right; letter-spacing: 0.5px; }
+  .team-bar-track { flex: 1; height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden; }
+  .team-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .team-bar-fill.ny { background: linear-gradient(90deg, var(--ny-color), #60a5fa); }
+  .team-bar-fill.xyne { background: linear-gradient(90deg, #c084fc, var(--xyne-color)); }
+  .team-bar-fill.nc { background: linear-gradient(90deg, var(--nc-color), #4ade80); }
+  .team-bar-fill.hs { background: linear-gradient(90deg, var(--hs-color), #fbbf24); }
+  .team-bar-value { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); width: 40px; }
+
+  /* Setup Section */
+  .setup-section {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    margin: 20px 0; overflow: hidden;
+  }
+  .setup-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; cursor: pointer; user-select: none; transition: background 0.2s;
+  }
+  .setup-header:hover { background: var(--bg-card-hover); }
+  .setup-header h3 { font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .setup-header .badge {
+    font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .setup-chevron { color: var(--text-dim); transition: transform 0.3s; font-size: 0.8rem; }
+  .setup-section.open .setup-chevron { transform: rotate(180deg); }
+  .setup-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+  .setup-section.open .setup-body { max-height: 600px; }
+  .setup-body-inner { padding: 0 24px 24px; }
+  .setup-method {
+    padding: 16px; border-radius: 10px; border: 1px solid var(--border-subtle);
+    background: var(--bg-secondary); margin-bottom: 12px;
+  }
+  .setup-method:last-child { margin-bottom: 0; }
+  .setup-method h4 { font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .setup-method h4 .tag {
+    font-size: 0.55rem; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+    background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .setup-method p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+  .setup-method ol { font-size: 0.78rem; color: var(--text-secondary); line-height: 2; padding-left: 20px; margin-top: 8px; }
+  .setup-method ol code {
+    background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  }
+  .setup-method .download-btn {
+    display: inline-block; padding: 8px 18px; margin-top: 10px;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    color: white; font-size: 0.78rem; font-weight: 700; border-radius: 8px;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .setup-method .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3); }
+  .setup-method .bookmarklet-link {
+    display: inline-block; padding: 6px 14px; margin-top: 8px;
+    background: var(--bg-primary); border: 1px solid var(--border);
+    color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; border-radius: 6px;
+    text-decoration: none; cursor: grab;
+  }
+  .setup-note {
+    display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 14px;
+    background: rgba(251, 191, 36, 0.06); border: 1px solid rgba(251, 191, 36, 0.15);
+    border-radius: 8px; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5;
+  }
+  .setup-note .note-icon { flex-shrink: 0; font-size: 0.85rem; }
+
+  /* Actions */
+  .actions { display: flex; gap: 8px; margin: 24px 0 16px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 9px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);
+    color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.8rem;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent-purple); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); border: none; }
+  .btn.primary:hover { box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3); }
+  .btn.danger { border-color: rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 0.7); font-size: 0.75rem; }
+  .btn.danger:hover { background: rgba(239, 68, 68, 0.1); }
+  .btn.secondary { background: transparent; color: var(--text-secondary); font-size: 0.75rem; }
+
+  /* Tabs */
+  .board-tabs {
+    display: flex; gap: 0; margin: 20px 0 8px; justify-content: center;
+  }
+  .board-tab {
+    padding: 10px 28px; border: 1px solid var(--border); background: var(--bg-secondary);
+    color: var(--text-secondary); font-family: 'Inter', sans-serif; font-size: 0.8rem;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .board-tab:first-child { border-radius: 10px 0 0 10px; }
+  .board-tab:last-child { border-radius: 0 10px 10px 0; }
+  .board-tab.active {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    border-color: var(--accent-purple); color: white;
+  }
+  .board-tab:hover:not(.active) { border-color: var(--accent-purple); color: var(--text-primary); }
+
+  .tabs {
+    display: flex; gap: 2px; margin: 8px 0 16px; background: var(--bg-secondary);
+    padding: 3px; border-radius: 10px; border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1; padding: 8px 14px; border: none; background: transparent; color: var(--text-dim);
+    font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    border-radius: 7px; transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text-secondary); }
+  .tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+  /* Leaderboard */
+  .leaderboard { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row {
+    display: grid; grid-template-columns: 44px 1fr 120px 90px 100px;
+    align-items: center; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 18px; transition: all 0.3s; cursor: default;
+    animation: slideIn 0.4s ease backwards; gap: 8px;
+  }
+  .lb-row:hover { border-color: rgba(168, 85, 247, 0.3); background: var(--bg-card-hover); }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .lb-row.rank-1 { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.04); }
+  .lb-row.rank-2 { border-color: rgba(148, 163, 184, 0.2); background: rgba(148, 163, 184, 0.02); }
+  .lb-row.rank-3 { border-color: rgba(205, 127, 50, 0.2); background: rgba(205, 127, 50, 0.02); }
+
+  .lb-position { font-size: 1.1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .lb-position.p1 { color: var(--gold); }
+  .lb-position.p2 { color: var(--silver); }
+  .lb-position.p3 { color: var(--bronze-color); }
+  .lb-position.px { color: var(--text-dim); }
+
+  .lb-user-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .lb-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .lb-team-tag {
+    font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .lb-team-tag.ny { background: rgba(59, 130, 246, 0.12); color: var(--ny-color); border: 1px solid rgba(59, 130, 246, 0.25); }
+  .lb-team-tag.xyne { background: rgba(168, 85, 247, 0.12); color: var(--xyne-color); border: 1px solid rgba(168, 85, 247, 0.25); }
+  .lb-team-tag.nc { background: rgba(34, 197, 94, 0.12); color: var(--nc-color); border: 1px solid rgba(34, 197, 94, 0.25); }
+  .lb-team-tag.hs { background: rgba(245, 158, 11, 0.12); color: var(--hs-color); border: 1px solid rgba(245, 158, 11, 0.25); }
+
+  .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
+  .rank-diamond { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+  .rank-platinum { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+  .rank-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); }
+  .rank-silver { background: rgba(148, 163, 184, 0.15); color: var(--silver); border: 1px solid rgba(148, 163, 184, 0.2); }
+  .rank-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze-color); border: 1px solid rgba(205, 127, 50, 0.2); }
+
+  .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
+  .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
+  .lb-updated { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
+
+  .lb-usage-bar { position: relative; height: 22px; background: var(--bg-primary); border-radius: 6px; overflow: hidden; }
+  .lb-usage-fill { height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
+  .lb-usage-fill.low { background: linear-gradient(90deg, #1e40af, var(--accent-blue)); }
+  .lb-usage-fill.mid { background: linear-gradient(90deg, #7c3aed, var(--accent-purple)); }
+  .lb-usage-fill.high { background: linear-gradient(90deg, #c2410c, var(--accent-orange)); }
+  .lb-usage-fill.max { background: linear-gradient(90deg, #dc2626, #ef4444); animation: maxPulse 2s ease-in-out infinite; }
+  @keyframes maxPulse { 0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); } }
+
+  .lb-pct { font-size: 1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; text-align: right; }
+
+  .fire-icon { display: inline-block; animation: fireFlicker 0.5s ease-in-out infinite alternate; }
+  @keyframes fireFlicker { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.1) rotate(3deg); } }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; width: 90%; max-width: 420px; animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif;
+    font-size: 0.85rem; outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent-purple); }
+  .form-group select option { background: var(--bg-card); color: var(--text-primary); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 12px; left: 12px; background: var(--bg-card);
+    border: 1px solid var(--accent-green); color: var(--text-primary); padding: 12px 20px;
+    border-radius: 10px; font-size: 0.85rem; font-weight: 600; z-index: 2000;
+    max-width: 400px; margin-left: auto;
+    animation: toastIn 0.4s ease, toastOut 0.4s ease 2.5s forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(20px); } }
+
+  .refresh-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; }
+  .refresh-fill { height: 100%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); width: 0%; transition: width 0.5s linear; }
+
+  .confetti-piece { position: fixed; z-index: 3000; pointer-events: none; }
+
+  .last-updated { text-align: center; color: var(--text-dim); font-size: 0.7rem; margin-top: 24px; padding-bottom: 40px; }
+
+  .spacer { flex: 1; }
+
+  /* FAB (mobile only) */
+  .fab { display: none; }
+  .fab-menu { display: none; }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    html, body { overflow-x: hidden; width: 100%; }
+    .container { padding: 8px; max-width: 100vw; overflow: hidden; }
+    .header { padding: 16px 0 10px; }
+    .header h1 { font-size: 1.5rem; }
+    .header .subtitle { font-size: 0.8rem; }
+
+    /* Compact stats: single row, 4 items */
+    .stats-bar { grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 10px 0; }
+    .stat-card { padding: 8px 4px; border-radius: 10px; }
+    .stat-value { font-size: 0.9rem; }
+    .stat-label { font-size: 0.5rem; margin-top: 2px; letter-spacing: 0.5px; }
+
+    /* Compact team battle */
+    .team-battle { padding: 10px 8px; margin: 10px 0; overflow: hidden; }
+    .team-battle h2 { font-size: 0.65rem; margin-bottom: 8px; }
+    .team-vs { flex-direction: row; gap: 4px; }
+    .team-side { min-width: 0; flex: 1; }
+    .team-name { font-size: 0.65rem; }
+    .team-pct { font-size: 0.85rem; }
+    .team-details { display: none; }
+    .team-bars { margin-top: 8px; }
+    .team-bar-track { height: 4px; }
+    .team-bar-value { display: none; }
+    .team-bar-label { font-size: 0.6rem; min-width: 32px; width: 32px; }
+    .team-bar-row { gap: 6px; }
+
+    /* Hide setup section on mobile */
+    .setup-section { display: none; }
+
+    /* Hide action buttons, use FAB instead */
+    .actions { display: none; }
+    .mobile-hide { display: none !important; }
+
+    /* Show FAB */
+    .fab {
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; bottom: 24px; right: 16px; width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border: none; border-radius: 50%; color: white; font-size: 1.4rem;
+      cursor: pointer; z-index: 900; box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+      transition: transform 0.2s;
+    }
+    .fab:hover { transform: scale(1.1); }
+    .fab.open { transform: rotate(45deg); }
+
+    .fab-menu {
+      position: fixed; bottom: 80px; right: 16px; z-index: 899;
+      flex-direction: column; gap: 8px; align-items: flex-end;
+    }
+    .fab-menu.open { display: flex; }
+    .fab-menu-item {
+      padding: 10px 16px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-primary); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      font-family: 'Inter', sans-serif; transition: all 0.2s;
+    }
+    .fab-menu-item:hover { border-color: var(--accent-purple); }
+
+    /* Tighter tabs */
+    .board-tabs { margin: 8px 0 4px; }
+    .board-tab { padding: 7px 12px; font-size: 0.68rem; }
+    .tabs { margin: 4px 0 8px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab { padding: 6px 8px; font-size: 0.68rem; flex: 0 0 auto; }
+
+    /* Leaderboard rows */
+    .lb-row {
+      grid-template-columns: 28px 1fr 50px;
+      padding: 10px 8px; gap: 4px;
+    }
+    .lb-row .lb-plans { display: none; }
+    .lb-row .lb-usage-bar { display: none; }
+    .lb-pct { font-size: 0.85rem; }
+    .lb-name { font-size: 0.8rem; }
+    .lb-team-tag, .lb-rank-badge { font-size: 0.5rem; padding: 1px 4px; }
+    .lb-position { font-size: 0.85rem; }
+    .lb-meta { gap: 4px; }
+    .lb-updated { font-size: 0.55rem; }
+
+    /* Modals */
+    .modal { width: 95%; padding: 20px; }
+  }
+
+  @media (max-width: 480px) {
+    .header h1 { font-size: 1.1rem; }
+    .header .subtitle { font-size: 0.7rem; }
+    .stats-bar { gap: 3px; }
+    .stat-value { font-size: 0.8rem; }
+    .stat-card { padding: 6px 3px; }
+    .stat-label { font-size: 0.45rem; }
+    .team-pct { font-size: 0.75rem; }
+    .team-name { font-size: 0.6rem; }
+    .board-tab { padding: 6px 10px; font-size: 0.65rem; }
+    .lb-row { grid-template-columns: 24px 1fr 46px; padding: 8px 6px; }
+    .lb-name { font-size: 0.75rem; }
+    .lb-pct { font-size: 0.8rem; }
+    .lb-position { font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="refresh-bar"><div class="refresh-fill" id="refreshFill"></div></div>
+
+<div class="container">
+  <div class="header">
+    <h1>CLAUDE USAGE LEADERBOARD</h1>
+    <div class="subtitle">Maximize your GPU/AI usage. Every token counts.</div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-value orange" id="statAvgUsage">0%</div>
+      <div class="stat-label" id="statAvgLabel">Avg Session Usage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value purple" id="statAvgWeekly">0%</div>
+      <div class="stat-label">Avg Weekly Usage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value blue" id="statTotalBudget">$0</div>
+      <div class="stat-label">Total Budget</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value green" id="statUsers">0</div>
+      <div class="stat-label">Active Users</div>
+    </div>
+  </div>
+
+  <div class="team-battle">
+    <h2>Team Battle <span id="teamBattleLabel" style="color:var(--text-dim);">(Session)</span></h2>
+    <div class="team-vs">
+      <div class="team-side">
+        <div class="team-name ny">NY</div>
+        <div class="team-pct" id="nyPct" style="color:var(--ny-color);">0%</div>
+        <div class="team-details" id="nyDetails">0 members</div>
+      </div>
+      <div class="team-side">
+        <div class="team-name nc">NC</div>
+        <div class="team-pct" id="ncPct" style="color:var(--nc-color);">0%</div>
+        <div class="team-details" id="ncDetails">0 members</div>
+      </div>
+      <div class="team-side">
+        <div class="team-name xyne">XYNE</div>
+        <div class="team-pct" id="xynePct" style="color:var(--xyne-color);">0%</div>
+        <div class="team-details" id="xyneDetails">0 members</div>
+      </div>
+      <div class="team-side">
+        <div class="team-name hs">HS</div>
+        <div class="team-pct" id="hsPct" style="color:var(--hs-color);">0%</div>
+        <div class="team-details" id="hsDetails">0 members</div>
+      </div>
+    </div>
+    <div class="team-bars">
+      <div class="team-bar-row">
+        <div class="team-bar-label" style="color:var(--ny-color);">NY</div>
+        <div class="team-bar-track"><div class="team-bar-fill ny" id="nyBar" style="width:0%"></div></div>
+        <div class="team-bar-value" id="nyBarVal">0%</div>
+      </div>
+      <div class="team-bar-row">
+        <div class="team-bar-label" style="color:var(--nc-color);">NC</div>
+        <div class="team-bar-track"><div class="team-bar-fill nc" id="ncBar" style="width:0%"></div></div>
+        <div class="team-bar-value" id="ncBarVal">0%</div>
+      </div>
+      <div class="team-bar-row">
+        <div class="team-bar-label" style="color:var(--xyne-color);">XYNE</div>
+        <div class="team-bar-track"><div class="team-bar-fill xyne" id="xyneBar" style="width:0%"></div></div>
+        <div class="team-bar-value" id="xyneBarVal">0%</div>
+      </div>
+      <div class="team-bar-row">
+        <div class="team-bar-label" style="color:var(--hs-color);">HS</div>
+        <div class="team-bar-track"><div class="team-bar-fill hs" id="hsBar" style="width:0%"></div></div>
+        <div class="team-bar-value" id="hsBarVal">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup Section - Collapsible -->
+  <div class="setup-section" id="setupSection">
+    <div class="setup-header" onclick="toggleSetup()">
+      <h3>How to Sync Your Usage <span class="badge">One-time setup</span></h3>
+      <span class="setup-chevron">&#9660;</span>
+    </div>
+    <div class="setup-body">
+      <div class="setup-body-inner">
+        <div class="setup-method">
+          <h4>Chrome Extension <span class="tag">Recommended</span></h4>
+          <p>Install once, then click the extension icon on your usage page. It reads your identity automatically.</p>
+          <ol>
+            <li>Download &amp; unzip the extension</li>
+            <li>Go to <code>chrome://extensions</code></li>
+            <li>Enable <strong>Developer mode</strong> (top right toggle)</li>
+            <li>Click <strong>Load unpacked</strong> &amp; select the unzipped folder</li>
+            <li>Navigate to <code>claude.ai/settings/usage</code></li>
+            <li>Click the extension icon &mdash; done!</li>
+          </ol>
+          <a class="download-btn" href="/extension/extension.zip" download>Download Extension</a>
+        </div>
+        <div class="setup-method">
+          <h4>Console Paste <span class="tag">No Extension Needed</span></h4>
+          <p>If you can't install extensions, open <strong>claude.ai/settings/usage</strong>, press <code>F12</code> (or Cmd+Option+J on Mac) to open DevTools Console, then paste this and hit Enter:</p>
+          <div style="position:relative;margin-top:8px;">
+            <pre id="consolePaste" style="background:var(--bg-primary);padding:10px 14px;border-radius:6px;font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:80px;overflow-y:auto;border:1px solid var(--border);"></pre>
+            <button onclick="copyConsoleCode()" style="position:absolute;top:6px;right:6px;padding:4px 10px;font-size:0.65rem;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:inherit;">Copy</button>
+          </div>
+        </div>
+        <div class="setup-method">
+          <h4>Manual Entry</h4>
+          <p>Don't want to run code? Just click <strong>"Log Usage"</strong> above and enter your percentages manually from the usage page.</p>
+        </div>
+        <div class="setup-note">
+          <span class="note-icon">&#9888;&#65039;</span>
+          <span><strong>Prerequisite:</strong> You must have <strong>claude.ai/settings/usage</strong> open in your browser before syncing. The extension/script reads usage percentages directly from that page.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" onclick="openModal('addUser')">+ Add User</button>
+    <button class="btn" onclick="openModal('logUsage')">Log Usage</button>
+    <button class="btn" onclick="openModal('addPlan')">+ Add Plan</button>
+    <span class="spacer"></span>
+    <button class="btn secondary mobile-hide" onclick="exportData()">Export</button>
+    <button class="btn secondary mobile-hide" onclick="document.getElementById('importFile').click()">Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+    <button class="btn danger mobile-hide" onclick="openModal('removeUser')">Remove</button>
+  </div>
+
+  <div class="board-tabs">
+    <button class="board-tab active" onclick="setBoardType('session',this)">Current</button>
+    <button class="board-tab" onclick="setBoardType('weekly',this)">Weekly</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('all',this)">All</button>
+    <button class="tab" onclick="setTab('ny',this)">NY</button>
+    <button class="tab" onclick="setTab('nc',this)">NC</button>
+    <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
+    <button class="tab" onclick="setTab('hs',this)">HS</button>
+    <button class="tab" onclick="setTab('top5',this)">Top 5</button>
+  </div>
+
+  <div class="leaderboard" id="leaderboard"></div>
+  <div class="last-updated" id="lastUpdated">Last updated: --</div>
+</div>
+
+<!-- Mobile FAB -->
+<button class="fab" id="fab" onclick="toggleFab()">+</button>
+<div class="fab-menu" id="fabMenu">
+  <button class="fab-menu-item" onclick="openModal('addUser');closeFab()">+ Add User</button>
+  <button class="fab-menu-item" onclick="openModal('logUsage');closeFab()">Log Usage</button>
+  <button class="fab-menu-item" onclick="openModal('addPlan');closeFab()">+ Add Plan</button>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="modal-addUser">
+  <div class="modal">
+    <h3>Add New User</h3>
+    <div class="form-group"><label>Name</label><input type="text" id="newUserName" placeholder="e.g. John Doe"></div>
+    <div class="form-group"><label>Team</label>
+      <select id="newUserTeam"><option value="NY">NY</option><option value="NC">Namma Cloud (NC)</option><option value="Xyne">Xyne</option><option value="HS">Hyper Switch (HS)</option></select>
+    </div>
+    <div class="form-group"><label>Number of Plans</label><input type="number" id="newUserPlans" value="1" min="1" max="20"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('addUser')">Cancel</button>
+      <button class="btn primary" onclick="addUser()">Add User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Usage Modal -->
+<div class="modal-overlay" id="modal-logUsage">
+  <div class="modal">
+    <h3>Log Usage</h3>
+    <div class="form-group"><label>User</label><select id="logUsageUser"></select></div>
+    <div class="form-group"><label>Session Usage %</label>
+      <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="100" step="0.1">
+    </div>
+    <div class="form-group"><label>Weekly Usage % (All Models)</label>
+      <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="100" step="0.1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
+      <button class="btn primary" onclick="logUsageManual()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Plan Modal -->
+<div class="modal-overlay" id="modal-addPlan">
+  <div class="modal">
+    <h3>Add Plan to User</h3>
+    <div class="form-group"><label>User</label><select id="addPlanUser"></select></div>
+    <div class="form-group"><label>Additional Plans</label><input type="number" id="addPlanCount" value="1" min="1" max="10"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('addPlan')">Cancel</button>
+      <button class="btn primary" onclick="addPlanAction()">Add Plans</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remove User Modal -->
+<div class="modal-overlay" id="modal-removeUser">
+  <div class="modal">
+    <h3>Remove User</h3>
+    <div class="form-group"><label>User</label><select id="removeUserSelect"></select></div>
+    <div class="form-group" style="color:rgba(239,68,68,0.8);font-size:0.78rem;line-height:1.5;">
+      This will permanently remove the user and all their data. This cannot be undone.
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('removeUser')">Cancel</button>
+      <button class="btn danger" onclick="removeUser()">Confirm Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let currentTab = 'all';
+  let boardType = 'session';
+  let cachedData = null;
+
+  // ============================================================
+  // SETUP SECTION - collapsible, remember state
+  // ============================================================
+  function toggleSetup() {
+    const el = document.getElementById('setupSection');
+    el.classList.toggle('open');
+    localStorage.setItem('claude_lb_setup_seen', el.classList.contains('open') ? '' : '1');
+  }
+  // Auto-open for first-time visitors, auto-collapse once they've synced at least once
+  if (!localStorage.getItem('claude_lb_setup_seen')) {
+    document.getElementById('setupSection').classList.add('open');
+  }
+  // Also collapse if there are users (meaning someone has synced)
+  function maybeCollapseSetup() {
+    if (cachedData && cachedData.users && cachedData.users.length > 0) {
+      localStorage.setItem('claude_lb_setup_seen', '1');
+    }
+  }
+
+  // ============================================================
+  // CONSOLE PASTE CODE
+  // ============================================================
+  function generateConsoleCode() {
+    return "(function(){" +
+      "var n=localStorage.getItem('claude_lb_name');" +
+      "if(!n){n=prompt('Enter your leaderboard name:');if(!n)return;localStorage.setItem('claude_lb_name',n);}" +
+      "var t=localStorage.getItem('claude_lb_team');" +
+      "if(!t){t=prompt('Enter your team (NY, NC, Xyne, or HS):');if(!t)return;localStorage.setItem('claude_lb_team',t);}" +
+      "var b=document.body.innerText,re=/(\\d{1,3})%\\s*used/g,all=[],m;" +
+      "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
+      "var sp=all[0]||null,wp=all[1]||null;" +
+      "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
+      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%'))return;" +
+      "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
+      "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
+      ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+(d.sessionPct||0)+'%, Weekly: '+(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
+      ".catch(e=>alert('Failed: '+e.message))" +
+      "})()";
+  }
+
+  function copyConsoleCode() {
+    navigator.clipboard.writeText(generateConsoleCode());
+    toast('Copied to clipboard!');
+  }
+
+  // ============================================================
+  // RANK SYSTEM
+  // ============================================================
+  function getRank(pct) {
+    if (pct >= 100) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
+    if (pct >= 80)  return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
+    if (pct >= 60)  return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
+    if (pct >= 40)  return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
+    if (pct >= 20)  return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
+    return                  { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
+  }
+
+  function getBarClass(pct) {
+    if (pct >= 90) return 'max';
+    if (pct >= 60) return 'high';
+    if (pct >= 30) return 'mid';
+    return 'low';
+  }
+
+  function pctColor(pct) {
+    if (pct >= 90) return '#ef4444';
+    if (pct >= 70) return 'var(--accent-orange)';
+    if (pct >= 50) return 'var(--accent-purple)';
+    if (pct >= 30) return 'var(--accent-blue)';
+    return 'var(--text-secondary)';
+  }
+
+  function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+
+  // ============================================================
+  // API
+  // ============================================================
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    return res.json();
+  }
+
+  // ============================================================
+  // BOARD TYPE
+  // ============================================================
+  function setBoardType(type, el) {
+    boardType = type;
+    document.querySelectorAll('.board-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    if (cachedData) renderData(cachedData);
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  async function render() {
+    try {
+      const data = await apiFetch('/api/data');
+      cachedData = data;
+      renderData(data);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+      document.getElementById('leaderboard').innerHTML =
+        '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
+    }
+  }
+
+  function renderData(data) {
+    const { users, stats, teams } = data;
+    const isSession = boardType === 'session';
+    const pctKey = isSession ? 'sessionPct' : 'weeklyPct';
+
+    const sorted = [...users].sort((a, b) => (b[pctKey] || 0) - (a[pctKey] || 0));
+
+    let filtered = sorted;
+    if (currentTab === 'ny') filtered = sorted.filter(u => u.team === 'NY');
+    else if (currentTab === 'nc') filtered = sorted.filter(u => u.team === 'NC');
+    else if (currentTab === 'xyne') filtered = sorted.filter(u => u.team === 'Xyne');
+    else if (currentTab === 'hs') filtered = sorted.filter(u => u.team === 'HS');
+    else if (currentTab === 'top5') filtered = sorted.slice(0, 5);
+
+    const lb = document.getElementById('leaderboard');
+    const scrollY = window.scrollY;
+    if (filtered.length === 0) {
+      lb.innerHTML = '<div class="empty-state"><div class="icon">&#128202;</div><p>No users yet. Click "+ Add User" to get started.</p></div>';
+    } else {
+      lb.innerHTML = filtered.map((u, i) => {
+        const pct = u[pctKey] || 0;
+        const otherPct = u[isSession ? 'weeklyPct' : 'sessionPct'] || 0;
+        const rank = getRank(pct);
+        const pos = i + 1;
+        const posClass = pos <= 3 ? 'p' + pos : 'px';
+        const rowClass = pos <= 3 ? 'rank-' + pos : '';
+        const barClass = getBarClass(pct);
+        const barWidth = Math.min(pct, 100);
+        const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
+        const ago = timeAgo(u.lastUpdated);
+        const otherLabel = isSession ? 'wk' : 'sess';
+        const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team.toLowerCase();
+
+        return `
+          <div class="lb-row ${rowClass}" style="animation-delay:${i * 0.05}s">
+            <div class="lb-position ${posClass}">#${pos}</div>
+            <div class="lb-user-info">
+              <div class="lb-name">${fire}${escHtml(u.name)}</div>
+              <div class="lb-meta">
+                <span class="lb-team-tag ${teamCls}">${u.team}</span>
+                <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
+                ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+              </div>
+            </div>
+            <div class="lb-plans">
+              ${pct.toFixed(0)}% <span class="sub">(${otherLabel}: ${otherPct.toFixed(0)}%)</span>
+              <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
+            </div>
+            <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${barWidth}%"></div></div>
+            <div class="lb-pct" style="color:${pctColor(pct)}">${pct.toFixed(1)}%</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Stats
+    document.getElementById('statAvgUsage').textContent = (stats.avgSessionPct || 0).toFixed(1) + '%';
+    document.getElementById('statAvgWeekly').textContent = (stats.avgWeeklyPct || 0).toFixed(1) + '%';
+    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
+    document.getElementById('statUsers').textContent = stats.totalUsers;
+
+    // Teams
+    const teamPctKey = isSession ? 'avgSessionPct' : 'avgWeeklyPct';
+    document.getElementById('teamBattleLabel').textContent = '(' + (isSession ? 'Session' : 'Weekly') + ')';
+
+    const teamNames = ['NY', 'NC', 'Xyne', 'HS'];
+    const teamIds = ['ny', 'nc', 'xyne', 'hs'];
+    const maxTeamPct = Math.max(...teamNames.map(t => teams[t] ? teams[t][teamPctKey] || 0 : 0), 1);
+
+    teamNames.forEach((t, idx) => {
+      const tid = teamIds[idx];
+      const teamData = teams[t] || { members: 0, avgSessionPct: 0, avgWeeklyPct: 0 };
+      const pct = teamData[teamPctKey] || 0;
+      document.getElementById(tid + 'Pct').textContent = pct.toFixed(1) + '%';
+      document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
+      document.getElementById(tid + 'Bar').style.width = (pct / maxTeamPct * 100) + '%';
+      document.getElementById(tid + 'BarVal').textContent = pct.toFixed(1) + '%';
+    });
+
+    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
+
+    // Restore scroll position after DOM update (prevents iOS Safari scroll jump)
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  }
+
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+  async function addUser() {
+    const name = document.getElementById('newUserName').value.trim();
+    const team = document.getElementById('newUserTeam').value;
+    const numPlans = parseInt(document.getElementById('newUserPlans').value) || 1;
+    if (!name) return toast('Enter a name', true);
+
+    const d = await apiFetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({ name, team, numPlans }),
+    });
+    if (d.id) {
+      closeModal('addUser');
+      document.getElementById('newUserName').value = '';
+      render();
+      toast(name + ' added to ' + team + '!');
+      confetti();
+    } else {
+      toast(d.error || 'Failed', true);
+    }
+  }
+
+  async function logUsageManual() {
+    const userId = document.getElementById('logUsageUser').value;
+    const sessionPct = parseFloat(document.getElementById('logSessionPct').value);
+    const weeklyPct = parseFloat(document.getElementById('logWeeklyPct').value);
+    if (!userId) return toast('Select a user', true);
+
+    const payload = { userId, source: 'manual' };
+    if (!isNaN(sessionPct)) payload.sessionPct = sessionPct;
+    if (!isNaN(weeklyPct)) payload.weeklyPct = weeklyPct;
+    if (isNaN(sessionPct) && isNaN(weeklyPct)) return toast('Enter at least one %', true);
+
+    const d = await apiFetch('/api/usage', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    if (d.ok) {
+      closeModal('logUsage');
+      document.getElementById('logSessionPct').value = '';
+      document.getElementById('logWeeklyPct').value = '';
+      render();
+      toast('Updated!');
+    } else {
+      toast(d.error || 'Failed', true);
+    }
+  }
+
+  async function addPlanAction() {
+    const userId = document.getElementById('addPlanUser').value;
+    const count = parseInt(document.getElementById('addPlanCount').value) || 1;
+    if (!userId) return toast('Select a user', true);
+
+    const d = await apiFetch('/api/users/' + userId + '/plans', {
+      method: 'POST',
+      body: JSON.stringify({ count }),
+    });
+    if (d.ok) {
+      closeModal('addPlan');
+      render();
+      toast('Added ' + count + ' plan(s). Now ' + d.numPlans + ' plans.');
+    } else {
+      toast(d.error || 'Failed', true);
+    }
+  }
+
+  async function removeUser() {
+    const userId = document.getElementById('removeUserSelect').value;
+    if (!userId) return toast('Select a user', true);
+    const userName = document.getElementById('removeUserSelect').selectedOptions[0]?.text || 'user';
+    if (!confirm('Are you sure you want to permanently remove ' + userName + '? This cannot be undone.')) return;
+
+    const d = await apiFetch('/api/users/' + userId, { method: 'DELETE' });
+    if (d.ok) {
+      closeModal('removeUser');
+      render();
+      toast('Removed ' + (d.removed || 'user'));
+    } else {
+      toast(d.error || 'Failed', true);
+    }
+  }
+
+  // ============================================================
+  // EXPORT / IMPORT
+  // ============================================================
+  async function exportData() {
+    const data = await apiFetch('/api/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'claude_leaderboard_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Data exported!');
+  }
+
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        const d = await apiFetch('/api/import', {
+          method: 'POST',
+          body: JSON.stringify(imported),
+        });
+        if (d.ok) {
+          render();
+          toast('Imported ' + d.imported + ' users!');
+          confetti();
+        } else {
+          toast(d.error || 'Import failed', true);
+        }
+      } catch { toast('Failed to parse file', true); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // ============================================================
+  // MODALS
+  // ============================================================
+  function openModal(name) {
+    if (cachedData) {
+      const users = cachedData.users || [];
+      ['logUsageUser', 'addPlanUser', 'removeUserSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.innerHTML = users.map(u =>
+            '<option value="' + u.id + '">' + escHtml(u.name) + ' (' + u.team + ')</option>'
+          ).join('');
+        }
+      });
+    }
+    document.getElementById('modal-' + name).classList.add('active');
+  }
+
+  function closeModal(name) {
+    document.getElementById('modal-' + name).classList.remove('active');
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  });
+
+  // ============================================================
+  // TABS
+  // ============================================================
+  function setTab(tab, el) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    if (cachedData) renderData(cachedData);
+  }
+
+  // ============================================================
+  // TOAST & CONFETTI
+  // ============================================================
+  function toast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    if (isError) t.style.borderColor = '#ef4444';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  function confetti() {
+    const colors = ['#f97316', '#a855f7', '#3b82f6', '#22c55e', '#ec4899', '#fbbf24', '#06b6d4'];
+    for (let i = 0; i < 40; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.top = '-10px';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.width = (Math.random() * 8 + 4) + 'px';
+      piece.style.height = (Math.random() * 8 + 4) + 'px';
+      document.body.appendChild(piece);
+      const dur = Math.random() * 2000 + 1500;
+      const xd = (Math.random() - 0.5) * 200;
+      piece.animate([
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${xd}px,${window.innerHeight + 20}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+      ], { duration: dur, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' }).onfinish = () => piece.remove();
+    }
+  }
+
+  // ============================================================
+  // AUTO-REFRESH
+  // ============================================================
+  let refreshCounter = 0;
+  const REFRESH_INTERVAL = 30;
+  setInterval(() => {
+    refreshCounter++;
+    document.getElementById('refreshFill').style.width = (refreshCounter / REFRESH_INTERVAL * 100) + '%';
+    if (refreshCounter >= REFRESH_INTERVAL) {
+      refreshCounter = 0;
+      render();
+    }
+  }, 1000);
+
+  // ============================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'a') openModal('addUser');
+    if (e.key === 'u') openModal('logUsage');
+    if (e.key === 'r') render();
+  });
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  // ============================================================
+  // FAB (mobile actions)
+  // ============================================================
+  function toggleFab() {
+    const fab = document.getElementById('fab');
+    const menu = document.getElementById('fabMenu');
+    fab.classList.toggle('open');
+    menu.classList.toggle('open');
+  }
+  function closeFab() {
+    document.getElementById('fab').classList.remove('open');
+    document.getElementById('fabMenu').classList.remove('open');
+  }
+
+  document.getElementById('consolePaste').textContent = generateConsoleCode();
+  render();
+</script>
+
+</body>
+</html>
