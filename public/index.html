@@ -85,6 +85,74 @@
   }
   @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
 
+  /* Vision Message */
+  .vision-banner {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08));
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .vision-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+  }
+  .vision-banner .vision-equation {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .vision-banner .vision-text {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .vision-banner .vision-text strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .vision-banner .vision-text .highlight {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+  .vision-banner .vision-author {
+    text-align: right;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 12px;
+    font-style: italic;
+  }
+  .vision-toggle {
+    text-align: center;
+    margin: 12px 0 4px;
+  }
+  .vision-toggle button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    padding: 4px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+  .vision-toggle button:hover {
+    border-color: rgba(168, 85, 247, 0.3);
+    color: var(--text-secondary);
+  }
+
   /* Stats */
   .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
   .stat-card {
@@ -646,6 +714,24 @@
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
 
+  <!-- Vimal's Vision -->
+  <div class="vision-toggle">
+    <button onclick="toggleVision()">&#9889; The Vision</button>
+  </div>
+  <div class="vision-banner" id="visionBanner" style="display:none;">
+    <div class="vision-equation">Compute = Intelligence / Multiplicative Value</div>
+    <div class="vision-text">
+      <strong>Who can max out the GPU usage?</strong> Claude $200 Max has high limits.
+      Can someone max out 5-10 of these subscriptions in a month?<br><br>
+      That would need a <span class="highlight">different way of using AI coding agents</span> &mdash;
+      an org of parallel agents + OpenClaw-like continuous running.<br><br>
+      The model: <strong>1 Meta/Manager agent</strong> (your assistant) +
+      <strong>N &times; (Implementor + Verification) agents</strong> when working on N parallel ideas.
+      Keep a voice / WhatsApp / Telegram channel to the meta agent.
+    </div>
+    <div class="vision-author">&mdash; Vimal</div>
+  </div>
+
   <!-- Leaderboard Section - Moved to Top -->
   <div class="leaderboard-section" id="leaderboardSection">
     <h2 style="text-align:center;font-size:0.8rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;">Leaderboard</h2>
@@ -916,6 +1002,17 @@
   // ============================================================
   // SETUP SECTION - collapsible, remember state
   // ============================================================
+  function toggleVision() {
+    const el = document.getElementById('visionBanner');
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? 'block' : 'none';
+    localStorage.setItem('claude_lb_vision', isHidden ? 'open' : 'closed');
+  }
+  // Restore vision banner state
+  if (localStorage.getItem('claude_lb_vision') === 'open') {
+    document.getElementById('visionBanner').style.display = 'block';
+  }
+
   function toggleSetup() {
     const el = document.getElementById('setupSection');
     el.classList.toggle('open');
