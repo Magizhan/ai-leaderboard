@@ -55,6 +55,38 @@ async function scrapeAndSync() {
   let weeklyPct = all.length >= 2 ? all[1] : null;
   if (sessionPct === null && weeklyPct === null) return;
 
+  // Scrape reset timers
+  // Session: "in X hr Y min" -> compute absolute reset timestamp
+  let sessionResetsAt = null;
+  const sessionResetMatch = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
+  if (sessionResetMatch) {
+    const ms = (parseInt(sessionResetMatch[1]) * 3600 + parseInt(sessionResetMatch[2]) * 60) * 1000;
+    sessionResetsAt = new Date(Date.now() + ms).toISOString();
+  }
+  // Weekly: "Day H:MM AM/PM" -> compute absolute reset timestamp
+  let weeklyResetsAt = null;
+  const weeklyResetMatch = bodyText.match(/(sun|mon|tue|wed|thu|fri|sat)\w*\s+(\d+):(\d+)\s*(am|pm)/i);
+  if (weeklyResetMatch) {
+    const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
+    const targetDay = dayNames.indexOf(weeklyResetMatch[1].toLowerCase().slice(0, 3));
+    let hour = parseInt(weeklyResetMatch[2]);
+    const min = parseInt(weeklyResetMatch[3]);
+    const isPM = weeklyResetMatch[4].toLowerCase() === 'pm';
+    if (isPM && hour !== 12) hour += 12;
+    if (!isPM && hour === 12) hour = 0;
+    const now = new Date();
+    const reset = new Date(now);
+    let daysAhead = (targetDay - now.getDay() + 7) % 7;
+    if (daysAhead === 0) {
+      const todayTarget = new Date(now);
+      todayTarget.setHours(hour, min, 0, 0);
+      if (todayTarget <= now) daysAhead = 7;
+    }
+    reset.setDate(reset.getDate() + daysAhead);
+    reset.setHours(hour, min, 0, 0);
+    weeklyResetsAt = reset.toISOString();
+  }
+
   // Get saved team preference (default to NY)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
   const team = stored.claude_lb_team || 'NY';
@@ -72,6 +104,8 @@ async function scrapeAndSync() {
     const payload = { name, team, source: 'extension' };
     if (sessionPct !== null) payload.sessionPct = sessionPct;
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;
+    if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
+    if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
 
     const res = await fetch(API_BASE + '/api/usage', {
       method: 'POST',

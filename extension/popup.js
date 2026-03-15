@@ -181,17 +181,49 @@ function scrapeUsagePage() {
   }
   if (!name) return { error: 'Could not detect your Claude username.' };
 
+  const bodyText = document.body.innerText;
   const re = /(\d{1,3})%\s*used/g;
   const all = [];
   let m;
-  while ((m = re.exec(document.body.innerText)) !== null) all.push(parseInt(m[1]));
+  while ((m = re.exec(bodyText)) !== null) all.push(parseInt(m[1]));
 
   let sessionPct = all.length >= 1 ? all[0] : null;
   let weeklyPct = all.length >= 2 ? all[1] : null;
   if (sessionPct === null && weeklyPct === null) {
     return { error: 'No usage data found. Make sure you are on the Usage tab.' };
   }
-  return { name, sessionPct, weeklyPct };
+
+  // Scrape reset timers
+  let sessionResetsAt = null;
+  const sessionResetMatch = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
+  if (sessionResetMatch) {
+    const ms = (parseInt(sessionResetMatch[1]) * 3600 + parseInt(sessionResetMatch[2]) * 60) * 1000;
+    sessionResetsAt = new Date(Date.now() + ms).toISOString();
+  }
+  let weeklyResetsAt = null;
+  const weeklyResetMatch = bodyText.match(/(sun|mon|tue|wed|thu|fri|sat)\w*\s+(\d+):(\d+)\s*(am|pm)/i);
+  if (weeklyResetMatch) {
+    const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
+    const targetDay = dayNames.indexOf(weeklyResetMatch[1].toLowerCase().slice(0, 3));
+    let hour = parseInt(weeklyResetMatch[2]);
+    const min = parseInt(weeklyResetMatch[3]);
+    const isPM = weeklyResetMatch[4].toLowerCase() === 'pm';
+    if (isPM && hour !== 12) hour += 12;
+    if (!isPM && hour === 12) hour = 0;
+    const now = new Date();
+    const reset = new Date(now);
+    let daysAhead = (targetDay - now.getDay() + 7) % 7;
+    if (daysAhead === 0) {
+      const todayTarget = new Date(now);
+      todayTarget.setHours(hour, min, 0, 0);
+      if (todayTarget <= now) daysAhead = 7;
+    }
+    reset.setDate(reset.getDate() + daysAhead);
+    reset.setHours(hour, min, 0, 0);
+    weeklyResetsAt = reset.toISOString();
+  }
+
+  return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt };
 }
 
 // ============================================================
@@ -210,6 +242,8 @@ async function doSync() {
     };
     if (scrapedData.sessionPct !== null) payload.sessionPct = scrapedData.sessionPct;
     if (scrapedData.weeklyPct !== null) payload.weeklyPct = scrapedData.weeklyPct;
+    if (scrapedData.sessionResetsAt) payload.sessionResetsAt = scrapedData.sessionResetsAt;
+    if (scrapedData.weeklyResetsAt) payload.weeklyResetsAt = scrapedData.weeklyResetsAt;
 
     const res = await fetch(API_BASE + '/api/usage', {
       method: 'POST',

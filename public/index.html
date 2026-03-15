@@ -27,6 +27,7 @@
     --xyne-color: #a855f7;
     --nc-color: #22c55e;
     --hs-color: #f59e0b;
+    --jp-color: #e11d48;
     --gold: #fbbf24;
     --silver: #94a3b8;
     --bronze-color: #cd7f32;
@@ -122,7 +123,7 @@
   .team-mini-row {
     display: flex; justify-content: space-around; gap: 8px;
   }
-  .team-mini-ny, .team-mini-nc, .team-mini-xyne, .team-mini-hs {
+  .team-mini-ny, .team-mini-nc, .team-mini-xyne, .team-mini-hs, .team-mini-jp {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
     flex: 1; padding: 6px 4px; border-radius: 8px;
     background: var(--bg-secondary);
@@ -134,6 +135,7 @@
   .team-mini-nc .team-mini-name { color: var(--nc-color); }
   .team-mini-xyne .team-mini-name { color: var(--xyne-color); }
   .team-mini-hs .team-mini-name { color: var(--hs-color); }
+  .team-mini-jp .team-mini-name { color: var(--jp-color); }
   .team-mini-pct {
     font-size: 0.9rem; font-weight: 800; font-family: 'JetBrains Mono', monospace;
     color: var(--text-primary);
@@ -143,7 +145,7 @@
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 28px; margin: 20px 0; position: relative; overflow: hidden;
   }
-  .team-battle::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--ny-color), var(--nc-color), var(--xyne-color), var(--hs-color)); }
+  .team-battle::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--ny-color), var(--nc-color), var(--xyne-color), var(--hs-color), var(--jp-color)); }
   .team-battle h2 { text-align: center; font-size: 0.8rem; font-weight: 700; margin-bottom: 20px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 3px; }
   .team-vs { display: flex; align-items: center; justify-content: center; gap: 20px; }
   .team-side { flex: 1; text-align: center; }
@@ -152,6 +154,7 @@
   .team-name.xyne { color: var(--xyne-color); }
   .team-name.nc { color: var(--nc-color); }
   .team-name.hs { color: var(--hs-color); }
+  .team-name.jp { color: var(--jp-color); }
   .team-pct { font-size: 2rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
   .team-details { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
   .team-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; }
@@ -163,6 +166,7 @@
   .team-bar-fill.xyne { background: linear-gradient(90deg, #c084fc, var(--xyne-color)); }
   .team-bar-fill.nc { background: linear-gradient(90deg, var(--nc-color), #4ade80); }
   .team-bar-fill.hs { background: linear-gradient(90deg, var(--hs-color), #fbbf24); }
+  .team-bar-fill.jp { background: linear-gradient(90deg, var(--jp-color), #fb7185); }
   .team-bar-value { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); width: 40px; }
 
   /* Setup Section */
@@ -297,6 +301,7 @@
   .lb-team-tag.xyne { background: rgba(168, 85, 247, 0.12); color: var(--xyne-color); border: 1px solid rgba(168, 85, 247, 0.25); }
   .lb-team-tag.nc { background: rgba(34, 197, 94, 0.12); color: var(--nc-color); border: 1px solid rgba(34, 197, 94, 0.25); }
   .lb-team-tag.hs { background: rgba(245, 158, 11, 0.12); color: var(--hs-color); border: 1px solid rgba(245, 158, 11, 0.25); }
+  .lb-team-tag.jp { background: rgba(225, 29, 72, 0.12); color: var(--jp-color); border: 1px solid rgba(225, 29, 72, 0.25); }
 
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
@@ -428,6 +433,75 @@
     padding: 6px 10px; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 6px; color: var(--text-primary); font-size: 0.78rem;
   }
+
+  /* Tooltip */
+  .chart-tooltip {
+    position: absolute; pointer-events: none; z-index: 600;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary); box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    white-space: nowrap; display: none;
+  }
+  .chart-tooltip.visible { display: block; }
+
+  /* History table */
+  .detail-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+  .detail-table th {
+    text-align: left; padding: 8px 10px; color: var(--text-dim); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; font-size: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-table td {
+    padding: 6px 10px; border-bottom: 1px solid var(--border-subtle);
+    font-family: 'JetBrains Mono', monospace; color: var(--text-secondary);
+  }
+  .detail-table tr:hover td { background: var(--bg-card-hover); color: var(--text-primary); }
+  .detail-table-wrap { max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+
+  /* Per-user reset pill in leaderboard rows */
+  .lb-reset {
+    font-size: 0.6rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+    letter-spacing: 0.3px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .lb-reset.session {
+    background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+  }
+  .lb-reset.weekly {
+    background: rgba(34, 197, 94, 0.1); color: var(--accent-green);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+  }
+  /* Estimated indicator */
+  .reset-estimated {
+    position: relative; cursor: help;
+    width: 12px; height: 12px; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 900; font-style: italic; font-family: serif;
+    border-radius: 50%; background: rgba(251, 191, 36, 0.15); color: var(--gold);
+    border: 1px solid rgba(251, 191, 36, 0.3); flex-shrink: 0;
+  }
+  .reset-estimated .reset-tooltip {
+    display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 12px; font-size: 0.65rem; font-family: 'Inter', sans-serif;
+    font-style: normal; font-weight: 500;
+    color: var(--text-secondary); white-space: nowrap; z-index: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4); margin-bottom: 6px;
+  }
+  .reset-estimated:hover .reset-tooltip { display: block; }
+
+
+  /* Countdown */
+  .countdown-bar {
+    display: flex; gap: 12px; margin-bottom: 16px;
+  }
+  .countdown-card {
+    flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; text-align: center;
+  }
+  .countdown-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-weight: 700; }
+  .countdown-value { font-size: 1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan); }
+  .countdown-sub { font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; }
 
   /* Team detail clickable */
   .team-side.clickable { cursor: pointer; border-radius: 8px; padding: 8px; transition: background 0.2s; }
@@ -577,6 +651,7 @@
         <div class="team-mini-nc"><span class="team-mini-name">NC</span><span class="team-mini-pct" id="ncMiniPct">0%</span></div>
         <div class="team-mini-xyne"><span class="team-mini-name">XYNE</span><span class="team-mini-pct" id="xyneMiniPct">0%</span></div>
         <div class="team-mini-hs"><span class="team-mini-name">HS</span><span class="team-mini-pct" id="hsMiniPct">0%</span></div>
+        <div class="team-mini-jp"><span class="team-mini-name">JP</span><span class="team-mini-pct" id="jpMiniPct">0%</span></div>
       </div>
     </div>
 
@@ -587,6 +662,7 @@
       <button class="tab" onclick="setTab('nc',this)">NC</button>
       <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
       <button class="tab" onclick="setTab('hs',this)">HS</button>
+      <button class="tab" onclick="setTab('jp',this)">JP</button>
       <button class="tab" onclick="setTab('top5',this)">Top 5</button>
     </div>
 
@@ -647,6 +723,11 @@
         <div class="team-pct" id="hsPct" style="color:var(--hs-color);">0%</div>
         <div class="team-details" id="hsDetails">0 members</div>
       </div>
+      <div class="team-side clickable" onclick="openTeamDetail('JP')">
+        <div class="team-name jp">JP</div>
+        <div class="team-pct" id="jpPct" style="color:var(--jp-color);">0%</div>
+        <div class="team-details" id="jpDetails">0 members</div>
+      </div>
     </div>
     <div class="team-bars">
       <div class="team-bar-row">
@@ -668,6 +749,11 @@
         <div class="team-bar-label" style="color:var(--hs-color);">HS</div>
         <div class="team-bar-track"><div class="team-bar-fill hs" id="hsBar" style="width:0%"></div></div>
         <div class="team-bar-value" id="hsBarVal">0%</div>
+      </div>
+      <div class="team-bar-row">
+        <div class="team-bar-label" style="color:var(--jp-color);">JP</div>
+        <div class="team-bar-track"><div class="team-bar-fill jp" id="jpBar" style="width:0%"></div></div>
+        <div class="team-bar-value" id="jpBarVal">0%</div>
       </div>
     </div>
   </div>
@@ -755,7 +841,7 @@
     <h3>Add New User</h3>
     <div class="form-group"><label>Name</label><input type="text" id="newUserName" placeholder="e.g. John Doe"></div>
     <div class="form-group"><label>Team</label>
-      <select id="newUserTeam"><option value="NY">NY</option><option value="NC">Namma Cloud (NC)</option><option value="Xyne">Xyne</option><option value="HS">Hyper Switch (HS)</option></select>
+      <select id="newUserTeam"><option value="NY">NY</option><option value="NC">Namma Cloud (NC)</option><option value="Xyne">Xyne</option><option value="HS">Hyper Switch (HS)</option><option value="JP">Juspay (JP)</option></select>
     </div>
     <div class="form-group"><label>Number of Plans</label><input type="number" id="newUserPlans" value="1" min="1" max="20"></div>
     <div class="modal-actions">
@@ -844,7 +930,7 @@
       "var n=localStorage.getItem('claude_lb_name');" +
       "if(!n){n=prompt('Enter your leaderboard name:');if(!n)return;localStorage.setItem('claude_lb_name',n);}" +
       "var t=localStorage.getItem('claude_lb_team');" +
-      "if(!t){t=prompt('Enter your team (NY, NC, Xyne, or HS):');if(!t)return;localStorage.setItem('claude_lb_team',t);}" +
+      "if(!t){t=prompt('Enter your team (NY, NC, Xyne, HS, or JP):');if(!t)return;localStorage.setItem('claude_lb_team',t);}" +
       "var b=document.body.innerText,re=/(\\d{1,3})%\\s*used/g,all=[],m;" +
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
@@ -971,6 +1057,7 @@
     else if (currentTab === 'nc') filtered = sorted.filter(u => u.team === 'NC');
     else if (currentTab === 'xyne') filtered = sorted.filter(u => u.team === 'Xyne');
     else if (currentTab === 'hs') filtered = sorted.filter(u => u.team === 'HS');
+    else if (currentTab === 'jp') filtered = sorted.filter(u => u.team === 'JP');
     else if (currentTab === 'top5') filtered = sorted.slice(0, 5);
 
     const lb = document.getElementById(containerId);
@@ -990,7 +1077,7 @@
       const barWidth = Math.min(pct, 100);
       const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
       const ago = timeAgo(u.lastUpdated);
-      const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team.toLowerCase();
+      const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team === 'JP' ? 'jp' : u.team.toLowerCase();
       const sparkData = u[sparkKey] || [];
       const sparkColor = pctColor(pct);
 
@@ -1003,6 +1090,8 @@
               <span class="lb-team-tag ${teamCls}">${u.team}</span>
               <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
               ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+              ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${u.sessionResetsAt}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
+              ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${u.weeklyResetsAt}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             </div>
           </div>
           <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
@@ -1032,8 +1121,8 @@
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
     // Teams - use weekly for team battle (or could use session)
-    const teamNames = ['NY', 'NC', 'Xyne', 'HS'];
-    const teamIds = ['ny', 'nc', 'xyne', 'hs'];
+    const teamNames = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
+    const teamIds = ['ny', 'nc', 'xyne', 'hs', 'jp'];
     const maxTeamPct = Math.max(...teamNames.map(t => teams[t] ? teams[t].avgWeeklyPct || 0 : 0), 1);
 
     teamNames.forEach((t, idx) => {
@@ -1256,16 +1345,20 @@
   // ============================================================
   // LINE CHART RENDERER (SVG)
   // ============================================================
+  let chartIdCounter = 0;
+
   function renderLineChart(data, valueKey, labelKey, options = {}) {
     const {
       width = 440, height = 180, color = '#a855f7', color2 = null, valueKey2 = null,
-      label = '', label2 = '', showDots = true, yLabel = '%'
+      label = '', label2 = '', showDots = true
     } = options;
 
+    const chartId = 'chart_' + (chartIdCounter++);
+
     if (!data || data.length === 0) {
-      return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      return `<div style="position:relative;"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
         <text x="${width/2}" y="${height/2}" fill="#475569" font-size="12" text-anchor="middle">No data yet</text>
-      </svg>`;
+      </svg></div>`;
     }
 
     const padL = 40, padR = 10, padT = 20, padB = 30;
@@ -1280,7 +1373,7 @@
     function toX(i) { return padL + (data.length === 1 ? cw / 2 : (i / (data.length - 1)) * cw); }
     function toY(v) { return padT + ch - ((v - minV) / range) * ch; }
 
-    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="font-family:'JetBrains Mono',monospace;">`;
+    let svg = `<svg id="${chartId}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="font-family:'JetBrains Mono',monospace;">`;
 
     // Grid lines
     const gridLines = 4;
@@ -1288,34 +1381,48 @@
       const y = padT + (i / gridLines) * ch;
       const val = maxV - (i / gridLines) * range;
       svg += `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#1e293b" stroke-width="1"/>`;
-      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${val.toFixed(0)}${yLabel}</text>`;
+      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${(val / 100).toFixed(2)}</text>`;
     }
 
     // Render line(s)
     function drawLine(vKey, clr, lbl) {
       const pts = data.map((d, i) => `${toX(i).toFixed(1)},${toY(d[vKey] || 0).toFixed(1)}`).join(' ');
-      // Area fill
       const areaStart = `${toX(0).toFixed(1)},${(padT + ch).toFixed(1)}`;
       const areaEnd = `${toX(data.length - 1).toFixed(1)},${(padT + ch).toFixed(1)}`;
-      svg += `<defs><linearGradient id="lcg_${clr.replace('#','')}_${vKey}" x1="0" y1="0" x2="0" y2="1">
+      svg += `<defs><linearGradient id="lcg_${clr.replace('#','')}_${vKey}_${chartId}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${clr}" stop-opacity="0.2"/>
         <stop offset="100%" stop-color="${clr}" stop-opacity="0"/>
       </linearGradient></defs>`;
-      svg += `<polygon points="${areaStart} ${pts} ${areaEnd}" fill="url(#lcg_${clr.replace('#','')}_${vKey})" />`;
+      svg += `<polygon points="${areaStart} ${pts} ${areaEnd}" fill="url(#lcg_${clr.replace('#','')}_${vKey}_${chartId})" />`;
       svg += `<polyline points="${pts}" fill="none" stroke="${clr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
       if (showDots && data.length <= 30) {
         data.forEach((d, i) => {
           const x = toX(i), y = toY(d[vKey] || 0);
-          const tooltip = `${d[labelKey] || ''}: ${(d[vKey] || 0).toFixed(1)}%`;
-          svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${clr}" stroke="var(--bg-secondary)" stroke-width="1.5"><title>${escHtml(tooltip)}</title></circle>`;
+          svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${clr}" stroke="var(--bg-secondary)" stroke-width="1.5" class="chart-dot" data-idx="${i}" data-key="${vKey}" style="cursor:pointer;"/>`;
         });
       }
     }
 
+    // Invisible hover zones for each data point (full-height vertical strips)
+    data.forEach((d, i) => {
+      const x = toX(i);
+      const stripW = data.length > 1 ? cw / (data.length - 1) : cw;
+      const stripX = x - stripW / 2;
+      const val1 = ((d[valueKey] || 0) / 100).toFixed(2);
+      const val2 = valueKey2 ? ((d[valueKey2] || 0) / 100).toFixed(2) : null;
+      const lbl = d[labelKey] || '';
+      let tooltipText = `${lbl}\\n${label || valueKey}: ${val1}`;
+      if (val2 !== null) tooltipText += `\\n${label2 || valueKey2}: ${val2}`;
+      svg += `<rect x="${stripX.toFixed(1)}" y="${padT}" width="${stripW.toFixed(1)}" height="${ch}" fill="transparent" class="chart-hover-zone" data-idx="${i}" data-tooltip="${escHtml(tooltipText)}" data-x="${x.toFixed(1)}" style="cursor:crosshair;"/>`;
+    });
+
     drawLine(valueKey, color, label);
     if (valueKey2 && color2) drawLine(valueKey2, color2, label2);
 
-    // X-axis labels (show a few)
+    // Vertical hover line (hidden by default)
+    svg += `<line class="chart-hover-line" x1="0" y1="${padT}" x2="0" y2="${padT + ch}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3" style="display:none;"/>`;
+
+    // X-axis labels
     const labelCount = Math.min(data.length, 6);
     for (let i = 0; i < labelCount; i++) {
       const idx = Math.floor(i * (data.length - 1) / Math.max(labelCount - 1, 1));
@@ -1337,7 +1444,11 @@
     }
 
     svg += '</svg>';
-    return svg;
+
+    return `<div style="position:relative;" class="chart-wrap">
+      ${svg}
+      <div class="chart-tooltip" id="tooltip_${chartId}"></div>
+    </div>`;
   }
 
   // ============================================================
@@ -1408,6 +1519,9 @@
 
     let html = '';
 
+    // Per-user countdown timers
+    html += renderCountdownBar(user);
+
     // Current stats
     html += `<div class="detail-section">
       <div class="detail-section-title">Current</div>
@@ -1422,11 +1536,11 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${peakSession.toFixed(0)}%</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${avgSession.toFixed(1)}%</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(avgSession / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${totalSessions}</div><div class="detail-stat-label">Total Sessions</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${peakWeekly.toFixed(0)}%</div><div class="detail-stat-label">Peak Weekly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${avgWeekly.toFixed(1)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${(peakWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(avgWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Weeks Tracked</div></div>
       </div>
     </div>`;
@@ -1440,6 +1554,12 @@
       })}</div>
     </div>`;
 
+    // Session history table
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Session History Log</div>
+      ${renderSessionHistoryTable(history)}
+    </div>`;
+
     // Weekly history chart
     if (weekly.length > 0) {
       html += `<div class="detail-section">
@@ -1450,13 +1570,10 @@
         })}</div>
       </div>`;
 
-      // Weekly peak chart
+      // Weekly history table
       html += `<div class="detail-section">
-        <div class="detail-section-title">Weekly Peaks</div>
-        <div class="detail-chart-container">${renderLineChart(weekly, 'peakSessionPct', 'weekKey', {
-          color: '#ef4444', color2: '#ec4899', valueKey2: 'peakWeeklyPct',
-          label: 'Peak Session', label2: 'Peak Weekly'
-        })}</div>
+        <div class="detail-section-title">Weekly History Log</div>
+        ${renderWeeklyHistoryTable(weekly)}
       </div>`;
     }
 
@@ -1498,12 +1615,12 @@
     const overlay = document.getElementById('detailOverlay');
     const body = document.getElementById('detailBody');
 
-    const teamColors = { NY: 'var(--ny-color)', NC: 'var(--nc-color)', Xyne: 'var(--xyne-color)', HS: 'var(--hs-color)' };
+    const teamColors = { NY: 'var(--ny-color)', NC: 'var(--nc-color)', Xyne: 'var(--xyne-color)', HS: 'var(--hs-color)', JP: 'var(--jp-color)' };
     const teamData = cachedData && cachedData.teams ? cachedData.teams[teamName] : null;
 
     document.getElementById('detailName').textContent = teamName + ' Team';
     document.getElementById('detailMeta').innerHTML = `
-      <span class="lb-team-tag ${teamName === 'NC' ? 'nc' : teamName === 'HS' ? 'hs' : teamName.toLowerCase()}">${teamName}</span>
+      <span class="lb-team-tag ${teamName === 'NC' ? 'nc' : teamName === 'HS' ? 'hs' : teamName === 'JP' ? 'jp' : teamName.toLowerCase()}">${teamName}</span>
       <span class="lb-updated">${teamData ? teamData.members : 0} members</span>
     `;
 
@@ -1549,8 +1666,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${peakSession.toFixed(0)}%</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${overallAvg.toFixed(1)}%</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(overallAvg / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${history.length}</div><div class="detail-stat-label">Data Points</div></div>
       </div>
     </div>`;
@@ -1618,6 +1735,177 @@
     if (e.key === 'u') openModal('logUsage');
     if (e.key === 'r') render();
   });
+
+  // ============================================================
+  // CHART HOVER TOOLTIPS (event delegation)
+  // ============================================================
+  document.addEventListener('mousemove', e => {
+    const zone = e.target.closest('.chart-hover-zone');
+    if (!zone) {
+      // Hide all tooltips
+      document.querySelectorAll('.chart-tooltip.visible').forEach(t => t.classList.remove('visible'));
+      document.querySelectorAll('.chart-hover-line').forEach(l => l.style.display = 'none');
+      return;
+    }
+    const wrap = zone.closest('.chart-wrap');
+    const tooltip = wrap.querySelector('.chart-tooltip');
+    const hoverLine = wrap.querySelector('.chart-hover-line');
+    const svgRect = zone.closest('svg').getBoundingClientRect();
+    const x = parseFloat(zone.dataset.x);
+
+    // Position tooltip
+    const tooltipText = zone.dataset.tooltip.replace(/\\n/g, '\n');
+    tooltip.textContent = '';
+    tooltipText.split('\n').forEach((line, i) => {
+      if (i > 0) tooltip.appendChild(document.createElement('br'));
+      tooltip.appendChild(document.createTextNode(line));
+    });
+    tooltip.classList.add('visible');
+
+    // Place tooltip near cursor but within bounds
+    const tipX = e.clientX - svgRect.left + 12;
+    const tipY = e.clientY - svgRect.top - 10;
+    tooltip.style.left = Math.min(tipX, svgRect.width - 160) + 'px';
+    tooltip.style.top = Math.max(tipY, 0) + 'px';
+
+    // Show hover line
+    if (hoverLine) {
+      hoverLine.setAttribute('x1', x);
+      hoverLine.setAttribute('x2', x);
+      hoverLine.style.display = '';
+    }
+  });
+
+  // ============================================================
+  // HISTORY DATA TABLE
+  // ============================================================
+  function renderSessionHistoryTable(history, maxRows = 20) {
+    if (!history || history.length === 0) return '<p style="color:var(--text-dim);font-size:0.75rem;">No data yet</p>';
+    const rows = history.slice(-maxRows).reverse();
+    let html = `<div class="detail-table-wrap"><table class="detail-table">
+      <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Weekly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
+    rows.forEach(h => {
+      const ts = h.timestamp ? new Date(h.timestamp).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '--';
+      html += `<tr>
+        <td>${ts}</td>
+        <td style="color:var(--text-dim)">${h.sessionSlot || '--'}</td>
+        <td style="color:var(--accent-orange)">${((h.sessionPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-purple)">${((h.weeklyPct || 0) / 100).toFixed(2)}</td>
+        <td>${h.source || '--'}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function renderWeeklyHistoryTable(weekly, maxRows = 20) {
+    if (!weekly || weekly.length === 0) return '<p style="color:var(--text-dim);font-size:0.75rem;">No data yet</p>';
+    const rows = weekly.slice(-maxRows).reverse();
+    let html = `<div class="detail-table-wrap"><table class="detail-table">
+      <thead><tr><th>Week</th><th>Avg Session</th><th>Peak Session</th><th>Avg Weekly</th><th>Peak Weekly</th><th>Points</th></tr></thead><tbody>`;
+    rows.forEach(w => {
+      html += `<tr>
+        <td>${w.weekKey || '--'}</td>
+        <td style="color:var(--accent-orange)">${((w.avgSessionPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-cyan)">${((w.peakSessionPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-purple)">${((w.avgWeeklyPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-pink)">${((w.peakWeeklyPct || 0) / 100).toFixed(2)}</td>
+        <td>${w.dataPoints || 0}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  // ============================================================
+  // SESSION & WEEKLY COUNTDOWNS
+  // ============================================================
+  // Claude Max: 5-hour session windows, weekly resets on user's cycle
+  // Per-user countdown from actual scraped reset timestamps
+  // Session: if expired, roll forward in 5-hour increments to find next reset
+  // Weekly: if expired, roll forward in 7-day increments
+  function formatCountdown(isoTimestamp, type = 'session') {
+    if (!isoTimestamp) return null;
+    let resetTime = new Date(isoTimestamp).getTime();
+    const now = Date.now();
+    if (resetTime <= now) {
+      const interval = type === 'weekly' ? 7 * 86400000 : 5 * 3600000;
+      // Roll forward to next cycle
+      const elapsed = now - resetTime;
+      const cycles = Math.floor(elapsed / interval) + 1;
+      resetTime += cycles * interval;
+    }
+    const diff = resetTime - now;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (d > 0) return { label: `${d}d ${h}h ${m}m` };
+    if (h > 0) return { label: `${h}h ${m}m ${s}s` };
+    return { label: `${m}m ${s}s` };
+  }
+
+  function renderCountdownBar(user) {
+    const session = formatCountdown(user.sessionResetsAt, 'session');
+    const weekly = formatCountdown(user.weeklyResetsAt, 'weekly');
+    const sessionLabel = session ? session.label : '--';
+    const weeklyLabel = weekly ? weekly.label : '--';
+    const sessionSub = session ? '5-hour window' : 'no data yet';
+    const weeklySub = weekly ? '7-day cycle' : 'no data yet';
+    const sessionEst = user.sessionResetSource === 'estimated';
+    const weeklyEst = user.weeklyResetSource === 'estimated';
+    const estHint = '<span class="reset-estimated" style="margin-left:6px;">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>';
+    return `<div class="countdown-bar">
+      <div class="countdown-card">
+        <div class="countdown-label">Session Resets In ${sessionEst ? estHint : ''}</div>
+        <div class="countdown-value" data-countdown-session="${user.id}">${sessionLabel}</div>
+        <div class="countdown-sub">${sessionSub}</div>
+      </div>
+      <div class="countdown-card">
+        <div class="countdown-label">Weekly Resets In ${weeklyEst ? estHint : ''}</div>
+        <div class="countdown-value" data-countdown-weekly="${user.id}">${weeklyLabel}</div>
+        <div class="countdown-sub">${weeklySub}</div>
+      </div>
+    </div>`;
+  }
+
+  // Update all countdowns every second (per-user in detail panel + inline headers)
+  function updateCountdowns() {
+    // Per-user countdowns in detail panel
+    document.querySelectorAll('[data-countdown-session]').forEach(el => {
+      const userId = el.dataset.countdownSession;
+      const user = cachedData && cachedData.users ? cachedData.users.find(u => u.id === userId) : null;
+      if (user && user.sessionResetsAt) {
+        const cd = formatCountdown(user.sessionResetsAt, 'session');
+        el.textContent = cd ? cd.label : '--';
+      }
+    });
+    document.querySelectorAll('[data-countdown-weekly]').forEach(el => {
+      const userId = el.dataset.countdownWeekly;
+      const user = cachedData && cachedData.users ? cachedData.users.find(u => u.id === userId) : null;
+      if (user && user.weeklyResetsAt) {
+        const cd = formatCountdown(user.weeklyResetsAt, 'weekly');
+        el.textContent = cd ? cd.label : '--';
+      }
+    });
+    // Per-user countdowns in leaderboard rows
+    document.querySelectorAll('[data-reset-session]').forEach(el => {
+      const ts = el.dataset.resetSession;
+      if (ts) {
+        const cd = formatCountdown(ts, 'session');
+        if (cd) el.textContent = cd.label;
+      }
+    });
+    document.querySelectorAll('[data-reset-weekly]').forEach(el => {
+      const ts = el.dataset.resetWeekly;
+      if (ts) {
+        const cd = formatCountdown(ts, 'weekly');
+        if (cd) el.textContent = cd.label;
+      }
+    });
+  }
+  setInterval(updateCountdowns, 1000);
+  updateCountdowns();
 
   // ============================================================
   // INIT

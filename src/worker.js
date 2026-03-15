@@ -188,7 +188,7 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, name, sessionPct, weeklyPct, pct, source = 'manual' } = body;
+  const { userId, name, sessionPct, weeklyPct, pct, source = 'manual', sessionResetsAt, weeklyResetsAt } = body;
 
   const users = await kvGet(env, 'users', []);
   let user;
@@ -261,17 +261,47 @@ async function logUsage(body, env) {
     history = history.slice(history.length - MAX_HISTORY);
   }
 
+  // --- Infer reset times from usage drops (fallback when extension doesn't provide them) ---
+  let inferredSessionResetsAt = existing.sessionResetsAt || null;
+  let inferredWeeklyResetsAt = existing.weeklyResetsAt || null;
+  let sessionResetSource = existing.sessionResetSource || null;
+  let weeklyResetSource = existing.weeklyResetSource || null;
+
+  if (sessionResetsAt) {
+    // Extension provided real data
+    inferredSessionResetsAt = sessionResetsAt;
+    sessionResetSource = 'extension';
+  } else if (sessionPct !== undefined && existing.sessionPct !== undefined) {
+    // Detect session reset: usage dropped = new session started
+    if (parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
+      // New session just started, estimate reset at now + 5 hours
+      inferredSessionResetsAt = new Date(Date.now() + 5 * 3600000).toISOString();
+      sessionResetSource = 'estimated';
+    }
+  }
+
+  if (weeklyResetsAt) {
+    inferredWeeklyResetsAt = weeklyResetsAt;
+    weeklyResetSource = 'extension';
+  } else if (weeklyPct !== undefined && existing.weeklyPct !== undefined) {
+    // Detect weekly reset: weekly usage dropped = new week started
+    if (parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
+      inferredWeeklyResetsAt = new Date(Date.now() + 7 * 86400000).toISOString();
+      weeklyResetSource = 'estimated';
+    }
+  }
+
   const usageData = {
     userId: user.id,
     sessionPct: newSessionPct,
     weeklyPct: newWeeklyPct,
     timestamp: now,
     source,
+    sessionResetsAt: inferredSessionResetsAt,
+    weeklyResetsAt: inferredWeeklyResetsAt,
+    sessionResetSource,
+    weeklyResetSource,
   };
-
-  // Also enforce monotonic on the current usage snapshot
-  usageData.sessionPct = Math.max(usageData.sessionPct, existing.sessionPct || 0);
-  usageData.weeklyPct = Math.max(usageData.weeklyPct, existing.weeklyPct || 0);
 
   // Update weekly aggregation
   const userConfig = await kvGet(env, `userconfig:${user.id}`, { weekStartDay: 'monday' });
@@ -373,6 +403,10 @@ async function getLeaderboardData(env) {
       source: usage ? usage.source : null,
       sessionSparkline,
       weeklySparkline,
+      sessionResetsAt: usage ? (usage.sessionResetsAt || null) : null,
+      weeklyResetsAt: usage ? (usage.weeklyResetsAt || null) : null,
+      sessionResetSource: usage ? (usage.sessionResetSource || null) : null,
+      weeklyResetSource: usage ? (usage.weeklyResetSource || null) : null,
     };
   }));
 
@@ -397,6 +431,7 @@ async function getLeaderboardData(env) {
       NC: teamStats(board.filter(u => u.team === 'NC')),
       Xyne: teamStats(board.filter(u => u.team === 'Xyne')),
       HS: teamStats(board.filter(u => u.team === 'HS')),
+      JP: teamStats(board.filter(u => u.team === 'JP')),
     },
     updatedAt: new Date().toISOString(),
   });
