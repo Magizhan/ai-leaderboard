@@ -36,6 +36,27 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
 
 const MAX_HISTORY = 500;
 const MAX_WEEKLY = 52;
+const VALID_TEAMS = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
+const VALID_SOURCES = ['manual', 'extension', 'console', 'api'];
+
+/** Strip HTML tags and dangerous characters from user-supplied strings */
+function sanitizeString(str, maxLen = 50) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/<[^>]*>/g, '').replace(/[<>"'`]/g, '').trim().slice(0, maxLen);
+}
+
+/** Validate team against allowlist */
+function sanitizeTeam(team) {
+  if (typeof team !== 'string') return 'NY';
+  const match = VALID_TEAMS.find(t => t.toLowerCase() === team.toLowerCase());
+  return match || 'NY';
+}
+
+/** Validate source against allowlist */
+function sanitizeSource(source) {
+  if (typeof source !== 'string') return 'manual';
+  return VALID_SOURCES.includes(source) ? source : 'manual';
+}
 
 export default {
   async fetch(request, env) {
@@ -142,7 +163,10 @@ async function getUserConfig(id, env) {
 
 async function setUserConfig(id, body, env) {
   const existing = await kvGet(env, `userconfig:${id}`, { weekStartDay: 'monday' });
-  if (body.weekStartDay) existing.weekStartDay = body.weekStartDay.toLowerCase();
+  const validDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  if (body.weekStartDay && validDays.includes(body.weekStartDay.toLowerCase())) {
+    existing.weekStartDay = body.weekStartDay.toLowerCase();
+  }
   await kvPut(env, `userconfig:${id}`, existing);
   return jsonResponse({ ok: true, ...existing });
 }
@@ -156,12 +180,14 @@ async function getUsers(env) {
 }
 
 async function addUser(body, env) {
-  const { name, team, numPlans = 1 } = body;
-  if (!name || !team) return jsonResponse({ error: 'name and team required' }, 400);
+  const name = sanitizeString(body.name);
+  const team = sanitizeTeam(body.team);
+  const numPlans = Math.max(1, Math.min(100, parseInt(body.numPlans) || 1));
+  if (!name) return jsonResponse({ error: 'name and team required' }, 400);
 
   const users = await kvGet(env, 'users', []);
   const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-  users.push({ id, name, team, numPlans: parseInt(numPlans) || 1 });
+  users.push({ id, name, team, numPlans });
   await kvPut(env, 'users', users);
   return jsonResponse({ id, name, team, numPlans });
 }
@@ -188,7 +214,9 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, name, sessionPct, weeklyPct, pct, source = 'manual', sessionResetsAt, weeklyResetsAt } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt } = body;
+  const name = body.name ? sanitizeString(body.name) : undefined;
+  const source = sanitizeSource(body.source);
 
   const users = await kvGet(env, 'users', []);
   let user;
@@ -197,7 +225,7 @@ async function logUsage(body, env) {
 
   // Auto-create user if not found (from extension/bookmarklet sync)
   if (!user && name) {
-    const team = body.team || 'NY';
+    const team = sanitizeTeam(body.team);
     const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
     user = { id, name, team, numPlans: 1 };
     users.push(user);
@@ -215,6 +243,10 @@ async function logUsage(body, env) {
   if (pct !== undefined && weeklyPct === undefined && sessionPct === undefined) {
     newWeeklyPct = parseFloat(pct);
   }
+
+  // Clamp to valid range
+  newSessionPct = Math.max(0, Math.min(200, isNaN(newSessionPct) ? 0 : newSessionPct));
+  newWeeklyPct = Math.max(0, Math.min(200, isNaN(newWeeklyPct) ? 0 : newWeeklyPct));
 
   const now = new Date().toISOString();
   const currentSlot = getSessionSlot(now);
@@ -369,7 +401,8 @@ async function addPlans(id, body, env) {
   const user = users.find(u => u.id === id);
   if (!user) return jsonResponse({ error: 'User not found' }, 404);
 
-  user.numPlans += parseInt(body.count) || 1;
+  const count = Math.max(1, Math.min(100, parseInt(body.count) || 1));
+  user.numPlans = Math.min(user.numPlans + count, 999);
   await kvPut(env, 'users', users);
   return jsonResponse({ ok: true, name: user.name, numPlans: user.numPlans });
 }
@@ -544,7 +577,10 @@ async function importData(body, env) {
   const existing = await kvGet(env, 'users', []);
   const existingMap = new Map(existing.map(u => [u.id, u]));
   for (const u of importedUsers) {
-    existingMap.set(u.id, u);
+    u.name = sanitizeString(u.name);
+    u.team = sanitizeTeam(u.team);
+    u.numPlans = Math.max(1, Math.min(100, parseInt(u.numPlans) || 1));
+    if (u.name) existingMap.set(u.id, u);
   }
   const merged = Array.from(existingMap.values());
   await kvPut(env, 'users', merged);
