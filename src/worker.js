@@ -292,19 +292,36 @@ async function logUsage(body, env) {
     inferredSessionResetsAt = sessionResetsAt;
     sessionResetSource = 'extension';
   } else if (sessionPct !== undefined) {
-    if (existing.sessionPct !== undefined && parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
-      // Usage dropped = new session started, estimate reset at now + 5 hours
-      inferredSessionResetsAt = new Date(Date.now() + 5 * 3600000).toISOString();
+    const SESSION_MS = 5 * 3600000; // 5 hours
+    const currentSessionPct = parseFloat(sessionPct);
+    if (existing.sessionPct !== undefined && currentSessionPct < (existing.sessionPct || 0) - 1) {
+      // Usage dropped = new session just started, reset at now + 5 hours
+      inferredSessionResetsAt = new Date(Date.now() + SESSION_MS).toISOString();
       sessionResetSource = 'estimated';
-    } else if (!inferredSessionResetsAt) {
-      // No reset time at all — estimate from current 5-hour UTC slot
-      const nowDate = new Date();
-      const slotStart = Math.floor(nowDate.getUTCHours() / 5) * 5;
-      const slotEnd = new Date(nowDate);
-      slotEnd.setUTCHours(slotStart + 5, 0, 0, 0);
-      if (slotEnd <= nowDate) slotEnd.setUTCDate(slotEnd.getUTCDate() + 1);
-      inferredSessionResetsAt = slotEnd.toISOString();
-      sessionResetSource = 'estimated';
+    } else if (!inferredSessionResetsAt || sessionResetSource === 'estimated') {
+      // Scan history to find when current session started (most recent drop)
+      let sessionStartTime = null;
+      for (let i = history.length - 1; i >= 1; i--) {
+        if ((history[i].sessionPct || 0) < (history[i - 1].sessionPct || 0) - 1) {
+          // Drop found at history[i] — that's when this session started
+          sessionStartTime = new Date(history[i].timestamp).getTime();
+          break;
+        }
+      }
+      if (!sessionStartTime && history.length > 0) {
+        // No drop found — use oldest history entry as session start (conservative)
+        sessionStartTime = new Date(history[0].timestamp).getTime();
+      }
+      if (sessionStartTime) {
+        let resetTime = sessionStartTime + SESSION_MS;
+        // Roll forward if in the past
+        if (resetTime <= Date.now()) {
+          const elapsed = Date.now() - resetTime;
+          resetTime += (Math.floor(elapsed / SESSION_MS) + 1) * SESSION_MS;
+        }
+        inferredSessionResetsAt = new Date(resetTime).toISOString();
+        sessionResetSource = 'estimated';
+      }
     }
   }
 
@@ -312,19 +329,33 @@ async function logUsage(body, env) {
     inferredWeeklyResetsAt = weeklyResetsAt;
     weeklyResetSource = 'extension';
   } else if (weeklyPct !== undefined) {
-    if (existing.weeklyPct !== undefined && parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
+    const WEEK_MS = 7 * 86400000;
+    const currentWeeklyPct = parseFloat(weeklyPct);
+    if (existing.weeklyPct !== undefined && currentWeeklyPct < (existing.weeklyPct || 0) - 1) {
       // Weekly usage dropped = new week started
-      inferredWeeklyResetsAt = new Date(Date.now() + 7 * 86400000).toISOString();
+      inferredWeeklyResetsAt = new Date(Date.now() + WEEK_MS).toISOString();
       weeklyResetSource = 'estimated';
-    } else if (!inferredWeeklyResetsAt) {
-      // No reset time — estimate next Monday 00:00 UTC
-      const nowDate = new Date();
-      const daysUntilMon = (1 - nowDate.getUTCDay() + 7) % 7 || 7;
-      const nextMon = new Date(nowDate);
-      nextMon.setUTCDate(nextMon.getUTCDate() + daysUntilMon);
-      nextMon.setUTCHours(0, 0, 0, 0);
-      inferredWeeklyResetsAt = nextMon.toISOString();
-      weeklyResetSource = 'estimated';
+    } else if (!inferredWeeklyResetsAt || weeklyResetSource === 'estimated') {
+      // Scan history for most recent weekly drop
+      let weekStartTime = null;
+      for (let i = history.length - 1; i >= 1; i--) {
+        if ((history[i].weeklyPct || 0) < (history[i - 1].weeklyPct || 0) - 1) {
+          weekStartTime = new Date(history[i].timestamp).getTime();
+          break;
+        }
+      }
+      if (!weekStartTime && history.length > 0) {
+        weekStartTime = new Date(history[0].timestamp).getTime();
+      }
+      if (weekStartTime) {
+        let resetTime = weekStartTime + WEEK_MS;
+        if (resetTime <= Date.now()) {
+          const elapsed = Date.now() - resetTime;
+          resetTime += (Math.floor(elapsed / WEEK_MS) + 1) * WEEK_MS;
+        }
+        inferredWeeklyResetsAt = new Date(resetTime).toISOString();
+        weeklyResetSource = 'estimated';
+      }
     }
   }
 
