@@ -100,6 +100,27 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .auth-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: #1e293b; border-radius: 8px; border: 1px solid #334155;
+  }
+  .auth-row.authenticated { border-color: #22c55e; background: rgba(34, 197, 94, 0.08); }
+  .auth-row.unauthenticated { border-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+  .auth-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .auth-dot.green { background: #22c55e; }
+  .auth-dot.red { background: #ef4444; }
+  .auth-info { flex: 1; }
+  .auth-info .label { font-size: 12px; font-weight: 600; }
+  .auth-info .desc { font-size: 10px; color: #94a3b8; margin-top: 2px; word-break: break-all; }
+  .auth-btn {
+    padding: 6px 12px; border: none; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    background: #7c3aed; color: white; flex-shrink: 0;
+  }
+  .auth-btn:hover { background: #6d28d9; }
+
   .footer {
     padding: 10px 20px; text-align: center; font-size: 10px;
     color: #475569; border-top: 1px solid #1e293b;
@@ -137,6 +158,18 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Account</div>
+    <div class="auth-row" id="authRow">
+      <div class="auth-dot" id="authDot"></div>
+      <div class="auth-info">
+        <div class="label" id="authLabel">Checking...</div>
+        <div class="desc" id="authDesc"></div>
+      </div>
+      <button class="auth-btn" id="authBtn" style="display:none;">Sign In</button>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Team</div>
     <select class="team-select" id="teamSelect">
       <option value="NY">NY</option>
@@ -164,13 +197,6 @@
       <option value="15">Every 15 minutes</option>
       <option value="30">Every 30 minutes</option>
     </select>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Authentication</div>
-    <input type="text" class="team-select" id="cfClientId" placeholder="CF-Access-Client-Id" style="margin-bottom:6px;font-size:11px;">
-    <input type="password" class="team-select" id="cfClientSecret" placeholder="CF-Access-Client-Secret" style="font-size:11px;">
-    <div style="font-size:10px;color:#64748b;margin-top:4px;">Service token from Cloudflare Zero Trust. Required for syncing.</div>
   </div>
 
   <div class="last-sync" id="lastSync" style="display:none;"></div>

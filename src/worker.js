@@ -41,17 +41,7 @@ async function verifyAccessJWT(request, env) {
     return { valid: true, email: 'dev@localhost', skipped: true };
   }
 
-  // Method 1: Service token auth (for extension/API clients)
-  const clientId = request.headers.get('CF-Access-Client-Id');
-  const clientSecret = request.headers.get('CF-Access-Client-Secret');
-  if (clientId && clientSecret) {
-    // Service tokens are validated by Cloudflare Access at the edge.
-    // If the request reaches the worker with valid service token headers,
-    // it means CF Access already validated them.
-    return { valid: true, email: 'service-token@extension', serviceToken: true };
-  }
-
-  // Method 2: Browser JWT auth
+  // Browser/Extension JWT auth
   const jwt = request.headers.get('CF-Access-JWT-Assertion') || '';
   if (!jwt) {
     return { valid: false, error: 'Authentication required. Please sign in via Cloudflare Access.' };
@@ -147,10 +137,19 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    const ALLOWED_ORIGINS = [
+      'https://leaderboard.magizhan.work',
+      'https://claude-leaderboard.mags-814.workers.dev',
+    ];
+    const origin = request.headers.get('Origin') || '';
+    // Allow chrome-extension:// origins (extension popup/content scripts)
+    const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin
+      : origin.startsWith('chrome-extension://') ? origin
+      : ALLOWED_ORIGINS[0];
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, CF-Access-JWT-Assertion, CF-Access-Client-Id, CF-Access-Client-Secret',
+      'Access-Control-Allow-Headers': 'Content-Type, CF-Access-JWT-Assertion',
     };
 
     if (request.method === 'OPTIONS') {

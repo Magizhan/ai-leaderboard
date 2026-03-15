@@ -56,7 +56,6 @@ async function scrapeAndSync() {
   if (sessionPct === null && weeklyPct === null) return;
 
   // Scrape reset timers
-  // Session: "in X hr Y min" -> compute absolute reset timestamp
   let sessionResetsAt = null;
   const sessionResetHrMin = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
   const sessionResetMinOnly = bodyText.match(/in\s+(\d+)\s*min/i);
@@ -71,7 +70,7 @@ async function scrapeAndSync() {
     const ms = parseInt(sessionResetHrOnly[1]) * 3600 * 1000;
     sessionResetsAt = new Date(Date.now() + ms).toISOString();
   }
-  // Weekly: "Day H:MM AM/PM" -> compute absolute reset timestamp
+
   let weeklyResetsAt = null;
   const weeklyResetMatch = bodyText.match(/(sun|mon|tue|wed|thu|fri|sat)\w*\s+(\d+):(\d+)\s*(am|pm)/i);
   if (weeklyResetMatch) {
@@ -107,6 +106,15 @@ async function scrapeAndSync() {
     return; // Same data synced less than 60s ago, skip
   }
 
+  // Get JWT from background
+  let jwt = null;
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'get_jwt' });
+    jwt = response ? response.jwt : null;
+  } catch (e) {
+    // Background not ready
+  }
+
   // Sync to leaderboard
   try {
     const payload = { name, team, source: 'extension' };
@@ -115,12 +123,9 @@ async function scrapeAndSync() {
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
     if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
 
-    // Include Cloudflare Access service token if configured
-    const authStore = await chrome.storage.local.get(['cf_access_client_id', 'cf_access_client_secret']);
     const headers = { 'Content-Type': 'application/json' };
-    if (authStore.cf_access_client_id && authStore.cf_access_client_secret) {
-      headers['CF-Access-Client-Id'] = authStore.cf_access_client_id;
-      headers['CF-Access-Client-Secret'] = authStore.cf_access_client_secret;
+    if (jwt) {
+      headers['CF-Access-JWT-Assertion'] = jwt;
     }
 
     const res = await fetch(API_BASE + '/api/usage', {
@@ -128,6 +133,13 @@ async function scrapeAndSync() {
       headers,
       body: JSON.stringify(payload),
     });
+
+    if (res.status === 403) {
+      // Auth expired — notify background
+      console.log('[Claude Leaderboard] Auth expired, please re-authenticate');
+      return;
+    }
+
     const data = await res.json();
 
     if (data.ok) {

@@ -20,8 +20,11 @@ const scheduleToggle = document.getElementById('scheduleToggle');
 const scheduleRow    = document.getElementById('scheduleRow');
 const scheduleLabel  = document.getElementById('scheduleLabel');
 const freqSelect     = document.getElementById('freqSelect');
-const cfClientIdEl   = document.getElementById('cfClientId');
-const cfClientSecEl  = document.getElementById('cfClientSecret');
+const authRow        = document.getElementById('authRow');
+const authDot        = document.getElementById('authDot');
+const authLabel      = document.getElementById('authLabel');
+const authDesc       = document.getElementById('authDesc');
+const authBtn        = document.getElementById('authBtn');
 
 dashLink.href = API_BASE;
 dashLink.addEventListener('click', (e) => {
@@ -32,10 +35,53 @@ dashLink.addEventListener('click', (e) => {
 let scrapedData = null;
 
 // ============================================================
+// Check auth status
+// ============================================================
+function updateAuthUI(authenticated, email) {
+  if (authenticated) {
+    authRow.className = 'auth-row authenticated';
+    authDot.className = 'auth-dot green';
+    authLabel.textContent = 'Signed in';
+    authDesc.textContent = email || '';
+    authBtn.textContent = 'Re-auth';
+    authBtn.style.display = 'block';
+  } else {
+    authRow.className = 'auth-row unauthenticated';
+    authDot.className = 'auth-dot red';
+    authLabel.textContent = 'Not signed in';
+    authDesc.textContent = 'Sign in with your @juspay.in email';
+    authBtn.textContent = 'Sign In';
+    authBtn.style.display = 'block';
+  }
+}
+
+chrome.runtime.sendMessage({ type: 'check_auth_status' }, (response) => {
+  if (response) {
+    updateAuthUI(response.authenticated, response.email);
+  } else {
+    updateAuthUI(false);
+  }
+});
+
+authBtn.addEventListener('click', () => {
+  authBtn.disabled = true;
+  authBtn.textContent = 'Opening...';
+  chrome.runtime.sendMessage({ type: 'trigger_auth' }, (result) => {
+    authBtn.disabled = false;
+    if (result && result.success) {
+      updateAuthUI(true, result.email);
+    } else {
+      updateAuthUI(false);
+      authBtn.textContent = 'Retry';
+    }
+  });
+});
+
+// ============================================================
 // Restore saved preferences
 // ============================================================
 chrome.storage.local.get(
-  ['claude_lb_team', 'schedule_enabled', 'schedule_interval', 'last_sync_time', 'last_sync_session', 'last_sync_weekly', 'defaults_applied_v2', 'cf_access_client_id', 'cf_access_client_secret'],
+  ['claude_lb_team', 'schedule_enabled', 'schedule_interval', 'last_sync_time', 'last_sync_session', 'last_sync_weekly', 'defaults_applied_v2'],
   (stored) => {
     if (stored.claude_lb_team) teamSelect.value = stored.claude_lb_team;
 
@@ -64,10 +110,6 @@ chrome.storage.local.get(
         'Last sync: ' + (stored.last_sync_session || 0) + '% session / ' + (stored.last_sync_weekly || 0) + '% weekly — ' + ago;
       document.getElementById('lastSync').style.display = 'block';
     }
-
-    // Restore saved auth credentials
-    if (stored.cf_access_client_id) cfClientIdEl.value = stored.cf_access_client_id;
-    if (stored.cf_access_client_secret) cfClientSecEl.value = stored.cf_access_client_secret;
   }
 );
 
@@ -76,16 +118,6 @@ chrome.storage.local.get(
 // ============================================================
 teamSelect.addEventListener('change', () => {
   chrome.storage.local.set({ claude_lb_team: teamSelect.value });
-});
-
-// ============================================================
-// Auth credentials change
-// ============================================================
-cfClientIdEl.addEventListener('change', () => {
-  chrome.storage.local.set({ cf_access_client_id: cfClientIdEl.value.trim() });
-});
-cfClientSecEl.addEventListener('change', () => {
-  chrome.storage.local.set({ cf_access_client_secret: cfClientSecEl.value.trim() });
 });
 
 // ============================================================
@@ -209,7 +241,6 @@ function scrapeUsagePage() {
     return { error: 'No usage data found. Make sure you are on the Usage tab.' };
   }
 
-  // Scrape reset timers
   let sessionResetsAt = null;
   const sessionResetHrMin = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
   const sessionResetMinOnly = bodyText.match(/in\s+(\d+)\s*min/i);
@@ -258,6 +289,15 @@ async function doSync() {
   syncBtn.disabled = true;
   setStatus('<span class="spinner"></span> Syncing...', 'loading');
 
+  // Get JWT from background
+  let jwt = null;
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'get_jwt' });
+    jwt = response ? response.jwt : null;
+  } catch (e) {
+    // Background not ready
+  }
+
   try {
     const payload = {
       name: scrapedData.name,
@@ -270,11 +310,8 @@ async function doSync() {
     if (scrapedData.weeklyResetsAt) payload.weeklyResetsAt = scrapedData.weeklyResetsAt;
 
     const headers = { 'Content-Type': 'application/json' };
-    const clientId = cfClientIdEl.value.trim();
-    const clientSecret = cfClientSecEl.value.trim();
-    if (clientId && clientSecret) {
-      headers['CF-Access-Client-Id'] = clientId;
-      headers['CF-Access-Client-Secret'] = clientSecret;
+    if (jwt) {
+      headers['CF-Access-JWT-Assertion'] = jwt;
     }
 
     const res = await fetch(API_BASE + '/api/usage', {
@@ -282,6 +319,14 @@ async function doSync() {
       headers,
       body: JSON.stringify(payload),
     });
+
+    if (res.status === 403) {
+      setStatus('Session expired. Please sign in again.', 'error');
+      updateAuthUI(false);
+      syncBtn.disabled = false;
+      return;
+    }
+
     const data = await res.json();
 
     if (data.ok) {
