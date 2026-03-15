@@ -37,6 +37,23 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
 const MAX_HISTORY = 500;
 const MAX_WEEKLY = 52;
 
+/** Normalize old-format history entries ({s, w, t} -> standard format) */
+function migrateHistoryEntries(entries) {
+  return entries.map(e => {
+    if (e.t !== undefined || e.s !== undefined) {
+      const ts = e.t || e.timestamp || new Date().toISOString();
+      return {
+        sessionPct: e.s !== undefined ? e.s : (e.sessionPct || 0),
+        weeklyPct: e.w !== undefined ? e.w : (e.weeklyPct || 0),
+        timestamp: ts,
+        sessionSlot: e.sessionSlot || getSessionSlot(ts),
+        source: e.source || 'migrated',
+      };
+    }
+    return e;
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -223,6 +240,9 @@ async function logUsage(body, env) {
   // Load history to check current slot values
   let history = await kvGet(env, `history:${user.id}`, []);
 
+  // Migrate old-format history entries
+  history = migrateHistoryEntries(history);
+
   // Lazy migration: seed history with existing usage if empty
   if (history.length === 0 && existing.timestamp) {
     history.push({
@@ -389,8 +409,9 @@ async function getLeaderboardData(env) {
     ]);
     const budget = u.numPlans * planCost;
 
-    // Build sparkline from last 20 session history entries
-    const sparklineEntries = history.slice(-20);
+    // Build sparkline from last 20 session history entries (migrate old format)
+    const migrated = migrateHistoryEntries(history);
+    const sparklineEntries = migrated.slice(-20);
     const sessionSparkline = sparklineEntries.map(e => e.sessionPct || 0);
     const weeklySparkline = sparklineEntries.map(e => e.weeklyPct || 0);
 
@@ -442,7 +463,7 @@ async function getLeaderboardData(env) {
 // ============================================================
 
 async function getUserHistory(userId, limit, env) {
-  const history = await kvGet(env, `history:${userId}`, []);
+  const history = migrateHistoryEntries(await kvGet(env, `history:${userId}`, []));
   return jsonResponse(history.slice(-limit));
 }
 
@@ -456,9 +477,9 @@ async function getTeamHistory(teamName, limit, env) {
   const teamUsers = users.filter(u => u.team === teamName);
   if (teamUsers.length === 0) return jsonResponse([]);
 
-  // Fetch all team members' histories
+  // Fetch all team members' histories (migrate old format)
   const histories = await Promise.all(
-    teamUsers.map(u => kvGet(env, `history:${u.id}`, []))
+    teamUsers.map(async u => migrateHistoryEntries(await kvGet(env, `history:${u.id}`, [])))
   );
 
   // Aggregate by session slot: average across members
