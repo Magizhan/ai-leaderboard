@@ -58,9 +58,17 @@ async function scrapeAndSync() {
   // Scrape reset timers
   // Session: "in X hr Y min" -> compute absolute reset timestamp
   let sessionResetsAt = null;
-  const sessionResetMatch = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
-  if (sessionResetMatch) {
-    const ms = (parseInt(sessionResetMatch[1]) * 3600 + parseInt(sessionResetMatch[2]) * 60) * 1000;
+  const sessionResetHrMin = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
+  const sessionResetMinOnly = bodyText.match(/in\s+(\d+)\s*min/i);
+  const sessionResetHrOnly = bodyText.match(/in\s+(\d+)\s*hr/i);
+  if (sessionResetHrMin) {
+    const ms = (parseInt(sessionResetHrMin[1]) * 3600 + parseInt(sessionResetHrMin[2]) * 60) * 1000;
+    sessionResetsAt = new Date(Date.now() + ms).toISOString();
+  } else if (sessionResetMinOnly) {
+    const ms = parseInt(sessionResetMinOnly[1]) * 60 * 1000;
+    sessionResetsAt = new Date(Date.now() + ms).toISOString();
+  } else if (sessionResetHrOnly) {
+    const ms = parseInt(sessionResetHrOnly[1]) * 3600 * 1000;
     sessionResetsAt = new Date(Date.now() + ms).toISOString();
   }
   // Weekly: "Day H:MM AM/PM" -> compute absolute reset timestamp
@@ -107,9 +115,17 @@ async function scrapeAndSync() {
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
     if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
 
+    // Include Cloudflare Access service token if configured
+    const authStore = await chrome.storage.local.get(['cf_access_client_id', 'cf_access_client_secret']);
+    const headers = { 'Content-Type': 'application/json' };
+    if (authStore.cf_access_client_id && authStore.cf_access_client_secret) {
+      headers['CF-Access-Client-Id'] = authStore.cf_access_client_id;
+      headers['CF-Access-Client-Secret'] = authStore.cf_access_client_secret;
+    }
+
     const res = await fetch(API_BASE + '/api/usage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
     const data = await res.json();

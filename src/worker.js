@@ -8,7 +8,91 @@
  *   weekly:{id}      -> JSON array of { weekKey, peakSessionPct, avgSessionPct, peakWeeklyPct, avgWeeklyPct, dataPoints, lastUpdated } (capped at 52)
  *   userconfig:{id}  -> JSON { weekStartDay }
  *   config           -> JSON { planCost }
+ *
+ * Auth: Cloudflare Access (Zero Trust) gates all requests at the edge.
+ *       Worker verifies CF-Access-JWT-Assertion as defense in depth.
+ *       Allowed email domains: @juspay.in, @nammayatri.in
+ *
+ * Environment variables needed:
+ *   CF_ACCESS_TEAM_DOMAIN  - Your Cloudflare Access team domain (e.g. "myteam" for myteam.cloudflareaccess.com)
+ *   CF_ACCESS_AUD          - The Application Audience (AUD) tag from Access app config
  */
+
+// ============================================================
+// Cloudflare Access JWT verification
+// ============================================================
+
+const ALLOWED_EMAIL_DOMAINS = ['juspay.in', 'nammayatri.in'];
+
+/**
+ * Verify Cloudflare Access authentication.
+ *
+ * Supports two auth methods:
+ * 1. Browser: CF-Access-JWT-Assertion header (set by CF Access after login)
+ * 2. Extension/API: CF-Access-Client-Id + CF-Access-Client-Secret headers (service token)
+ *
+ * If CF_ACCESS_AUD is not configured, verification is skipped (local dev mode).
+ */
+async function verifyAccessJWT(request, env) {
+  const aud = env.CF_ACCESS_AUD;
+
+  // Skip verification if Access is not configured (local dev)
+  if (!aud) {
+    return { valid: true, email: 'dev@localhost', skipped: true };
+  }
+
+  // Method 1: Service token auth (for extension/API clients)
+  const clientId = request.headers.get('CF-Access-Client-Id');
+  const clientSecret = request.headers.get('CF-Access-Client-Secret');
+  if (clientId && clientSecret) {
+    // Service tokens are validated by Cloudflare Access at the edge.
+    // If the request reaches the worker with valid service token headers,
+    // it means CF Access already validated them.
+    return { valid: true, email: 'service-token@extension', serviceToken: true };
+  }
+
+  // Method 2: Browser JWT auth
+  const jwt = request.headers.get('CF-Access-JWT-Assertion') || '';
+  if (!jwt) {
+    return { valid: false, error: 'Authentication required. Please sign in via Cloudflare Access.' };
+  }
+
+  try {
+    // Decode JWT payload (middle part) without full crypto verification.
+    // Cloudflare Access at the edge already verified the signature;
+    // we validate claims as defense in depth.
+    const parts = jwt.split('.');
+    if (parts.length !== 3) {
+      return { valid: false, error: 'Invalid JWT format' };
+    }
+
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+
+    // Check expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      return { valid: false, error: 'Access token expired. Please re-authenticate.' };
+    }
+
+    // Check audience
+    if (payload.aud && Array.isArray(payload.aud)) {
+      if (!payload.aud.includes(aud)) {
+        return { valid: false, error: 'Invalid token audience' };
+      }
+    }
+
+    // Check email domain
+    const email = payload.email || '';
+    const domain = email.split('@')[1] || '';
+    if (!ALLOWED_EMAIL_DOMAINS.includes(domain.toLowerCase())) {
+      return { valid: false, error: `Email domain @${domain} is not allowed. Only @juspay.in and @nammayatri.in are permitted.` };
+    }
+
+    return { valid: true, email };
+  } catch (err) {
+    return { valid: false, error: 'Failed to verify access token: ' + err.message };
+  }
+}
 
 // ============================================================
 // Session & Week helpers
@@ -36,22 +120,26 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
 
 const MAX_HISTORY = 500;
 const MAX_WEEKLY = 52;
+const VALID_TEAMS = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
+const VALID_SOURCES = ['manual', 'extension', 'console', 'api'];
 
-/** Normalize old-format history entries ({s, w, t} -> standard format) */
-function migrateHistoryEntries(entries) {
-  return entries.map(e => {
-    if (e.t !== undefined || e.s !== undefined) {
-      const ts = e.t || e.timestamp || new Date().toISOString();
-      return {
-        sessionPct: e.s !== undefined ? e.s : (e.sessionPct || 0),
-        weeklyPct: e.w !== undefined ? e.w : (e.weeklyPct || 0),
-        timestamp: ts,
-        sessionSlot: e.sessionSlot || getSessionSlot(ts),
-        source: e.source || 'migrated',
-      };
-    }
-    return e;
-  });
+/** Strip HTML tags and dangerous characters from user-supplied strings */
+function sanitizeString(str, maxLen = 50) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/<[^>]*>/g, '').replace(/[<>"'`]/g, '').trim().slice(0, maxLen);
+}
+
+/** Validate team against allowlist */
+function sanitizeTeam(team) {
+  if (typeof team !== 'string') return 'NY';
+  const match = VALID_TEAMS.find(t => t.toLowerCase() === team.toLowerCase());
+  return match || 'NY';
+}
+
+/** Validate source against allowlist */
+function sanitizeSource(source) {
+  if (typeof source !== 'string') return 'manual';
+  return VALID_SOURCES.includes(source) ? source : 'manual';
 }
 
 export default {
@@ -62,16 +150,22 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, CF-Access-JWT-Assertion, CF-Access-Client-Id, CF-Access-Client-Secret',
     };
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // Verify Cloudflare Access JWT on all requests (defense in depth)
+    const auth = await verifyAccessJWT(request, env);
+    if (!auth.valid) {
+      return jsonResponse({ error: auth.error }, 403, corsHeaders);
+    }
+
     try {
       if (path.startsWith('/api/')) {
-        const response = await handleApi(path, request, env, url);
+        const response = await handleApi(path, request, env, url, auth);
         const newHeaders = new Headers(response.headers);
         Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
         return new Response(response.body, {
@@ -89,7 +183,7 @@ export default {
   },
 };
 
-async function handleApi(path, request, env, url) {
+async function handleApi(path, request, env, url, auth) {
   const method = request.method;
 
   if (path === '/api/data' && method === 'GET') return getLeaderboardData(env);
@@ -159,7 +253,10 @@ async function getUserConfig(id, env) {
 
 async function setUserConfig(id, body, env) {
   const existing = await kvGet(env, `userconfig:${id}`, { weekStartDay: 'monday' });
-  if (body.weekStartDay) existing.weekStartDay = body.weekStartDay.toLowerCase();
+  const validDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  if (body.weekStartDay && validDays.includes(body.weekStartDay.toLowerCase())) {
+    existing.weekStartDay = body.weekStartDay.toLowerCase();
+  }
   await kvPut(env, `userconfig:${id}`, existing);
   return jsonResponse({ ok: true, ...existing });
 }
@@ -173,12 +270,14 @@ async function getUsers(env) {
 }
 
 async function addUser(body, env) {
-  const { name, team, numPlans = 1 } = body;
-  if (!name || !team) return jsonResponse({ error: 'name and team required' }, 400);
+  const name = sanitizeString(body.name);
+  const team = sanitizeTeam(body.team);
+  const numPlans = Math.max(1, Math.min(100, parseInt(body.numPlans) || 1));
+  if (!name) return jsonResponse({ error: 'name and team required' }, 400);
 
   const users = await kvGet(env, 'users', []);
   const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-  users.push({ id, name, team, numPlans: parseInt(numPlans) || 1 });
+  users.push({ id, name, team, numPlans });
   await kvPut(env, 'users', users);
   return jsonResponse({ id, name, team, numPlans });
 }
@@ -205,7 +304,9 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, name, sessionPct, weeklyPct, pct, source = 'manual', sessionResetsAt, weeklyResetsAt } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt } = body;
+  const name = body.name ? sanitizeString(body.name) : undefined;
+  const source = sanitizeSource(body.source);
 
   const users = await kvGet(env, 'users', []);
   let user;
@@ -214,7 +315,7 @@ async function logUsage(body, env) {
 
   // Auto-create user if not found (from extension/bookmarklet sync)
   if (!user && name) {
-    const team = body.team || 'NY';
+    const team = sanitizeTeam(body.team);
     const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
     user = { id, name, team, numPlans: 1 };
     users.push(user);
@@ -233,15 +334,16 @@ async function logUsage(body, env) {
     newWeeklyPct = parseFloat(pct);
   }
 
+  // Clamp to valid range
+  newSessionPct = Math.max(0, Math.min(200, isNaN(newSessionPct) ? 0 : newSessionPct));
+  newWeeklyPct = Math.max(0, Math.min(200, isNaN(newWeeklyPct) ? 0 : newWeeklyPct));
+
   const now = new Date().toISOString();
   const currentSlot = getSessionSlot(now);
 
   // --- Monotonic increase within same session slot ---
   // Load history to check current slot values
   let history = await kvGet(env, `history:${user.id}`, []);
-
-  // Migrate old-format history entries
-  history = migrateHistoryEntries(history);
 
   // Lazy migration: seed history with existing usage if empty
   if (history.length === 0 && existing.timestamp) {
@@ -281,81 +383,33 @@ async function logUsage(body, env) {
     history = history.slice(history.length - MAX_HISTORY);
   }
 
-  // --- Infer reset times (fallback when extension doesn't provide them) ---
+  // --- Infer reset times from usage drops (fallback when extension doesn't provide them) ---
   let inferredSessionResetsAt = existing.sessionResetsAt || null;
   let inferredWeeklyResetsAt = existing.weeklyResetsAt || null;
   let sessionResetSource = existing.sessionResetSource || null;
   let weeklyResetSource = existing.weeklyResetSource || null;
 
   if (sessionResetsAt) {
-    // Extension v1.3+ provided real data
+    // Extension provided real data
     inferredSessionResetsAt = sessionResetsAt;
     sessionResetSource = 'extension';
-  } else if (sessionPct !== undefined) {
-    const SESSION_MS = 5 * 3600000; // 5 hours
-    const currentSessionPct = parseFloat(sessionPct);
-    if (existing.sessionPct !== undefined && currentSessionPct < (existing.sessionPct || 0) - 1) {
-      // Usage dropped = new session just started, reset at now + 5 hours
-      inferredSessionResetsAt = new Date(Date.now() + SESSION_MS).toISOString();
+  } else if (sessionPct !== undefined && existing.sessionPct !== undefined) {
+    // Detect session reset: usage dropped = new session started
+    if (parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
+      // New session just started, estimate reset at now + 5 hours
+      inferredSessionResetsAt = new Date(Date.now() + 5 * 3600000).toISOString();
       sessionResetSource = 'estimated';
-    } else if (!inferredSessionResetsAt || sessionResetSource === 'estimated') {
-      // Scan history to find when current session started (most recent drop)
-      let sessionStartTime = null;
-      for (let i = history.length - 1; i >= 1; i--) {
-        if ((history[i].sessionPct || 0) < (history[i - 1].sessionPct || 0) - 1) {
-          // Drop found at history[i] — that's when this session started
-          sessionStartTime = new Date(history[i].timestamp).getTime();
-          break;
-        }
-      }
-      if (!sessionStartTime && history.length > 0) {
-        // No drop found — use oldest history entry as session start (conservative)
-        sessionStartTime = new Date(history[0].timestamp).getTime();
-      }
-      if (sessionStartTime) {
-        let resetTime = sessionStartTime + SESSION_MS;
-        // Roll forward if in the past
-        if (resetTime <= Date.now()) {
-          const elapsed = Date.now() - resetTime;
-          resetTime += (Math.floor(elapsed / SESSION_MS) + 1) * SESSION_MS;
-        }
-        inferredSessionResetsAt = new Date(resetTime).toISOString();
-        sessionResetSource = 'estimated';
-      }
     }
   }
 
   if (weeklyResetsAt) {
     inferredWeeklyResetsAt = weeklyResetsAt;
     weeklyResetSource = 'extension';
-  } else if (weeklyPct !== undefined) {
-    const WEEK_MS = 7 * 86400000;
-    const currentWeeklyPct = parseFloat(weeklyPct);
-    if (existing.weeklyPct !== undefined && currentWeeklyPct < (existing.weeklyPct || 0) - 1) {
-      // Weekly usage dropped = new week started
-      inferredWeeklyResetsAt = new Date(Date.now() + WEEK_MS).toISOString();
+  } else if (weeklyPct !== undefined && existing.weeklyPct !== undefined) {
+    // Detect weekly reset: weekly usage dropped = new week started
+    if (parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
+      inferredWeeklyResetsAt = new Date(Date.now() + 7 * 86400000).toISOString();
       weeklyResetSource = 'estimated';
-    } else if (!inferredWeeklyResetsAt || weeklyResetSource === 'estimated') {
-      // Scan history for most recent weekly drop
-      let weekStartTime = null;
-      for (let i = history.length - 1; i >= 1; i--) {
-        if ((history[i].weeklyPct || 0) < (history[i - 1].weeklyPct || 0) - 1) {
-          weekStartTime = new Date(history[i].timestamp).getTime();
-          break;
-        }
-      }
-      if (!weekStartTime && history.length > 0) {
-        weekStartTime = new Date(history[0].timestamp).getTime();
-      }
-      if (weekStartTime) {
-        let resetTime = weekStartTime + WEEK_MS;
-        if (resetTime <= Date.now()) {
-          const elapsed = Date.now() - resetTime;
-          resetTime += (Math.floor(elapsed / WEEK_MS) + 1) * WEEK_MS;
-        }
-        inferredWeeklyResetsAt = new Date(resetTime).toISOString();
-        weeklyResetSource = 'estimated';
-      }
     }
   }
 
@@ -437,7 +491,8 @@ async function addPlans(id, body, env) {
   const user = users.find(u => u.id === id);
   if (!user) return jsonResponse({ error: 'User not found' }, 404);
 
-  user.numPlans += parseInt(body.count) || 1;
+  const count = Math.max(1, Math.min(100, parseInt(body.count) || 1));
+  user.numPlans = Math.min(user.numPlans + count, 999);
   await kvPut(env, 'users', users);
   return jsonResponse({ ok: true, name: user.name, numPlans: user.numPlans });
 }
@@ -457,9 +512,8 @@ async function getLeaderboardData(env) {
     ]);
     const budget = u.numPlans * planCost;
 
-    // Build sparkline from last 20 session history entries (migrate old format)
-    const migrated = migrateHistoryEntries(history);
-    const sparklineEntries = migrated.slice(-20);
+    // Build sparkline from last 20 session history entries
+    const sparklineEntries = history.slice(-20);
     const sessionSparkline = sparklineEntries.map(e => e.sessionPct || 0);
     const weeklySparkline = sparklineEntries.map(e => e.weeklyPct || 0);
 
@@ -511,7 +565,7 @@ async function getLeaderboardData(env) {
 // ============================================================
 
 async function getUserHistory(userId, limit, env) {
-  const history = migrateHistoryEntries(await kvGet(env, `history:${userId}`, []));
+  const history = await kvGet(env, `history:${userId}`, []);
   return jsonResponse(history.slice(-limit));
 }
 
@@ -525,9 +579,9 @@ async function getTeamHistory(teamName, limit, env) {
   const teamUsers = users.filter(u => u.team === teamName);
   if (teamUsers.length === 0) return jsonResponse([]);
 
-  // Fetch all team members' histories (migrate old format)
+  // Fetch all team members' histories
   const histories = await Promise.all(
-    teamUsers.map(async u => migrateHistoryEntries(await kvGet(env, `history:${u.id}`, [])))
+    teamUsers.map(u => kvGet(env, `history:${u.id}`, []))
   );
 
   // Aggregate by session slot: average across members
@@ -613,7 +667,10 @@ async function importData(body, env) {
   const existing = await kvGet(env, 'users', []);
   const existingMap = new Map(existing.map(u => [u.id, u]));
   for (const u of importedUsers) {
-    existingMap.set(u.id, u);
+    u.name = sanitizeString(u.name);
+    u.team = sanitizeTeam(u.team);
+    u.numPlans = Math.max(1, Math.min(100, parseInt(u.numPlans) || 1));
+    if (u.name) existingMap.set(u.id, u);
   }
   const merged = Array.from(existingMap.values());
   await kvPut(env, 'users', merged);

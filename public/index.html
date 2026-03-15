@@ -61,7 +61,7 @@
 
   @keyframes bgPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
-  .container { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 24px 20px; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
 
   /* Header */
   .header { text-align: center; padding: 40px 0 24px; }
@@ -102,9 +102,6 @@
   /* Team Battle */
   /* Leaderboard Section at Top */
   .leaderboard-section { margin: 20px 0; }
-  .lb-dual {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-  }
   .lb-section { margin-bottom: 24px; }
   .lb-section-title {
     font-size: 0.75rem; font-weight: 700; color: var(--text-dim);
@@ -276,13 +273,11 @@
   /* Leaderboard */
   .leaderboard { display: flex; flex-direction: column; gap: 6px; }
   .lb-row {
-    display: grid; grid-template-columns: 32px 1fr 60px 60px;
+    display: grid; grid-template-columns: 44px 1fr 80px 120px 90px 100px;
     align-items: center; background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 10px 14px; transition: all 0.3s; cursor: pointer;
-    animation: slideIn 0.4s ease backwards; gap: 6px;
+    border-radius: 12px; padding: 14px 18px; transition: all 0.3s; cursor: pointer;
+    animation: slideIn 0.4s ease backwards; gap: 8px;
   }
-  .lb-row .lb-plans { display: none; }
-  .lb-row .lb-usage-bar { display: none; }
   .lb-row:hover { border-color: rgba(168, 85, 247, 0.3); background: var(--bg-card-hover); }
   @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .lb-row.rank-1 { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.04); }
@@ -523,7 +518,6 @@
   @media (max-width: 768px) {
     html, body { overflow-x: hidden; width: 100%; }
     .container { padding: 8px; max-width: 100vw; overflow: hidden; }
-    .lb-dual { grid-template-columns: 1fr; }
     .header { padding: 16px 0 10px; }
     .header h1 { font-size: 1.5rem; }
     .header .subtitle { font-size: 0.8rem; }
@@ -672,16 +666,16 @@
       <button class="tab" onclick="setTab('top5',this)">Top 5</button>
     </div>
 
-    <!-- Side-by-side leaderboards -->
-    <div class="lb-dual">
-      <div class="lb-section">
-        <h3 class="lb-section-title">Current Session</h3>
-        <div class="leaderboard" id="leaderboardSession"></div>
-      </div>
-      <div class="lb-section">
-        <h3 class="lb-section-title">Weekly</h3>
-        <div class="leaderboard" id="leaderboardWeekly"></div>
-      </div>
+    <!-- Current Session Leaderboard -->
+    <div class="lb-section">
+      <h3 class="lb-section-title">Current Session</h3>
+      <div class="leaderboard" id="leaderboardSession"></div>
+    </div>
+
+    <!-- Weekly Leaderboard -->
+    <div class="lb-section">
+      <h3 class="lb-section-title">Weekly</h3>
+      <div class="leaderboard" id="leaderboardWeekly"></div>
     </div>
 
     <div class="last-updated" id="lastUpdated">Last updated: --</div>
@@ -982,6 +976,8 @@
   }
 
   function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  const TEAM_CSS = {NY:'ny',NC:'nc',Xyne:'xyne',HS:'hs',JP:'jp'};
 
   function timeAgo(ts) {
     if (!ts) return '';
@@ -1083,21 +1079,22 @@
       const barWidth = Math.min(pct, 100);
       const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
       const ago = timeAgo(u.lastUpdated);
-      const teamCls = u.team === 'NC' ? 'nc' : u.team === 'HS' ? 'hs' : u.team === 'JP' ? 'jp' : u.team.toLowerCase();
+      const teamCls = TEAM_CSS[u.team] || 'ny';
       const sparkData = u[sparkKey] || [];
       const sparkColor = pctColor(pct);
+      const safeId = escAttr(u.id);
 
       return `
-        <div class="lb-row clickable ${rowClass}" style="animation-delay:${i * 0.05}s" onclick="openDetail('${u.id}')">
+        <div class="lb-row clickable ${rowClass}" style="animation-delay:${i * 0.05}s" onclick="openDetail('${safeId}')">
           <div class="lb-position ${posClass}">#${pos}</div>
           <div class="lb-user-info">
             <div class="lb-name">${fire}${escHtml(u.name)}</div>
             <div class="lb-meta">
-              <span class="lb-team-tag ${teamCls}">${u.team}</span>
+              <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
               <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
               ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
-              ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${u.sessionResetsAt}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
-              ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${u.weeklyResetsAt}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
+              ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
+              ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             </div>
           </div>
           <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
@@ -1286,7 +1283,7 @@
         const el = document.getElementById(id);
         if (el) {
           el.innerHTML = users.map(u =>
-            '<option value="' + u.id + '">' + escHtml(u.name) + ' (' + u.team + ')</option>'
+            '<option value="' + escAttr(u.id) + '">' + escHtml(u.name) + ' (' + escHtml(u.team) + ')</option>'
           ).join('');
         }
       });
@@ -1473,12 +1470,12 @@
 
     // Set header
     const rank = getRank(user.sessionPct || 0);
-    const teamCls = user.team === 'NC' ? 'nc' : user.team === 'HS' ? 'hs' : user.team.toLowerCase();
+    const teamCls = TEAM_CSS[user.team] || 'ny';
     document.getElementById('detailName').textContent = user.name;
     document.getElementById('detailMeta').innerHTML = `
-      <span class="lb-team-tag ${teamCls}">${user.team}</span>
+      <span class="lb-team-tag ${teamCls}">${escHtml(user.team)}</span>
       <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
-      <span class="lb-updated">${user.numPlans} plan${user.numPlans > 1 ? 's' : ''} &middot; $${user.budget}</span>
+      <span class="lb-updated">${parseInt(user.numPlans) || 1} plan${user.numPlans > 1 ? 's' : ''} &middot; $${parseInt(user.budget) || 0}</span>
     `;
 
     body.innerHTML = '<div class="empty-state"><p>Loading history...</p></div>';
@@ -1588,7 +1585,7 @@
       <div class="detail-section-title">Settings</div>
       <div class="detail-config">
         <label>Week starts on:</label>
-        <select onchange="updateWeekStart('${user.id}', this.value)">
+        <select onchange="updateWeekStart('${escAttr(user.id)}', this.value)">
           ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d =>
             `<option value="${d.toLowerCase()}" ${d.toLowerCase() === weekStartDay ? 'selected' : ''}>${d}</option>`
           ).join('')}
@@ -1626,7 +1623,7 @@
 
     document.getElementById('detailName').textContent = teamName + ' Team';
     document.getElementById('detailMeta').innerHTML = `
-      <span class="lb-team-tag ${teamName === 'NC' ? 'nc' : teamName === 'HS' ? 'hs' : teamName === 'JP' ? 'jp' : teamName.toLowerCase()}">${teamName}</span>
+      <span class="lb-team-tag ${TEAM_CSS[teamName] || 'ny'}">${escHtml(teamName)}</span>
       <span class="lb-updated">${teamData ? teamData.members : 0} members</span>
     `;
 
@@ -1705,7 +1702,7 @@
         ${teamMembers.sort((a, b) => (b.sessionPct || 0) - (a.sessionPct || 0)).map(m => {
           const sPct = m.sessionPct || 0;
           const wPct = m.weeklyPct || 0;
-          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="closeDetail();setTimeout(()=>openDetail('${m.id}'),350)">
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="closeDetail();setTimeout(()=>openDetail('${escAttr(m.id)}'),350)">
             <div style="flex:1;font-weight:600;font-size:0.85rem;">${escHtml(m.name)}</div>
             <div style="width:72px;">${renderSparkline(m.sessionSparkline || [], pctColor(sPct))}</div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${pctColor(sPct)};min-width:50px;text-align:right;">${(sPct/100).toFixed(2)}</div>
@@ -1864,12 +1861,12 @@
     return `<div class="countdown-bar">
       <div class="countdown-card">
         <div class="countdown-label">Session Resets In ${sessionEst ? estHint : ''}</div>
-        <div class="countdown-value" data-countdown-session="${user.id}">${sessionLabel}</div>
+        <div class="countdown-value" data-countdown-session="${escAttr(user.id)}">${sessionLabel}</div>
         <div class="countdown-sub">${sessionSub}</div>
       </div>
       <div class="countdown-card">
         <div class="countdown-label">Weekly Resets In ${weeklyEst ? estHint : ''}</div>
-        <div class="countdown-value" data-countdown-weekly="${user.id}">${weeklyLabel}</div>
+        <div class="countdown-value" data-countdown-weekly="${escAttr(user.id)}">${weeklyLabel}</div>
         <div class="countdown-sub">${weeklySub}</div>
       </div>
     </div>`;

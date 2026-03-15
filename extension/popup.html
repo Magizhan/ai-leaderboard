@@ -166,6 +166,13 @@
     </select>
   </div>
 
+  <div class="section">
+    <div class="section-title">Authentication</div>
+    <input type="text" class="team-select" id="cfClientId" placeholder="CF-Access-Client-Id" style="margin-bottom:6px;font-size:11px;">
+    <input type="password" class="team-select" id="cfClientSecret" placeholder="CF-Access-Client-Secret" style="font-size:11px;">
+    <div style="font-size:10px;color:#64748b;margin-top:4px;">Service token from Cloudflare Zero Trust. Required for syncing.</div>
+  </div>
+
   <div class="last-sync" id="lastSync" style="display:none;"></div>
 
   <button class="btn btn-primary" id="syncBtn" style="display:none;">Sync Now</button>

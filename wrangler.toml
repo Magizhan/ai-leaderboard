@@ -6,6 +6,9 @@ compatibility_date = "2024-12-01"
 # Then paste the ID below
 [vars]
 PLAN_COST = "200"
+# Cloudflare Access - set these after creating your Access application
+# CF_ACCESS_AUD = "your-application-audience-tag"
+# CF_ACCESS_TEAM_DOMAIN = "your-team-name"
 
 [[kv_namespaces]]
 binding = "LEADERBOARD_KV"
