@@ -110,6 +110,7 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
 
 const MAX_HISTORY = 500;
 const MAX_WEEKLY = 52;
+const CACHE_TTL_MS = 60_000; // 60s cache for leaderboard data
 const VALID_TEAMS = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
 const VALID_SOURCES = ['manual', 'extension', 'console', 'api'];
 
@@ -278,6 +279,7 @@ async function addUser(body, env) {
   const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   users.push({ id, name, team, numPlans });
   await kvPut(env, 'users', users);
+  invalidateLeaderboardCache(env);
   return jsonResponse({ id, name, team, numPlans });
 }
 
@@ -295,6 +297,7 @@ async function deleteUser(id, env) {
     env.LEADERBOARD_KV.delete(`weekly:${id}`),
     env.LEADERBOARD_KV.delete(`userconfig:${id}`),
   ]);
+  invalidateLeaderboardCache(env);
   return jsonResponse({ ok: true, removed: user.name });
 }
 
@@ -436,6 +439,7 @@ async function logUsage(body, env) {
     kvPut(env, `history:${user.id}`, history),
     kvPut(env, `weekly:${user.id}`, weeklyHistory),
   ]);
+  invalidateLeaderboardCache(env);
 
   return jsonResponse({ ok: true, user: user.name, ...usageData });
 }
@@ -493,6 +497,7 @@ async function addPlans(id, body, env) {
   const count = Math.max(1, Math.min(100, parseInt(body.count) || 1));
   user.numPlans = Math.min(user.numPlans + count, 999);
   await kvPut(env, 'users', users);
+  invalidateLeaderboardCache(env);
   return jsonResponse({ ok: true, name: user.name, numPlans: user.numPlans });
 }
 
@@ -501,6 +506,12 @@ async function addPlans(id, body, env) {
 // ============================================================
 
 async function getLeaderboardData(env) {
+  // Check KV cache first
+  const cached = await kvGet(env, '_cache:leaderboard', null);
+  if (cached && cached._cachedAt && (Date.now() - cached._cachedAt) < CACHE_TTL_MS) {
+    return jsonResponse(cached.data);
+  }
+
   const users = await kvGet(env, 'users', []);
   const planCost = parseInt(env.PLAN_COST || '200');
 
@@ -540,7 +551,7 @@ async function getLeaderboardData(env) {
     };
   }
 
-  return jsonResponse({
+  const result = {
     users: board,
     stats: {
       totalUsers: board.length,
@@ -556,7 +567,12 @@ async function getLeaderboardData(env) {
       JP: teamStats(board.filter(u => u.team === 'JP')),
     },
     updatedAt: new Date().toISOString(),
-  });
+  };
+
+  // Cache in KV (fire-and-forget)
+  kvPut(env, '_cache:leaderboard', { data: result, _cachedAt: Date.now() });
+
+  return jsonResponse(result);
 }
 
 // ============================================================
@@ -689,6 +705,7 @@ async function importData(body, env) {
   }
   await Promise.all(writes);
 
+  invalidateLeaderboardCache(env);
   return jsonResponse({ ok: true, imported: importedUsers.length, total: merged.length });
 }
 
@@ -726,6 +743,11 @@ async function kvGet(env, key, defaultVal) {
 
 async function kvPut(env, key, val) {
   await env.LEADERBOARD_KV.put(key, JSON.stringify(val));
+}
+
+/** Invalidate leaderboard cache — call after any data mutation */
+function invalidateLeaderboardCache(env) {
+  env.LEADERBOARD_KV.delete('_cache:leaderboard');
 }
 
 function jsonResponse(data, status = 200, extraHeaders = {}) {
