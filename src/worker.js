@@ -281,21 +281,29 @@ async function logUsage(body, env) {
     history = history.slice(history.length - MAX_HISTORY);
   }
 
-  // --- Infer reset times from usage drops (fallback when extension doesn't provide them) ---
+  // --- Infer reset times (fallback when extension doesn't provide them) ---
   let inferredSessionResetsAt = existing.sessionResetsAt || null;
   let inferredWeeklyResetsAt = existing.weeklyResetsAt || null;
   let sessionResetSource = existing.sessionResetSource || null;
   let weeklyResetSource = existing.weeklyResetSource || null;
 
   if (sessionResetsAt) {
-    // Extension provided real data
+    // Extension v1.3+ provided real data
     inferredSessionResetsAt = sessionResetsAt;
     sessionResetSource = 'extension';
-  } else if (sessionPct !== undefined && existing.sessionPct !== undefined) {
-    // Detect session reset: usage dropped = new session started
-    if (parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
-      // New session just started, estimate reset at now + 5 hours
+  } else if (sessionPct !== undefined) {
+    if (existing.sessionPct !== undefined && parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
+      // Usage dropped = new session started, estimate reset at now + 5 hours
       inferredSessionResetsAt = new Date(Date.now() + 5 * 3600000).toISOString();
+      sessionResetSource = 'estimated';
+    } else if (!inferredSessionResetsAt) {
+      // No reset time at all — estimate from current 5-hour UTC slot
+      const nowDate = new Date();
+      const slotStart = Math.floor(nowDate.getUTCHours() / 5) * 5;
+      const slotEnd = new Date(nowDate);
+      slotEnd.setUTCHours(slotStart + 5, 0, 0, 0);
+      if (slotEnd <= nowDate) slotEnd.setUTCDate(slotEnd.getUTCDate() + 1);
+      inferredSessionResetsAt = slotEnd.toISOString();
       sessionResetSource = 'estimated';
     }
   }
@@ -303,10 +311,19 @@ async function logUsage(body, env) {
   if (weeklyResetsAt) {
     inferredWeeklyResetsAt = weeklyResetsAt;
     weeklyResetSource = 'extension';
-  } else if (weeklyPct !== undefined && existing.weeklyPct !== undefined) {
-    // Detect weekly reset: weekly usage dropped = new week started
-    if (parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
+  } else if (weeklyPct !== undefined) {
+    if (existing.weeklyPct !== undefined && parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
+      // Weekly usage dropped = new week started
       inferredWeeklyResetsAt = new Date(Date.now() + 7 * 86400000).toISOString();
+      weeklyResetSource = 'estimated';
+    } else if (!inferredWeeklyResetsAt) {
+      // No reset time — estimate next Monday 00:00 UTC
+      const nowDate = new Date();
+      const daysUntilMon = (1 - nowDate.getUTCDay() + 7) % 7 || 7;
+      const nextMon = new Date(nowDate);
+      nextMon.setUTCDate(nextMon.getUTCDate() + daysUntilMon);
+      nextMon.setUTCHours(0, 0, 0, 0);
+      inferredWeeklyResetsAt = nextMon.toISOString();
       weeklyResetSource = 'estimated';
     }
   }
