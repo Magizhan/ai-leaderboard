@@ -107,9 +107,17 @@ async function scrapeAndSync() {
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
     if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
 
+    // Include Cloudflare Access service token if configured
+    const authStore = await chrome.storage.local.get(['cf_access_client_id', 'cf_access_client_secret']);
+    const headers = { 'Content-Type': 'application/json' };
+    if (authStore.cf_access_client_id && authStore.cf_access_client_secret) {
+      headers['CF-Access-Client-Id'] = authStore.cf_access_client_id;
+      headers['CF-Access-Client-Secret'] = authStore.cf_access_client_secret;
+    }
+
     const res = await fetch(API_BASE + '/api/usage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
     const data = await res.json();

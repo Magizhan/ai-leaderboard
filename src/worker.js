@@ -8,7 +8,91 @@
  *   weekly:{id}      -> JSON array of { weekKey, peakSessionPct, avgSessionPct, peakWeeklyPct, avgWeeklyPct, dataPoints, lastUpdated } (capped at 52)
  *   userconfig:{id}  -> JSON { weekStartDay }
  *   config           -> JSON { planCost }
+ *
+ * Auth: Cloudflare Access (Zero Trust) gates all requests at the edge.
+ *       Worker verifies CF-Access-JWT-Assertion as defense in depth.
+ *       Allowed email domains: @juspay.in, @nammayatri.in
+ *
+ * Environment variables needed:
+ *   CF_ACCESS_TEAM_DOMAIN  - Your Cloudflare Access team domain (e.g. "myteam" for myteam.cloudflareaccess.com)
+ *   CF_ACCESS_AUD          - The Application Audience (AUD) tag from Access app config
  */
+
+// ============================================================
+// Cloudflare Access JWT verification
+// ============================================================
+
+const ALLOWED_EMAIL_DOMAINS = ['juspay.in', 'nammayatri.in'];
+
+/**
+ * Verify Cloudflare Access authentication.
+ *
+ * Supports two auth methods:
+ * 1. Browser: CF-Access-JWT-Assertion header (set by CF Access after login)
+ * 2. Extension/API: CF-Access-Client-Id + CF-Access-Client-Secret headers (service token)
+ *
+ * If CF_ACCESS_AUD is not configured, verification is skipped (local dev mode).
+ */
+async function verifyAccessJWT(request, env) {
+  const aud = env.CF_ACCESS_AUD;
+
+  // Skip verification if Access is not configured (local dev)
+  if (!aud) {
+    return { valid: true, email: 'dev@localhost', skipped: true };
+  }
+
+  // Method 1: Service token auth (for extension/API clients)
+  const clientId = request.headers.get('CF-Access-Client-Id');
+  const clientSecret = request.headers.get('CF-Access-Client-Secret');
+  if (clientId && clientSecret) {
+    // Service tokens are validated by Cloudflare Access at the edge.
+    // If the request reaches the worker with valid service token headers,
+    // it means CF Access already validated them.
+    return { valid: true, email: 'service-token@extension', serviceToken: true };
+  }
+
+  // Method 2: Browser JWT auth
+  const jwt = request.headers.get('CF-Access-JWT-Assertion') || '';
+  if (!jwt) {
+    return { valid: false, error: 'Authentication required. Please sign in via Cloudflare Access.' };
+  }
+
+  try {
+    // Decode JWT payload (middle part) without full crypto verification.
+    // Cloudflare Access at the edge already verified the signature;
+    // we validate claims as defense in depth.
+    const parts = jwt.split('.');
+    if (parts.length !== 3) {
+      return { valid: false, error: 'Invalid JWT format' };
+    }
+
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+
+    // Check expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      return { valid: false, error: 'Access token expired. Please re-authenticate.' };
+    }
+
+    // Check audience
+    if (payload.aud && Array.isArray(payload.aud)) {
+      if (!payload.aud.includes(aud)) {
+        return { valid: false, error: 'Invalid token audience' };
+      }
+    }
+
+    // Check email domain
+    const email = payload.email || '';
+    const domain = email.split('@')[1] || '';
+    if (!ALLOWED_EMAIL_DOMAINS.includes(domain.toLowerCase())) {
+      return { valid: false, error: `Email domain @${domain} is not allowed. Only @juspay.in and @nammayatri.in are permitted.` };
+    }
+
+    return { valid: true, email };
+  } catch (err) {
+    return { valid: false, error: 'Failed to verify access token: ' + err.message };
+  }
+}
 
 // ============================================================
 // Session & Week helpers
@@ -66,16 +150,22 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, CF-Access-JWT-Assertion',
     };
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // Verify Cloudflare Access JWT on all requests (defense in depth)
+    const auth = await verifyAccessJWT(request, env);
+    if (!auth.valid) {
+      return jsonResponse({ error: auth.error }, 403, corsHeaders);
+    }
+
     try {
       if (path.startsWith('/api/')) {
-        const response = await handleApi(path, request, env, url);
+        const response = await handleApi(path, request, env, url, auth);
         const newHeaders = new Headers(response.headers);
         Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
         return new Response(response.body, {
@@ -93,7 +183,7 @@ export default {
   },
 };
 
-async function handleApi(path, request, env, url) {
+async function handleApi(path, request, env, url, auth) {
   const method = request.method;
 
   if (path === '/api/data' && method === 'GET') return getLeaderboardData(env);

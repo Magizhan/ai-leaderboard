@@ -20,6 +20,8 @@ const scheduleToggle = document.getElementById('scheduleToggle');
 const scheduleRow    = document.getElementById('scheduleRow');
 const scheduleLabel  = document.getElementById('scheduleLabel');
 const freqSelect     = document.getElementById('freqSelect');
+const cfClientIdEl   = document.getElementById('cfClientId');
+const cfClientSecEl  = document.getElementById('cfClientSecret');
 
 dashLink.href = API_BASE;
 dashLink.addEventListener('click', (e) => {
@@ -33,7 +35,7 @@ let scrapedData = null;
 // Restore saved preferences
 // ============================================================
 chrome.storage.local.get(
-  ['claude_lb_team', 'schedule_enabled', 'schedule_interval', 'last_sync_time', 'last_sync_session', 'last_sync_weekly', 'defaults_applied_v2'],
+  ['claude_lb_team', 'schedule_enabled', 'schedule_interval', 'last_sync_time', 'last_sync_session', 'last_sync_weekly', 'defaults_applied_v2', 'cf_access_client_id', 'cf_access_client_secret'],
   (stored) => {
     if (stored.claude_lb_team) teamSelect.value = stored.claude_lb_team;
 
@@ -62,6 +64,10 @@ chrome.storage.local.get(
         'Last sync: ' + (stored.last_sync_session || 0) + '% session / ' + (stored.last_sync_weekly || 0) + '% weekly — ' + ago;
       document.getElementById('lastSync').style.display = 'block';
     }
+
+    // Restore saved auth credentials
+    if (stored.cf_access_client_id) cfClientIdEl.value = stored.cf_access_client_id;
+    if (stored.cf_access_client_secret) cfClientSecEl.value = stored.cf_access_client_secret;
   }
 );
 
@@ -70,6 +76,16 @@ chrome.storage.local.get(
 // ============================================================
 teamSelect.addEventListener('change', () => {
   chrome.storage.local.set({ claude_lb_team: teamSelect.value });
+});
+
+// ============================================================
+// Auth credentials change
+// ============================================================
+cfClientIdEl.addEventListener('change', () => {
+  chrome.storage.local.set({ cf_access_client_id: cfClientIdEl.value.trim() });
+});
+cfClientSecEl.addEventListener('change', () => {
+  chrome.storage.local.set({ cf_access_client_secret: cfClientSecEl.value.trim() });
 });
 
 // ============================================================
@@ -245,9 +261,17 @@ async function doSync() {
     if (scrapedData.sessionResetsAt) payload.sessionResetsAt = scrapedData.sessionResetsAt;
     if (scrapedData.weeklyResetsAt) payload.weeklyResetsAt = scrapedData.weeklyResetsAt;
 
+    const headers = { 'Content-Type': 'application/json' };
+    const clientId = cfClientIdEl.value.trim();
+    const clientSecret = cfClientSecEl.value.trim();
+    if (clientId && clientSecret) {
+      headers['CF-Access-Client-Id'] = clientId;
+      headers['CF-Access-Client-Secret'] = clientSecret;
+    }
+
     const res = await fetch(API_BASE + '/api/usage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
     const data = await res.json();
