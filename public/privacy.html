@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Claude Usage Sync</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #e2e8f0; background: #0f0f1a; line-height: 1.7; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  h2 { font-size: 1.1rem; margin-top: 28px; color: #a5b4fc; }
+  p, li { font-size: 0.95rem; color: #cbd5e1; }
+  .date { font-size: 0.85rem; color: #64748b; margin-bottom: 24px; }
+  a { color: #7c3aed; }
+  ul { padding-left: 20px; }
+</style>
+</head>
+<body>
+<h1>Privacy Policy</h1>
+<p class="date">Claude Usage Sync — Chrome Extension<br>Last updated: March 16, 2026</p>
+
+<h2>What We Collect</h2>
+<p>The extension reads the following data from your <strong>claude.ai/settings/usage</strong> page:</p>
+<ul>
+  <li>Your Claude username (from the profile button)</li>
+  <li>Session and weekly usage percentages</li>
+  <li>Session and weekly reset timer information</li>
+</ul>
+<p>This data is sent to our leaderboard API at <strong>leaderboard.magizhan.work</strong> to display team usage rankings.</p>
+
+<h2>Authentication</h2>
+<p>The extension reads a Cloudflare Access authentication cookie (<code>CF_Authorization</code>) from the leaderboard domain to authenticate API requests. This cookie is set after you sign in with your Google Workspace account (@juspay.in or @nammayatri.in). No passwords are collected or stored.</p>
+
+<h2>What We Do NOT Collect</h2>
+<ul>
+  <li>No browsing history, web activity, or page content outside of claude.ai/settings/usage</li>
+  <li>No personal communications, emails, or chat messages</li>
+  <li>No financial, health, or location data</li>
+  <li>No keystrokes, clicks, or mouse activity</li>
+</ul>
+
+<h2>Data Storage</h2>
+<p>Usage data is stored in Cloudflare KV (key-value storage) associated with your leaderboard user profile. Local preferences (team selection, sync schedule) are stored in Chrome's local storage on your device.</p>
+
+<h2>Data Sharing</h2>
+<p>We do not sell, transfer, or share your data with any third parties. Data is only used to display the team leaderboard at leaderboard.magizhan.work, accessible to authenticated @juspay.in and @nammayatri.in users.</p>
+
+<h2>Data Retention</h2>
+<p>Usage history is retained for up to 500 data points per user. You can request deletion of your data by contacting the leaderboard administrator.</p>
+
+<h2>Contact</h2>
+<p>For questions about this privacy policy, contact the leaderboard administrator via your internal team channels.</p>
+</body>
+</html>
