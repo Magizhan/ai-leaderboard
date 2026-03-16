@@ -374,8 +374,7 @@
   @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(20px); } }
 
-  .refresh-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; }
-  .refresh-fill { height: 100%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); width: 0%; transition: width 0.5s linear; }
+  .refresh-bar { display: none; }
 
   .confetti-piece { position: fixed; z-index: 3000; pointer-events: none; }
 
@@ -644,6 +643,7 @@
     <h1>CLAUDE USAGE LEADERBOARD</h1>
     <div class="subtitle">Maximize your GPU/AI usage. Every token counts.</div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div id="lastUpdatedTop" style="color:var(--text-dim);font-size:0.7rem;margin-top:8px;">Last updated: --</div>
   </div>
 
   <!-- Leaderboard Section - Moved to Top -->
@@ -866,11 +866,11 @@
   <div class="modal">
     <h3>Log Usage</h3>
     <div class="form-group"><label>User</label><select id="logUsageUser"></select></div>
-    <div class="form-group"><label>Session Usage (decimal)</label>
-      <input type="number" id="logSessionPct" placeholder="e.g. 0.07" min="0" max="100" step="0.01">
+    <div class="form-group"><label>Session Usage (%)</label>
+      <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="200" step="1">
     </div>
-    <div class="form-group"><label>Weekly Usage (decimal, All Models)</label>
-      <input type="number" id="logWeeklyPct" placeholder="e.g. 0.26" min="0" max="100" step="0.01">
+    <div class="form-group"><label>Weekly Usage (%, All Models)</label>
+      <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="200" step="1">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
@@ -945,11 +945,10 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
-      "var spDec=sp?(sp/100).toFixed(2):null,wpDec=wp?(wp/100).toFixed(2):null;" +
-      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(spDec||'--')+'  Weekly: '+(wpDec||'--')))return;" +
-      "var p={name:n,team:t,source:'console'};if(spDec)p.sessionPct=spDec;if(wpDec)p.weeklyPct=wpDec;" +
+      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%'))return;" +
+      "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
       "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
-      ".then(r=>r.json()).then(d=>{if(d.ok){var s=((d.sessionPct||0)/100).toFixed(2),w=((d.weeklyPct||0)/100).toFixed(2);alert('Synced! '+n+' - Session: '+s+', Weekly: '+w);}else alert('Error: '+(d.error||'Unknown'))})" +
+      ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+Math.round(d.sessionPct||0)+'%, Weekly: '+Math.round(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
       ".catch(e=>alert('Failed: '+e.message))" +
       "})()";
   }
@@ -960,14 +959,14 @@
   }
 
   // ============================================================
-  // RANK SYSTEM (works with decimals, e.g., 1.0 = 100%)
+  // RANK SYSTEM (works with whole percentages, e.g., 100 = 100%)
   // ============================================================
   function getRank(val) {
-    if (val >= 1.0) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
-    if (val >= 0.8) return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
-    if (val >= 0.6) return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
-    if (val >= 0.4) return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
-    if (val >= 0.2) return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
+    if (val >= 100) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
+    if (val >= 80)  return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
+    if (val >= 60)  return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
+    if (val >= 40)  return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
+    if (val >= 20)  return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
     return                  { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
   }
 
@@ -1110,11 +1109,11 @@
           </div>
           <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
           <div class="lb-plans">
-            ${(pct/100).toFixed(2)} <span class="sub">(${otherLabel}: ${(otherPct/100).toFixed(2)})</span>
+            ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>
             <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
           </div>
           <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
-          <div class="lb-pct" style="color:${pctColor(pct)}">${(pct/100).toFixed(2)}</div>
+          <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
         </div>
       `;
     }).join('');
@@ -1129,8 +1128,8 @@
     renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
 
     // Stats
-    document.getElementById('statAvgUsage').textContent = ((stats.avgSessionPct || 0) / 100).toFixed(2);
-    document.getElementById('statAvgWeekly').textContent = ((stats.avgWeeklyPct || 0) / 100).toFixed(2);
+    document.getElementById('statAvgUsage').textContent = Math.round(stats.avgSessionPct || 0) + '%';
+    document.getElementById('statAvgWeekly').textContent = Math.round(stats.avgWeeklyPct || 0) + '%';
     document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
@@ -1146,16 +1145,18 @@
       const sessionPct = teamData.avgSessionPct || 0;
 
       // Full team battle
-      document.getElementById(tid + 'Pct').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'Pct').textContent = Math.round(weeklyPct) + '%';
       document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'BarVal').textContent = Math.round(weeklyPct) + '%';
 
       // Mini team battle (show weekly)
-      document.getElementById(tid + 'MiniPct').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'MiniPct').textContent = Math.round(weeklyPct) + '%';
     });
 
-    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
+    const updatedText = 'Last updated: ' + new Date().toLocaleString();
+    document.getElementById('lastUpdated').textContent = updatedText;
+    document.getElementById('lastUpdatedTop').textContent = updatedText;
 
     // Restore scroll position after DOM update (prevents iOS Safari scroll jump)
     requestAnimationFrame(() => window.scrollTo(0, scrollY));
@@ -1395,7 +1396,7 @@
       const y = padT + (i / gridLines) * ch;
       const val = maxV - (i / gridLines) * range;
       svg += `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#1e293b" stroke-width="1"/>`;
-      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${(val / 100).toFixed(2)}</text>`;
+      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${Math.round(val)}%</text>`;
     }
 
     // Render line(s)
@@ -1422,8 +1423,8 @@
       const x = toX(i);
       const stripW = data.length > 1 ? cw / (data.length - 1) : cw;
       const stripX = x - stripW / 2;
-      const val1 = ((d[valueKey] || 0) / 100).toFixed(2);
-      const val2 = valueKey2 ? ((d[valueKey2] || 0) / 100).toFixed(2) : null;
+      const val1 = Math.round(d[valueKey] || 0) + '%';
+      const val2 = valueKey2 ? Math.round(d[valueKey2] || 0) + '%' : null;
       const lbl = d[labelKey] || '';
       let tooltipText = `${lbl}\\n${label || valueKey}: ${val1}`;
       if (val2 !== null) tooltipText += `\\n${label2 || valueKey2}: ${val2}`;
@@ -1540,8 +1541,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${(user.sessionPct / 100).toFixed(2)}</div><div class="detail-stat-label">Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(user.weeklyPct / 100).toFixed(2)}</div><div class="detail-stat-label">Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(user.sessionPct)}%</div><div class="detail-stat-label">Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
       </div>
     </div>`;
@@ -1550,11 +1551,11 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(avgSession / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${totalSessions}</div><div class="detail-stat-label">Total Sessions</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${(peakWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Weekly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(avgWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Weeks Tracked</div></div>
       </div>
     </div>`;
@@ -1670,8 +1671,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${(avgSession / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(avgWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${teamMembers.length}</div><div class="detail-stat-label">Members</div></div>
       </div>
     </div>`;
@@ -1680,8 +1681,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(overallAvg / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(overallAvg)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${history.length}</div><div class="detail-stat-label">Data Points</div></div>
       </div>
     </div>`;
@@ -1716,7 +1717,7 @@
           return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="closeDetail();setTimeout(()=>openDetail('${escAttr(m.id)}'),350)">
             <div style="flex:1;font-weight:600;font-size:0.85rem;">${escHtml(m.name)}</div>
             <div style="width:72px;">${renderSparkline(m.sessionSparkline || [], pctColor(sPct))}</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${pctColor(sPct)};min-width:50px;text-align:right;">${(sPct/100).toFixed(2)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${pctColor(sPct)};min-width:50px;text-align:right;">${Math.round(sPct)}%</div>
           </div>`;
         }).join('')}
       </div>
@@ -1726,18 +1727,10 @@
   }
 
   // ============================================================
-  // AUTO-REFRESH
+  // AUTO-REFRESH (silent, no loading bar)
   // ============================================================
-  let refreshCounter = 0;
-  const REFRESH_INTERVAL = 30;
-  setInterval(() => {
-    refreshCounter++;
-    document.getElementById('refreshFill').style.width = (refreshCounter / REFRESH_INTERVAL * 100) + '%';
-    if (refreshCounter >= REFRESH_INTERVAL) {
-      refreshCounter = 0;
-      render();
-    }
-  }, 1000);
+  const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+  setInterval(() => render(), REFRESH_INTERVAL_MS);
 
   // ============================================================
   // KEYBOARD SHORTCUTS
@@ -1803,8 +1796,8 @@
       html += `<tr>
         <td>${ts}</td>
         <td style="color:var(--text-dim)">${h.sessionSlot || '--'}</td>
-        <td style="color:var(--accent-orange)">${((h.sessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-purple)">${((h.weeklyPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-orange)">${Math.round(h.sessionPct || 0)}%</td>
+        <td style="color:var(--accent-purple)">${Math.round(h.weeklyPct || 0)}%</td>
         <td>${h.source || '--'}</td>
       </tr>`;
     });
@@ -1820,10 +1813,10 @@
     rows.forEach(w => {
       html += `<tr>
         <td>${w.weekKey || '--'}</td>
-        <td style="color:var(--accent-orange)">${((w.avgSessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-cyan)">${((w.peakSessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-purple)">${((w.avgWeeklyPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-pink)">${((w.peakWeeklyPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-orange)">${Math.round(w.avgSessionPct || 0)}%</td>
+        <td style="color:var(--accent-cyan)">${Math.round(w.peakSessionPct || 0)}%</td>
+        <td style="color:var(--accent-purple)">${Math.round(w.avgWeeklyPct || 0)}%</td>
+        <td style="color:var(--accent-pink)">${Math.round(w.peakWeeklyPct || 0)}%</td>
         <td>${w.dataPoints || 0}</td>
       </tr>`;
     });
