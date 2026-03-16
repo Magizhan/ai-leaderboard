@@ -360,8 +360,12 @@ async function logUsage(body, env) {
 
   const lastEntry = history.length > 0 ? history[history.length - 1] : null;
 
-  if (lastEntry && lastEntry.sessionSlot === currentSlot) {
-    // Same session slot: only allow increase (monotonic)
+  // Detect session reset: if session usage dropped significantly, it's a new session
+  const sessionReset = lastEntry && newSessionPct < (lastEntry.sessionPct || 0) - 1;
+  const weeklyReset = lastEntry && newWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
+
+  if (lastEntry && !sessionReset && !weeklyReset && lastEntry.sessionSlot === currentSlot) {
+    // Same session, no reset: only allow increase (monotonic)
     newSessionPct = Math.max(newSessionPct, lastEntry.sessionPct || 0);
     newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
     // Update in place
@@ -370,7 +374,11 @@ async function logUsage(body, env) {
     lastEntry.timestamp = now;
     lastEntry.source = source;
   } else {
-    // New session slot: append
+    // New session slot or reset detected: append new entry
+    // On session reset, only reset session; preserve weekly unless it also reset
+    if (sessionReset && !weeklyReset && lastEntry) {
+      newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
+    }
     history.push({
       sessionPct: newSessionPct,
       weeklyPct: newWeeklyPct,
