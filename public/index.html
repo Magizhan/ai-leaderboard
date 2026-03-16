@@ -1040,22 +1040,26 @@
   // ============================================================
   // API
   // ============================================================
-  async function apiFetch(path, options = {}) {
-    const res = await fetch(API_BASE + path, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      // CF Access returned login page instead of JSON — reload to trigger auth
-      window.location.reload();
-      return null;
+  async function apiFetch(path, options = {}, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(API_BASE + path, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options,
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Non-JSON response (status ' + res.status + ')');
+        }
+        return await res.json();
+      } catch (e) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
     }
-    if (res.status === 403) {
-      window.location.reload();
-      return null;
-    }
-    return res.json();
   }
 
   // ============================================================
