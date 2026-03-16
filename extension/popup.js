@@ -301,15 +301,6 @@ async function doSync() {
   syncBtn.disabled = true;
   setStatus('<span class="spinner"></span> Syncing...', 'loading');
 
-  // Get JWT from background
-  let jwt = null;
-  try {
-    const response = await chrome.runtime.sendMessage({ type: 'get_jwt' });
-    jwt = response ? response.jwt : null;
-  } catch (e) {
-    // Background not ready
-  }
-
   try {
     const payload = {
       name: scrapedData.name,
@@ -324,25 +315,28 @@ async function doSync() {
     if (scrapedData.extraUsageLimit !== null) payload.extraUsageLimit = scrapedData.extraUsageLimit;
     if (scrapedData.extraUsagePct !== null) payload.extraUsagePct = scrapedData.extraUsagePct;
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (jwt) {
-      headers['CF-Access-JWT-Assertion'] = jwt;
-    }
-
-    const res = await fetch(API_BASE + '/api/usage', {
+    // Route through background service worker to avoid CORS (CF Access blocks OPTIONS preflight)
+    const result = await chrome.runtime.sendMessage({
+      type: 'api_fetch',
+      url: API_BASE + '/api/usage',
       method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
+      body: payload,
     });
 
-    if (res.status === 403) {
+    if (!result || result.error === 'auth_expired') {
       setStatus('Session expired. Please sign in again.', 'error');
       updateAuthUI(false);
       syncBtn.disabled = false;
       return;
     }
 
-    const data = await res.json();
+    if (result.error) {
+      setStatus('Network error: ' + result.error, 'error');
+      syncBtn.disabled = false;
+      return;
+    }
+
+    const data = result.data;
 
     if (data.ok) {
       await chrome.storage.local.set({

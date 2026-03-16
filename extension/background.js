@@ -154,6 +154,34 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Proxy API calls through background to avoid CORS (CF Access blocks OPTIONS preflight)
+  if (msg.type === 'api_fetch') {
+    (async () => {
+      try {
+        const jwt = await getValidJWT();
+        const headers = { 'Content-Type': 'application/json' };
+        if (jwt) headers['CF-Access-JWT-Assertion'] = jwt;
+
+        const res = await fetch(msg.url, {
+          method: msg.method || 'POST',
+          headers,
+          body: msg.body ? JSON.stringify(msg.body) : undefined,
+        });
+
+        if (res.status === 403) {
+          sendResponse({ error: 'auth_expired', status: 403 });
+          return;
+        }
+
+        const data = await res.json();
+        sendResponse({ ok: true, data, status: res.status });
+      } catch (e) {
+        sendResponse({ error: e.message, status: 0 });
+      }
+    })();
+    return true;
+  }
+
   if (msg.type === 'sync_success') {
     chrome.action.setBadgeText({ text: '✓' });
     chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });

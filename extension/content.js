@@ -118,16 +118,7 @@ async function scrapeAndSync() {
     return; // Same data synced less than 60s ago, skip
   }
 
-  // Get JWT from background
-  let jwt = null;
-  try {
-    const response = await chrome.runtime.sendMessage({ type: 'get_jwt' });
-    jwt = response ? response.jwt : null;
-  } catch (e) {
-    // Background not ready
-  }
-
-  // Sync to leaderboard
+  // Sync via background service worker (avoids CORS — CF Access blocks OPTIONS preflight)
   try {
     const payload = { name, team, source: 'extension' };
     if (sessionPct !== null) payload.sessionPct = sessionPct;
@@ -138,24 +129,24 @@ async function scrapeAndSync() {
     if (extraUsageLimit !== null) payload.extraUsageLimit = extraUsageLimit;
     if (extraUsagePct !== null) payload.extraUsagePct = extraUsagePct;
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (jwt) {
-      headers['CF-Access-JWT-Assertion'] = jwt;
-    }
-
-    const res = await fetch(API_BASE + '/api/usage', {
+    const result = await chrome.runtime.sendMessage({
+      type: 'api_fetch',
+      url: API_BASE + '/api/usage',
       method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
+      body: payload,
     });
 
-    if (res.status === 403) {
-      // Auth expired — notify background
+    if (!result || result.error === 'auth_expired') {
       console.log('[Claude Leaderboard] Auth expired, please re-authenticate');
       return;
     }
 
-    const data = await res.json();
+    if (result.error) {
+      console.log('[Claude Leaderboard] Sync failed:', result.error);
+      return;
+    }
+
+    const data = result.data;
 
     if (data.ok) {
       // Save sync state
