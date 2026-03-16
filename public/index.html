@@ -1118,11 +1118,18 @@
     </svg>`;
   }
 
-  /** Compute effective usage: if at 100% with extra usage active, add extra % on top */
+  /**
+   * Compute effective usage including extra spend.
+   * Plan cost per plan = budget / numPlans (typically $200).
+   * When session is at 100% and extra usage is active:
+   *   effective = 100 + (extraUsageSpent / planCost) * 100
+   * e.g. $208 extra on a $200 plan = 100 + 104 = 204%
+   */
   function effectivePct(u, key) {
     const base = u[key] || 0;
-    if (base >= 100 && u.extraUsagePct > 0 && key === 'sessionPct') {
-      return 100 + u.extraUsagePct;
+    if (base >= 100 && u.extraUsageSpent > 0 && key === 'sessionPct') {
+      const planCost = (u.budget && u.numPlans) ? u.budget / u.numPlans : 200;
+      return 100 + (u.extraUsageSpent / planCost) * 100;
     }
     return base;
   }
