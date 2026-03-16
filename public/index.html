@@ -1118,6 +1118,46 @@
     </svg>`;
   }
 
+  function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
+    const pct = u[pctKey] || 0;
+    const otherPct = u[otherPctKey] || 0;
+    const rank = getRank(pct);
+    const pos = i + 1;
+    const posClass = pos <= 3 ? 'p' + pos : 'px';
+    const rowClass = pos <= 3 ? 'rank-' + pos : '';
+    const barClass = getBarClass(pct);
+    const barWidth = Math.min(pct, 100);
+    const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
+    const ago = timeAgo(u.lastUpdated);
+    const teamCls = TEAM_CSS[u.team] || 'ny';
+    const sparkData = u[sparkKey] || [];
+    const sparkColor = pctColor(pct);
+    const safeId = escAttr(u.id);
+
+    return `
+      <div class="lb-row clickable ${rowClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
+        <div class="lb-position ${posClass}">#${pos}</div>
+        <div class="lb-user-info">
+          <div class="lb-name">${fire}${escHtml(u.name)}</div>
+          <div class="lb-meta">
+            <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
+            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
+            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+            ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
+            ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
+          </div>
+        </div>
+        <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
+        <div class="lb-plans">
+          ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+          <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>
+        </div>
+        <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
+        <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
+      </div>
+    `;
+  }
+
   function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sparkKey = pctKey === 'sessionPct' ? 'sessionSparkline' : 'weeklySparkline';
     const sorted = [...users].sort((a, b) => (b[pctKey] || 0) - (a[pctKey] || 0));
@@ -1136,45 +1176,54 @@
       return;
     }
 
-    lb.innerHTML = filtered.map((u, i) => {
+    const existingRows = lb.querySelectorAll('.lb-row[data-uid]');
+    const existingIds = [...existingRows].map(r => r.dataset.uid);
+    const newIds = filtered.map(u => u.id);
+
+    // If user list or order changed, do a full rebuild
+    if (existingIds.length !== newIds.length || existingIds.some((id, i) => id !== newIds[i])) {
+      lb.innerHTML = filtered.map((u, i) => buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey)).join('');
+      return;
+    }
+
+    // Same users, same order — update each row in-place
+    filtered.forEach((u, i) => {
+      const row = existingRows[i];
       const pct = u[pctKey] || 0;
       const otherPct = u[otherPctKey] || 0;
       const rank = getRank(pct);
-      const pos = i + 1;
-      const posClass = pos <= 3 ? 'p' + pos : 'px';
-      const rowClass = pos <= 3 ? 'rank-' + pos : '';
-      const barClass = getBarClass(pct);
-      const barWidth = Math.min(pct, 100);
-      const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
-      const ago = timeAgo(u.lastUpdated);
-      const teamCls = TEAM_CSS[u.team] || 'ny';
       const sparkData = u[sparkKey] || [];
       const sparkColor = pctColor(pct);
-      const safeId = escAttr(u.id);
+      const ago = timeAgo(u.lastUpdated);
+      const barClass = getBarClass(pct);
 
-      return `
-        <div class="lb-row clickable ${rowClass}" style="animation-delay:${i * 0.05}s" onclick="openDetail('${safeId}')">
-          <div class="lb-position ${posClass}">#${pos}</div>
-          <div class="lb-user-info">
-            <div class="lb-name">${fire}${escHtml(u.name)}</div>
-            <div class="lb-meta">
-              <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
-              <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
-              ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
-              ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
-              ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
-            </div>
-          </div>
-          <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
-          <div class="lb-plans">
-            ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
-            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>
-          </div>
-          <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
-          <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
-        </div>
-      `;
-    }).join('');
+      // Update percentage
+      const pctEl = row.querySelector('.lb-pct');
+      if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = pctColor(pct); }
+
+      // Update plans/details
+      const plansEl = row.querySelector('.lb-plans');
+      if (plansEl) {
+        plansEl.innerHTML = `${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+          <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>`;
+      }
+
+      // Update usage bar
+      const barFill = row.querySelector('.lb-usage-fill');
+      if (barFill) { barFill.style.width = Math.min(pct, 100) + '%'; barFill.className = 'lb-usage-fill ' + barClass; }
+
+      // Update sparkline
+      const sparkEl = row.querySelector('.lb-sparkline');
+      if (sparkEl) sparkEl.innerHTML = renderSparkline(sparkData, sparkColor);
+
+      // Update rank badge
+      const rankEl = row.querySelector('.lb-rank-badge');
+      if (rankEl) { rankEl.className = 'lb-rank-badge ' + rank.cls; rankEl.innerHTML = rank.icon + ' ' + rank.title; }
+
+      // Update time ago
+      const agoEl = row.querySelector('.lb-meta .lb-updated');
+      if (agoEl) agoEl.textContent = ago;
+    });
   }
 
   function renderData(data) {
