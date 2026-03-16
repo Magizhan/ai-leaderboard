@@ -1045,6 +1045,16 @@
       headers: { 'Content-Type': 'application/json' },
       ...options,
     });
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      // CF Access returned login page instead of JSON — reload to trigger auth
+      window.location.reload();
+      return null;
+    }
+    if (res.status === 403) {
+      window.location.reload();
+      return null;
+    }
     return res.json();
   }
 
