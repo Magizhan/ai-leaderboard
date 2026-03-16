@@ -4,6 +4,9 @@
   "description": "Real-time Claude Usage Leaderboard Dashboard",
   "scripts": {
     "dev": "wrangler dev",
+    "test": "node test/e2e.test.mjs",
+    "test:prod": "API_BASE=https://leaderboard.magizhan.work node test/e2e.test.mjs",
+    "predeploy": "node test/e2e.test.mjs",
     "deploy": "wrangler deploy",
     "kv:create": "wrangler kv namespace create LEADERBOARD_KV"
   },
