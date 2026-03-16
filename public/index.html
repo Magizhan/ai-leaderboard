@@ -1065,17 +1065,24 @@
   // ============================================================
   // RENDER
   // ============================================================
-  async function render() {
+  let lastDataHash = '';
+  async function render(force = false) {
     try {
       const data = await apiFetch('/api/data');
+      // Skip re-render if data hasn't changed (prevents flicker on auto-refresh)
+      const hash = JSON.stringify(data);
+      if (!force && hash === lastDataHash) return;
+      lastDataHash = hash;
       cachedData = data;
       renderData(data);
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      document.getElementById('leaderboardSession').innerHTML =
-        '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
-      document.getElementById('leaderboardWeekly').innerHTML =
-        '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
+      if (!cachedData) {
+        document.getElementById('leaderboardSession').innerHTML =
+          '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
+        document.getElementById('leaderboardWeekly').innerHTML =
+          '<div class="empty-state"><div class="icon">&#9888;&#65039;</div><p>Failed to load data.</p></div>';
+      }
     }
   }
 
@@ -1230,7 +1237,7 @@
     if (d.id) {
       closeModal('addUser');
       document.getElementById('newUserName').value = '';
-      render();
+      render(true);
       toast(name + ' added to ' + team + '!');
       confetti();
     } else {
@@ -1263,7 +1270,7 @@
       document.getElementById('logWeeklyPct').value = '';
       document.getElementById('logExtraSpent').value = '';
       document.getElementById('logExtraLimit').value = '';
-      render();
+      render(true);
       toast('Updated!');
     } else {
       toast(d.error || 'Failed', true);
@@ -1281,7 +1288,7 @@
     });
     if (d.ok) {
       closeModal('addPlan');
-      render();
+      render(true);
       toast('Added ' + count + ' plan(s). Now ' + d.numPlans + ' plans.');
     } else {
       toast(d.error || 'Failed', true);
@@ -1297,7 +1304,7 @@
     const d = await apiFetch('/api/users/' + userId, { method: 'DELETE' });
     if (d.ok) {
       closeModal('removeUser');
-      render();
+      render(true);
       toast('Removed ' + (d.removed || 'user'));
     } else {
       toast(d.error || 'Failed', true);
@@ -1331,7 +1338,7 @@
           body: JSON.stringify(imported),
         });
         if (d.ok) {
-          render();
+          render(true);
           toast('Imported ' + d.imported + ' users!');
           confetti();
         } else {
@@ -1800,7 +1807,7 @@
     if (e.key === 'Escape' && detailPanelOpen) { closeDetail(); return; }
     if (e.key === 'a') openModal('addUser');
     if (e.key === 'u') openModal('logUsage');
-    if (e.key === 'r') render();
+    if (e.key === 'r') render(true);
   });
 
   // ============================================================
@@ -1992,7 +1999,7 @@
   }
 
   document.getElementById('consolePaste').textContent = generateConsoleCode();
-  render();
+  render(true);
 </script>
 
 </body>
