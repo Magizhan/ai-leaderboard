@@ -955,13 +955,31 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
+      // Session reset timer: "in X hr Y min" or "in X min" or "in X hr"
+      "var sra=null,srHM=b.match(/in\\s+(\\d+)\\s*hr?\\s+(\\d+)\\s*min/i)," +
+      "srM=b.match(/in\\s+(\\d+)\\s*min/i),srH=b.match(/in\\s+(\\d+)\\s*hr/i);" +
+      "if(srHM)sra=new Date(Date.now()+(parseInt(srHM[1])*3600+parseInt(srHM[2])*60)*1000).toISOString();" +
+      "else if(srM)sra=new Date(Date.now()+parseInt(srM[1])*60000).toISOString();" +
+      "else if(srH)sra=new Date(Date.now()+parseInt(srH[1])*3600000).toISOString();" +
+      // Weekly reset timer: "Sat 5:29 PM" pattern
+      "var wra=null,wrm=b.match(/(sun|mon|tue|wed|thu|fri|sat)\\w*\\s+(\\d+):(\\d+)\\s*(am|pm)/i);" +
+      "if(wrm){var dn=['sun','mon','tue','wed','thu','fri','sat']," +
+      "td=dn.indexOf(wrm[1].toLowerCase().slice(0,3)),hr=parseInt(wrm[2]),mn=parseInt(wrm[3])," +
+      "pm=wrm[4].toLowerCase()==='pm';if(pm&&hr!==12)hr+=12;if(!pm&&hr===12)hr=0;" +
+      "var nw=new Date(),rs=new Date(nw),da=(td-nw.getDay()+7)%7;" +
+      "if(da===0){var tt=new Date(nw);tt.setHours(hr,mn,0,0);if(tt<=nw)da=7;}" +
+      "rs.setDate(rs.getDate()+da);rs.setHours(hr,mn,0,0);wra=rs.toISOString();}" +
+      // Extra usage
       "var esm=b.match(/\\$(\\d+(?:\\.\\d{1,2})?)\\s*spent/i),es=esm?parseFloat(esm[1]):null;" +
       "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
+      "var ep=(esm&&all.length>=4)?all[3]:null;" +
+      // Confirm
       "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
       "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
       "if(!confirm(msg))return;" +
+      // Build payload
       "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
-      "var ep=(esm&&all.length>=4)?all[3]:null;" +
+      "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
       ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+Math.round(d.sessionPct||0)+'%, Weekly: '+Math.round(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
