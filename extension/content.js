@@ -94,6 +94,18 @@ async function scrapeAndSync() {
     weeklyResetsAt = reset.toISOString();
   }
 
+  // Scrape extra usage data ($ spent, spend limit, % used)
+  // Page order: session % → weekly (All models) % → Sonnet only % → Extra usage %
+  let extraUsageSpent = null;
+  let extraUsageLimit = null;
+  let extraUsagePct = null;
+  const spentMatch = bodyText.match(/\$(\d+(?:\.\d{1,2})?)\s*spent/i);
+  if (spentMatch) extraUsageSpent = parseFloat(spentMatch[1]);
+  const limitMatch = bodyText.match(/\$(\d+(?:,\d{3})*)\s*\n?\s*Monthly spend limit/i);
+  if (limitMatch) extraUsageLimit = parseFloat(limitMatch[1].replace(/,/g, ''));
+  // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
+  if (spentMatch && all.length >= 4) extraUsagePct = all[3];
+
   // Get saved team preference (default to NY)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
   const team = stored.claude_lb_team || 'NY';
@@ -122,6 +134,9 @@ async function scrapeAndSync() {
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
     if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
+    if (extraUsageSpent !== null) payload.extraUsageSpent = extraUsageSpent;
+    if (extraUsageLimit !== null) payload.extraUsageLimit = extraUsageLimit;
+    if (extraUsagePct !== null) payload.extraUsagePct = extraUsagePct;
 
     const headers = { 'Content-Type': 'application/json' };
     if (jwt) {

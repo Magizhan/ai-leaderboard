@@ -306,7 +306,7 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct } = body;
   const name = body.name ? sanitizeString(body.name) : undefined;
   const source = sanitizeSource(body.source);
 
@@ -415,6 +415,11 @@ async function logUsage(body, env) {
     }
   }
 
+  // Extra usage fields (pass through if provided)
+  const newExtraUsageSpent = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : (existing.extraUsageSpent || null);
+  const newExtraUsageLimit = extraUsageLimit !== undefined ? parseFloat(extraUsageLimit) : (existing.extraUsageLimit || null);
+  const newExtraUsagePct = extraUsagePct !== undefined ? parseFloat(extraUsagePct) : (existing.extraUsagePct || null);
+
   const usageData = {
     userId: user.id,
     sessionPct: newSessionPct,
@@ -425,6 +430,9 @@ async function logUsage(body, env) {
     weeklyResetsAt: inferredWeeklyResetsAt,
     sessionResetSource,
     weeklyResetSource,
+    extraUsageSpent: newExtraUsageSpent,
+    extraUsageLimit: newExtraUsageLimit,
+    extraUsagePct: newExtraUsagePct,
   };
 
   // Update weekly aggregation
@@ -540,6 +548,9 @@ async function getLeaderboardData(env) {
       weeklyResetsAt: usage ? (usage.weeklyResetsAt || null) : null,
       sessionResetSource: usage ? (usage.sessionResetSource || null) : null,
       weeklyResetSource: usage ? (usage.weeklyResetSource || null) : null,
+      extraUsageSpent: usage ? (usage.extraUsageSpent || null) : null,
+      extraUsageLimit: usage ? (usage.extraUsageLimit || null) : null,
+      extraUsagePct: usage ? (usage.extraUsagePct || null) : null,
     };
   }));
 

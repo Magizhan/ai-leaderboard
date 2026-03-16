@@ -309,6 +309,7 @@
   .lb-team-tag.jp { background: rgba(225, 29, 72, 0.12); color: var(--jp-color); border: 1px solid rgba(225, 29, 72, 0.25); }
 
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
   .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
   .rank-diamond { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
   .rank-platinum { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
@@ -326,6 +327,9 @@
   .lb-usage-fill.mid { background: linear-gradient(90deg, #7c3aed, var(--accent-purple)); }
   .lb-usage-fill.high { background: linear-gradient(90deg, #c2410c, var(--accent-orange)); }
   .lb-usage-fill.max { background: linear-gradient(90deg, #dc2626, #ef4444); animation: maxPulse 2s ease-in-out infinite; }
+  .lb-usage-fill.overflow { background: linear-gradient(90deg, #ef4444, #f97316, #ef4444); background-size: 200% 100%; animation: overflowShift 2s linear infinite; }
+  @keyframes overflowShift { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+  .extra-usage-tag { font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.25); margin-left: 4px; }
   @keyframes maxPulse { 0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); } }
 
   .lb-pct { font-size: 1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; text-align: right; }
@@ -374,8 +378,7 @@
   @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(20px); } }
 
-  .refresh-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; }
-  .refresh-fill { height: 100%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); width: 0%; transition: width 0.5s linear; }
+  .refresh-bar { display: none; }
 
   .confetti-piece { position: fixed; z-index: 3000; pointer-events: none; }
 
@@ -644,6 +647,7 @@
     <h1>CLAUDE USAGE LEADERBOARD</h1>
     <div class="subtitle">Maximize your GPU/AI usage. Every token counts.</div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div id="lastUpdatedTop" style="color:var(--text-dim);font-size:0.7rem;margin-top:8px;">Last updated: --</div>
   </div>
 
   <!-- Leaderboard Section - Moved to Top -->
@@ -866,11 +870,17 @@
   <div class="modal">
     <h3>Log Usage</h3>
     <div class="form-group"><label>User</label><select id="logUsageUser"></select></div>
-    <div class="form-group"><label>Session Usage (decimal)</label>
-      <input type="number" id="logSessionPct" placeholder="e.g. 0.07" min="0" max="100" step="0.01">
+    <div class="form-group"><label>Session Usage (%)</label>
+      <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="200" step="1">
     </div>
-    <div class="form-group"><label>Weekly Usage (decimal, All Models)</label>
-      <input type="number" id="logWeeklyPct" placeholder="e.g. 0.26" min="0" max="100" step="0.01">
+    <div class="form-group"><label>Weekly Usage (%, All Models)</label>
+      <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="200" step="1">
+    </div>
+    <div class="form-group"><label>Extra Usage $ Spent</label>
+      <input type="number" id="logExtraSpent" placeholder="e.g. 30.90" min="0" step="0.01">
+    </div>
+    <div class="form-group"><label>Extra Usage Spend Limit ($)</label>
+      <input type="number" id="logExtraLimit" placeholder="e.g. 200" min="0" step="1">
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
@@ -945,11 +955,34 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
-      "var spDec=sp?(sp/100).toFixed(2):null,wpDec=wp?(wp/100).toFixed(2):null;" +
-      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(spDec||'--')+'  Weekly: '+(wpDec||'--')))return;" +
-      "var p={name:n,team:t,source:'console'};if(spDec)p.sessionPct=spDec;if(wpDec)p.weeklyPct=wpDec;" +
+      // Session reset timer: "in X hr Y min" or "in X min" or "in X hr"
+      "var sra=null,srHM=b.match(/in\\s+(\\d+)\\s*hr?\\s+(\\d+)\\s*min/i)," +
+      "srM=b.match(/in\\s+(\\d+)\\s*min/i),srH=b.match(/in\\s+(\\d+)\\s*hr/i);" +
+      "if(srHM)sra=new Date(Date.now()+(parseInt(srHM[1])*3600+parseInt(srHM[2])*60)*1000).toISOString();" +
+      "else if(srM)sra=new Date(Date.now()+parseInt(srM[1])*60000).toISOString();" +
+      "else if(srH)sra=new Date(Date.now()+parseInt(srH[1])*3600000).toISOString();" +
+      // Weekly reset timer: "Sat 5:29 PM" pattern
+      "var wra=null,wrm=b.match(/(sun|mon|tue|wed|thu|fri|sat)\\w*\\s+(\\d+):(\\d+)\\s*(am|pm)/i);" +
+      "if(wrm){var dn=['sun','mon','tue','wed','thu','fri','sat']," +
+      "td=dn.indexOf(wrm[1].toLowerCase().slice(0,3)),hr=parseInt(wrm[2]),mn=parseInt(wrm[3])," +
+      "pm=wrm[4].toLowerCase()==='pm';if(pm&&hr!==12)hr+=12;if(!pm&&hr===12)hr=0;" +
+      "var nw=new Date(),rs=new Date(nw),da=(td-nw.getDay()+7)%7;" +
+      "if(da===0){var tt=new Date(nw);tt.setHours(hr,mn,0,0);if(tt<=nw)da=7;}" +
+      "rs.setDate(rs.getDate()+da);rs.setHours(hr,mn,0,0);wra=rs.toISOString();}" +
+      // Extra usage
+      "var esm=b.match(/\\$(\\d+(?:\\.\\d{1,2})?)\\s*spent/i),es=esm?parseFloat(esm[1]):null;" +
+      "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
+      "var ep=(esm&&all.length>=4)?all[3]:null;" +
+      // Confirm
+      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
+      "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
+      "if(!confirm(msg))return;" +
+      // Build payload
+      "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
+      "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
+      "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
-      ".then(r=>r.json()).then(d=>{if(d.ok){var s=((d.sessionPct||0)/100).toFixed(2),w=((d.weeklyPct||0)/100).toFixed(2);alert('Synced! '+n+' - Session: '+s+', Weekly: '+w);}else alert('Error: '+(d.error||'Unknown'))})" +
+      ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+Math.round(d.sessionPct||0)+'%, Weekly: '+Math.round(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
       ".catch(e=>alert('Failed: '+e.message))" +
       "})()";
   }
@@ -960,18 +993,20 @@
   }
 
   // ============================================================
-  // RANK SYSTEM (works with decimals, e.g., 1.0 = 100%)
+  // RANK SYSTEM (works with whole percentages, e.g., 100 = 100%)
   // ============================================================
   function getRank(val) {
-    if (val >= 1.0) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
-    if (val >= 0.8) return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
-    if (val >= 0.6) return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
-    if (val >= 0.4) return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
-    if (val >= 0.2) return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
-    return                  { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
+    if (val > 100)  return { title: 'MYTHIC',     icon: '\u{1f525}', cls: 'rank-mythic' };
+    if (val >= 100) return { title: 'LEGENDARY',  icon: '\u{1f451}', cls: 'rank-legendary' };
+    if (val >= 80)  return { title: 'DIAMOND',    icon: '\u{1f48e}', cls: 'rank-diamond' };
+    if (val >= 60)  return { title: 'PLATINUM',   icon: '\u{2b50}',  cls: 'rank-platinum' };
+    if (val >= 40)  return { title: 'GOLD',       icon: '\u{1f31f}', cls: 'rank-gold' };
+    if (val >= 20)  return { title: 'SILVER',     icon: '\u{26a1}',  cls: 'rank-silver' };
+    return                   { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
   }
 
   function getBarClass(pct) {
+    if (pct > 100) return 'overflow';
     if (pct >= 90) return 'max';
     if (pct >= 60) return 'high';
     if (pct >= 30) return 'mid';
@@ -979,6 +1014,7 @@
   }
 
   function pctColor(pct) {
+    if (pct > 100) return '#ff6b6b';
     if (pct >= 90) return '#ef4444';
     if (pct >= 70) return 'var(--accent-orange)';
     if (pct >= 50) return 'var(--accent-purple)';
@@ -1110,11 +1146,11 @@
           </div>
           <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
           <div class="lb-plans">
-            ${(pct/100).toFixed(2)} <span class="sub">(${otherLabel}: ${(otherPct/100).toFixed(2)})</span>
-            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
+            ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>
           </div>
           <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
-          <div class="lb-pct" style="color:${pctColor(pct)}">${(pct/100).toFixed(2)}</div>
+          <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
         </div>
       `;
     }).join('');
@@ -1129,9 +1165,10 @@
     renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
 
     // Stats
-    document.getElementById('statAvgUsage').textContent = ((stats.avgSessionPct || 0) / 100).toFixed(2);
-    document.getElementById('statAvgWeekly').textContent = ((stats.avgWeeklyPct || 0) / 100).toFixed(2);
-    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
+    document.getElementById('statAvgUsage').textContent = Math.round(stats.avgSessionPct || 0) + '%';
+    document.getElementById('statAvgWeekly').textContent = Math.round(stats.avgWeeklyPct || 0) + '%';
+    const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
+    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0) + (totalExtraSpent > 0 ? ' + $' + totalExtraSpent.toFixed(0) : '');
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
     // Teams - use weekly for team battle (or could use session)
@@ -1146,16 +1183,18 @@
       const sessionPct = teamData.avgSessionPct || 0;
 
       // Full team battle
-      document.getElementById(tid + 'Pct').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'Pct').textContent = Math.round(weeklyPct) + '%';
       document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'BarVal').textContent = Math.round(weeklyPct) + '%';
 
       // Mini team battle (show weekly)
-      document.getElementById(tid + 'MiniPct').textContent = (weeklyPct / 100).toFixed(2);
+      document.getElementById(tid + 'MiniPct').textContent = Math.round(weeklyPct) + '%';
     });
 
-    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
+    const updatedText = 'Last updated: ' + new Date().toLocaleString();
+    document.getElementById('lastUpdated').textContent = updatedText;
+    document.getElementById('lastUpdatedTop').textContent = updatedText;
 
     // Restore scroll position after DOM update (prevents iOS Safari scroll jump)
     requestAnimationFrame(() => window.scrollTo(0, scrollY));
@@ -1189,12 +1228,16 @@
     const userId = document.getElementById('logUsageUser').value;
     const sessionPct = parseFloat(document.getElementById('logSessionPct').value);
     const weeklyPct = parseFloat(document.getElementById('logWeeklyPct').value);
+    const extraSpent = parseFloat(document.getElementById('logExtraSpent').value);
+    const extraLimit = parseFloat(document.getElementById('logExtraLimit').value);
     if (!userId) return toast('Select a user', true);
 
     const payload = { userId, source: 'manual' };
     if (!isNaN(sessionPct)) payload.sessionPct = sessionPct;
     if (!isNaN(weeklyPct)) payload.weeklyPct = weeklyPct;
-    if (isNaN(sessionPct) && isNaN(weeklyPct)) return toast('Enter at least one %', true);
+    if (!isNaN(extraSpent)) payload.extraUsageSpent = extraSpent;
+    if (!isNaN(extraLimit)) payload.extraUsageLimit = extraLimit;
+    if (isNaN(sessionPct) && isNaN(weeklyPct) && isNaN(extraSpent) && isNaN(extraLimit)) return toast('Enter at least one value', true);
 
     const d = await apiFetch('/api/usage', {
       method: 'POST',
@@ -1204,6 +1247,8 @@
       closeModal('logUsage');
       document.getElementById('logSessionPct').value = '';
       document.getElementById('logWeeklyPct').value = '';
+      document.getElementById('logExtraSpent').value = '';
+      document.getElementById('logExtraLimit').value = '';
       render();
       toast('Updated!');
     } else {
@@ -1395,7 +1440,7 @@
       const y = padT + (i / gridLines) * ch;
       const val = maxV - (i / gridLines) * range;
       svg += `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#1e293b" stroke-width="1"/>`;
-      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${(val / 100).toFixed(2)}</text>`;
+      svg += `<text x="${padL - 4}" y="${y + 3}" fill="#475569" font-size="9" text-anchor="end">${Math.round(val)}%</text>`;
     }
 
     // Render line(s)
@@ -1422,8 +1467,8 @@
       const x = toX(i);
       const stripW = data.length > 1 ? cw / (data.length - 1) : cw;
       const stripX = x - stripW / 2;
-      const val1 = ((d[valueKey] || 0) / 100).toFixed(2);
-      const val2 = valueKey2 ? ((d[valueKey2] || 0) / 100).toFixed(2) : null;
+      const val1 = Math.round(d[valueKey] || 0) + '%';
+      const val2 = valueKey2 ? Math.round(d[valueKey2] || 0) + '%' : null;
       const lbl = d[labelKey] || '';
       let tooltipText = `${lbl}\\n${label || valueKey}: ${val1}`;
       if (val2 !== null) tooltipText += `\\n${label2 || valueKey2}: ${val2}`;
@@ -1540,9 +1585,11 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${(user.sessionPct / 100).toFixed(2)}</div><div class="detail-stat-label">Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(user.weeklyPct / 100).toFixed(2)}</div><div class="detail-stat-label">Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(user.sessionPct)}%</div><div class="detail-stat-label">Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
+        ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
+        ${user.extraUsageLimit ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">$${user.extraUsageLimit}</div><div class="detail-stat-label">Spend Limit</div></div>` : ''}
       </div>
     </div>`;
 
@@ -1550,11 +1597,11 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(avgSession / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${totalSessions}</div><div class="detail-stat-label">Total Sessions</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${(peakWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Weekly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(avgWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Weeks Tracked</div></div>
       </div>
     </div>`;
@@ -1670,8 +1717,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${(avgSession / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${(avgWeekly / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${teamMembers.length}</div><div class="detail-stat-label">Members</div></div>
       </div>
     </div>`;
@@ -1680,8 +1727,8 @@
     html += `<div class="detail-section">
       <div class="detail-section-title">Summary</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${(peakSession / 100).toFixed(2)}</div><div class="detail-stat-label">Peak Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${(overallAvg / 100).toFixed(2)}</div><div class="detail-stat-label">Avg Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(overallAvg)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${history.length}</div><div class="detail-stat-label">Data Points</div></div>
       </div>
     </div>`;
@@ -1716,7 +1763,7 @@
           return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="closeDetail();setTimeout(()=>openDetail('${escAttr(m.id)}'),350)">
             <div style="flex:1;font-weight:600;font-size:0.85rem;">${escHtml(m.name)}</div>
             <div style="width:72px;">${renderSparkline(m.sessionSparkline || [], pctColor(sPct))}</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${pctColor(sPct)};min-width:50px;text-align:right;">${(sPct/100).toFixed(2)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${pctColor(sPct)};min-width:50px;text-align:right;">${Math.round(sPct)}%</div>
           </div>`;
         }).join('')}
       </div>
@@ -1726,18 +1773,10 @@
   }
 
   // ============================================================
-  // AUTO-REFRESH
+  // AUTO-REFRESH (silent, no loading bar)
   // ============================================================
-  let refreshCounter = 0;
-  const REFRESH_INTERVAL = 30;
-  setInterval(() => {
-    refreshCounter++;
-    document.getElementById('refreshFill').style.width = (refreshCounter / REFRESH_INTERVAL * 100) + '%';
-    if (refreshCounter >= REFRESH_INTERVAL) {
-      refreshCounter = 0;
-      render();
-    }
-  }, 1000);
+  const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+  setInterval(() => render(), REFRESH_INTERVAL_MS);
 
   // ============================================================
   // KEYBOARD SHORTCUTS
@@ -1803,8 +1842,8 @@
       html += `<tr>
         <td>${ts}</td>
         <td style="color:var(--text-dim)">${h.sessionSlot || '--'}</td>
-        <td style="color:var(--accent-orange)">${((h.sessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-purple)">${((h.weeklyPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-orange)">${Math.round(h.sessionPct || 0)}%</td>
+        <td style="color:var(--accent-purple)">${Math.round(h.weeklyPct || 0)}%</td>
         <td>${h.source || '--'}</td>
       </tr>`;
     });
@@ -1820,10 +1859,10 @@
     rows.forEach(w => {
       html += `<tr>
         <td>${w.weekKey || '--'}</td>
-        <td style="color:var(--accent-orange)">${((w.avgSessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-cyan)">${((w.peakSessionPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-purple)">${((w.avgWeeklyPct || 0) / 100).toFixed(2)}</td>
-        <td style="color:var(--accent-pink)">${((w.peakWeeklyPct || 0) / 100).toFixed(2)}</td>
+        <td style="color:var(--accent-orange)">${Math.round(w.avgSessionPct || 0)}%</td>
+        <td style="color:var(--accent-cyan)">${Math.round(w.peakSessionPct || 0)}%</td>
+        <td style="color:var(--accent-purple)">${Math.round(w.avgWeeklyPct || 0)}%</td>
+        <td style="color:var(--accent-pink)">${Math.round(w.peakWeeklyPct || 0)}%</td>
         <td>${w.dataPoints || 0}</td>
       </tr>`;
     });
