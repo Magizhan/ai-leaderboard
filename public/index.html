@@ -955,9 +955,10 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
-      // Session reset timer: "in X hr Y min" or "in X min" or "in X hr"
-      "var sra=null,srHM=b.match(/in\\s+(\\d+)\\s*hr?\\s+(\\d+)\\s*min/i)," +
-      "srM=b.match(/in\\s+(\\d+)\\s*min/i),srH=b.match(/in\\s+(\\d+)\\s*hr/i);" +
+      // Session reset timer — only match in text before "Weekly limits" to avoid Sonnet's timer
+      "var sb=b.split(/Weekly limits/i)[0]||b;" +
+      "var sra=null,srHM=sb.match(/in\\s+(\\d+)\\s*hr?\\s+(\\d+)\\s*min/i)," +
+      "srM=sb.match(/in\\s+(\\d+)\\s*min/i),srH=sb.match(/in\\s+(\\d+)\\s*hr/i);" +
       "if(srHM)sra=new Date(Date.now()+(parseInt(srHM[1])*3600+parseInt(srHM[2])*60)*1000).toISOString();" +
       "else if(srM)sra=new Date(Date.now()+parseInt(srM[1])*60000).toISOString();" +
       "else if(srH)sra=new Date(Date.now()+parseInt(srH[1])*3600000).toISOString();" +

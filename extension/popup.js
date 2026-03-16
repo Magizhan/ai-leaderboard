@@ -242,9 +242,10 @@ function scrapeUsagePage() {
   }
 
   let sessionResetsAt = null;
-  const sessionResetHrMin = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
-  const sessionResetMinOnly = bodyText.match(/in\s+(\d+)\s*min/i);
-  const sessionResetHrOnly = bodyText.match(/in\s+(\d+)\s*hr/i);
+  const sessionSection = bodyText.split(/Weekly limits/i)[0] || bodyText;
+  const sessionResetHrMin = sessionSection.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
+  const sessionResetMinOnly = sessionSection.match(/in\s+(\d+)\s*min/i);
+  const sessionResetHrOnly = sessionSection.match(/in\s+(\d+)\s*hr/i);
   if (sessionResetHrMin) {
     const ms = (parseInt(sessionResetHrMin[1]) * 3600 + parseInt(sessionResetHrMin[2]) * 60) * 1000;
     sessionResetsAt = new Date(Date.now() + ms).toISOString();

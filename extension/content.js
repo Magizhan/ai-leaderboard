@@ -55,11 +55,13 @@ async function scrapeAndSync() {
   let weeklyPct = all.length >= 2 ? all[1] : null;
   if (sessionPct === null && weeklyPct === null) return;
 
-  // Scrape reset timers
+  // Scrape reset timers — use section-specific text to avoid matching Sonnet's timer
+  // Page layout: "Current session ... Resets in X min ... Weekly limits ... Sonnet only ... Resets in 23 hr 49 min"
   let sessionResetsAt = null;
-  const sessionResetHrMin = bodyText.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
-  const sessionResetMinOnly = bodyText.match(/in\s+(\d+)\s*min/i);
-  const sessionResetHrOnly = bodyText.match(/in\s+(\d+)\s*hr/i);
+  const sessionSection = bodyText.split(/Weekly limits/i)[0] || bodyText; // text before "Weekly limits"
+  const sessionResetHrMin = sessionSection.match(/in\s+(\d+)\s*hr?\s+(\d+)\s*min/i);
+  const sessionResetMinOnly = sessionSection.match(/in\s+(\d+)\s*min/i);
+  const sessionResetHrOnly = sessionSection.match(/in\s+(\d+)\s*hr/i);
   if (sessionResetHrMin) {
     const ms = (parseInt(sessionResetHrMin[1]) * 3600 + parseInt(sessionResetHrMin[2]) * 60) * 1000;
     sessionResetsAt = new Date(Date.now() + ms).toISOString();
