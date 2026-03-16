@@ -210,7 +210,18 @@ async function handleApi(path, request, env, url, auth) {
     return deleteUser(id, env);
   }
 
-  if (path === '/api/usage' && method === 'POST') return logUsage(await request.json(), env);
+  if (path === '/api/usage' && method === 'POST') {
+    // Accept text/plain (from sendBeacon) or application/json
+    const ct = request.headers.get('content-type') || '';
+    let body;
+    if (ct.includes('application/json')) {
+      body = await request.json();
+    } else {
+      const text = await request.text();
+      try { body = JSON.parse(text); } catch (e) { return jsonResponse({ error: 'Invalid JSON' }, 400); }
+    }
+    return logUsage(body, env);
+  }
 
   // History endpoints
   if (path.match(/^\/api\/history\/[^/]+$/) && method === 'GET') {

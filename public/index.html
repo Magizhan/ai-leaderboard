@@ -981,9 +981,9 @@
       "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
-      "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
-      ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+Math.round(d.sessionPct||0)+'%, Weekly: '+Math.round(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
-      ".catch(e=>alert('Failed: '+e.message))" +
+      "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
+      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
+      "else alert('Sync failed. Please try again.')" +
       "})()";
   }
 
