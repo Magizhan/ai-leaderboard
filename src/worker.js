@@ -325,6 +325,15 @@ async function logUsage(body, env) {
   }
   if (!user) return jsonResponse({ error: 'User not found. Provide a name to auto-register.' }, 404);
 
+  // Update team if extension sends a different one
+  if (body.team) {
+    const newTeam = sanitizeTeam(body.team);
+    if (newTeam !== user.team) {
+      user.team = newTeam;
+      await kvPut(env, 'users', users);
+    }
+  }
+
   // Get existing usage to preserve values not being updated
   const existing = await kvGet(env, `usage:${user.id}`, {});
 
