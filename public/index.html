@@ -1118,9 +1118,18 @@
     </svg>`;
   }
 
+  /** Compute effective usage: if at 100% with extra usage active, add extra % on top */
+  function effectivePct(u, key) {
+    const base = u[key] || 0;
+    if (base >= 100 && u.extraUsagePct > 0 && key === 'sessionPct') {
+      return 100 + u.extraUsagePct;
+    }
+    return base;
+  }
+
   function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
-    const pct = u[pctKey] || 0;
-    const otherPct = u[otherPctKey] || 0;
+    const pct = effectivePct(u, pctKey);
+    const otherPct = effectivePct(u, otherPctKey);
     const rank = getRank(pct);
     const pos = i + 1;
     const posClass = pos <= 3 ? 'p' + pos : 'px';
@@ -1160,7 +1169,7 @@
 
   function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sparkKey = pctKey === 'sessionPct' ? 'sessionSparkline' : 'weeklySparkline';
-    const sorted = [...users].sort((a, b) => (b[pctKey] || 0) - (a[pctKey] || 0));
+    const sorted = [...users].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
 
     let filtered = sorted;
     if (currentTab === 'ny') filtered = sorted.filter(u => u.team === 'NY');
@@ -1189,8 +1198,8 @@
     // Same users, same order — update each row in-place
     filtered.forEach((u, i) => {
       const row = existingRows[i];
-      const pct = u[pctKey] || 0;
-      const otherPct = u[otherPctKey] || 0;
+      const pct = effectivePct(u, pctKey);
+      const otherPct = effectivePct(u, otherPctKey);
       const rank = getRank(pct);
       const sparkData = u[sparkKey] || [];
       const sparkColor = pctColor(pct);
