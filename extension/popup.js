@@ -278,7 +278,19 @@ function scrapeUsagePage() {
     weeklyResetsAt = reset.toISOString();
   }
 
-  return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt };
+  // Scrape extra usage data
+  // Page order: session % → weekly (All models) % → Sonnet only % → Extra usage %
+  let extraUsageSpent = null;
+  let extraUsageLimit = null;
+  let extraUsagePct = null;
+  const spentMatch = bodyText.match(/\$(\d+(?:\.\d{1,2})?)\s*spent/i);
+  if (spentMatch) extraUsageSpent = parseFloat(spentMatch[1]);
+  const limitMatch = bodyText.match(/\$(\d+(?:,\d{3})*)\s*\n?\s*Monthly spend limit/i);
+  if (limitMatch) extraUsageLimit = parseFloat(limitMatch[1].replace(/,/g, ''));
+  // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
+  if (spentMatch && all.length >= 4) extraUsagePct = all[3];
+
+  return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct };
 }
 
 // ============================================================
@@ -308,6 +320,9 @@ async function doSync() {
     if (scrapedData.weeklyPct !== null) payload.weeklyPct = scrapedData.weeklyPct;
     if (scrapedData.sessionResetsAt) payload.sessionResetsAt = scrapedData.sessionResetsAt;
     if (scrapedData.weeklyResetsAt) payload.weeklyResetsAt = scrapedData.weeklyResetsAt;
+    if (scrapedData.extraUsageSpent !== null) payload.extraUsageSpent = scrapedData.extraUsageSpent;
+    if (scrapedData.extraUsageLimit !== null) payload.extraUsageLimit = scrapedData.extraUsageLimit;
+    if (scrapedData.extraUsagePct !== null) payload.extraUsagePct = scrapedData.extraUsagePct;
 
     const headers = { 'Content-Type': 'application/json' };
     if (jwt) {

@@ -309,6 +309,7 @@
   .lb-team-tag.jp { background: rgba(225, 29, 72, 0.12); color: var(--jp-color); border: 1px solid rgba(225, 29, 72, 0.25); }
 
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
   .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
   .rank-diamond { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
   .rank-platinum { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
@@ -326,6 +327,9 @@
   .lb-usage-fill.mid { background: linear-gradient(90deg, #7c3aed, var(--accent-purple)); }
   .lb-usage-fill.high { background: linear-gradient(90deg, #c2410c, var(--accent-orange)); }
   .lb-usage-fill.max { background: linear-gradient(90deg, #dc2626, #ef4444); animation: maxPulse 2s ease-in-out infinite; }
+  .lb-usage-fill.overflow { background: linear-gradient(90deg, #ef4444, #f97316, #ef4444); background-size: 200% 100%; animation: overflowShift 2s linear infinite; }
+  @keyframes overflowShift { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+  .extra-usage-tag { font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.25); margin-left: 4px; }
   @keyframes maxPulse { 0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); } }
 
   .lb-pct { font-size: 1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; text-align: right; }
@@ -872,6 +876,12 @@
     <div class="form-group"><label>Weekly Usage (%, All Models)</label>
       <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="200" step="1">
     </div>
+    <div class="form-group"><label>Extra Usage $ Spent</label>
+      <input type="number" id="logExtraSpent" placeholder="e.g. 30.90" min="0" step="0.01">
+    </div>
+    <div class="form-group"><label>Extra Usage Spend Limit ($)</label>
+      <input type="number" id="logExtraLimit" placeholder="e.g. 200" min="0" step="1">
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('logUsage')">Cancel</button>
       <button class="btn primary" onclick="logUsageManual()">Update</button>
@@ -945,8 +955,14 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
-      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%'))return;" +
+      "var esm=b.match(/\\$(\\d+(?:\\.\\d{1,2})?)\\s*spent/i),es=esm?parseFloat(esm[1]):null;" +
+      "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
+      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
+      "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
+      "if(!confirm(msg))return;" +
       "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
+      "var ep=(esm&&all.length>=4)?all[3]:null;" +
+      "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
       ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+Math.round(d.sessionPct||0)+'%, Weekly: '+Math.round(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
       ".catch(e=>alert('Failed: '+e.message))" +
@@ -962,15 +978,17 @@
   // RANK SYSTEM (works with whole percentages, e.g., 100 = 100%)
   // ============================================================
   function getRank(val) {
-    if (val >= 100) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
-    if (val >= 80)  return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
-    if (val >= 60)  return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
-    if (val >= 40)  return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
-    if (val >= 20)  return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
-    return                  { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
+    if (val > 100)  return { title: 'MYTHIC',     icon: '\u{1f525}', cls: 'rank-mythic' };
+    if (val >= 100) return { title: 'LEGENDARY',  icon: '\u{1f451}', cls: 'rank-legendary' };
+    if (val >= 80)  return { title: 'DIAMOND',    icon: '\u{1f48e}', cls: 'rank-diamond' };
+    if (val >= 60)  return { title: 'PLATINUM',   icon: '\u{2b50}',  cls: 'rank-platinum' };
+    if (val >= 40)  return { title: 'GOLD',       icon: '\u{1f31f}', cls: 'rank-gold' };
+    if (val >= 20)  return { title: 'SILVER',     icon: '\u{26a1}',  cls: 'rank-silver' };
+    return                   { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
   }
 
   function getBarClass(pct) {
+    if (pct > 100) return 'overflow';
     if (pct >= 90) return 'max';
     if (pct >= 60) return 'high';
     if (pct >= 30) return 'mid';
@@ -978,6 +996,7 @@
   }
 
   function pctColor(pct) {
+    if (pct > 100) return '#ff6b6b';
     if (pct >= 90) return '#ef4444';
     if (pct >= 70) return 'var(--accent-orange)';
     if (pct >= 50) return 'var(--accent-purple)';
@@ -1109,8 +1128,8 @@
           </div>
           <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
           <div class="lb-plans">
-            ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>
-            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}</div>
+            ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+            <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>
           </div>
           <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
           <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
@@ -1130,7 +1149,8 @@
     // Stats
     document.getElementById('statAvgUsage').textContent = Math.round(stats.avgSessionPct || 0) + '%';
     document.getElementById('statAvgWeekly').textContent = Math.round(stats.avgWeeklyPct || 0) + '%';
-    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0);
+    const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
+    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0) + (totalExtraSpent > 0 ? ' + $' + totalExtraSpent.toFixed(0) : '');
     document.getElementById('statUsers').textContent = stats.totalUsers;
 
     // Teams - use weekly for team battle (or could use session)
@@ -1190,12 +1210,16 @@
     const userId = document.getElementById('logUsageUser').value;
     const sessionPct = parseFloat(document.getElementById('logSessionPct').value);
     const weeklyPct = parseFloat(document.getElementById('logWeeklyPct').value);
+    const extraSpent = parseFloat(document.getElementById('logExtraSpent').value);
+    const extraLimit = parseFloat(document.getElementById('logExtraLimit').value);
     if (!userId) return toast('Select a user', true);
 
     const payload = { userId, source: 'manual' };
     if (!isNaN(sessionPct)) payload.sessionPct = sessionPct;
     if (!isNaN(weeklyPct)) payload.weeklyPct = weeklyPct;
-    if (isNaN(sessionPct) && isNaN(weeklyPct)) return toast('Enter at least one %', true);
+    if (!isNaN(extraSpent)) payload.extraUsageSpent = extraSpent;
+    if (!isNaN(extraLimit)) payload.extraUsageLimit = extraLimit;
+    if (isNaN(sessionPct) && isNaN(weeklyPct) && isNaN(extraSpent) && isNaN(extraLimit)) return toast('Enter at least one value', true);
 
     const d = await apiFetch('/api/usage', {
       method: 'POST',
@@ -1205,6 +1229,8 @@
       closeModal('logUsage');
       document.getElementById('logSessionPct').value = '';
       document.getElementById('logWeeklyPct').value = '';
+      document.getElementById('logExtraSpent').value = '';
+      document.getElementById('logExtraLimit').value = '';
       render();
       toast('Updated!');
     } else {
@@ -1544,6 +1570,8 @@
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(user.sessionPct)}%</div><div class="detail-stat-label">Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
+        ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
+        ${user.extraUsageLimit ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">$${user.extraUsageLimit}</div><div class="detail-stat-label">Spend Limit</div></div>` : ''}
       </div>
     </div>`;
 
