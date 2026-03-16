@@ -41,8 +41,14 @@ async function verifyAccessJWT(request, env) {
     return { valid: true, email: 'dev@localhost', skipped: true };
   }
 
-  // Browser/Extension JWT auth
-  const jwt = request.headers.get('CF-Access-JWT-Assertion') || '';
+  // Browser/Extension JWT auth — check header first, then cookie
+  let jwt = request.headers.get('CF-Access-JWT-Assertion') || '';
+  if (!jwt) {
+    // Browser fetch() sends the JWT as CF_Authorization cookie, not a header
+    const cookieHeader = request.headers.get('Cookie') || '';
+    const match = cookieHeader.match(/CF_Authorization=([^\s;]+)/);
+    if (match) jwt = match[1];
+  }
   if (!jwt) {
     return { valid: false, error: 'Authentication required. Please sign in via Cloudflare Access.' };
   }
@@ -141,6 +147,7 @@ export default {
     const ALLOWED_ORIGINS = [
       'https://leaderboard.magizhan.work',
       'https://claude-leaderboard.mags-814.workers.dev',
+      'https://claude.ai',
     ];
     const origin = request.headers.get('Origin') || '';
     // Allow chrome-extension:// origins (extension popup/content scripts)
@@ -157,8 +164,15 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Verify Cloudflare Access JWT on all requests (defense in depth)
-    const auth = await verifyAccessJWT(request, env);
+    // Skip JWT verification for POST /api/usage — this endpoint is called
+    // by the extension's sendBeacon from claude.ai. CF Access Bypass policy
+    // lets it through, so we accept the data without a JWT.
+    const isPublicUsageEndpoint = path === '/api/usage' && request.method === 'POST';
+
+    // Verify Cloudflare Access JWT on all other requests (defense in depth)
+    const auth = isPublicUsageEndpoint
+      ? { valid: true, email: 'anonymous@extension', skipped: true }
+      : await verifyAccessJWT(request, env);
     if (!auth.valid) {
       return jsonResponse({ error: auth.error }, 403, corsHeaders);
     }
