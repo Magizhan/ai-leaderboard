@@ -58,8 +58,10 @@ chrome.storage.local.get(
 
     if (stored.last_sync_time) {
       const ago = timeAgo(stored.last_sync_time);
+      const sessDisp = stored.last_sync_session ? parseFloat(stored.last_sync_session).toFixed(2) : '0';
+      const weekDisp = stored.last_sync_weekly ? parseFloat(stored.last_sync_weekly).toFixed(2) : '0';
       document.getElementById('lastSync').textContent =
-        'Last sync: ' + (stored.last_sync_session || 0) + '% session / ' + (stored.last_sync_weekly || 0) + '% weekly — ' + ago;
+        'Last sync: ' + sessDisp + ' session / ' + weekDisp + ' weekly — ' + ago;
       document.getElementById('lastSync').style.display = 'block';
     }
   }
@@ -149,8 +151,8 @@ function formatMins(m) {
 
     scrapedData = data;
     userEl.textContent = data.name;
-    sessEl.textContent = data.sessionPct !== null ? data.sessionPct + '%' : '--';
-    weekEl.textContent = data.weeklyPct !== null ? data.weeklyPct + '%' : '--';
+    sessEl.textContent = data.sessionPct !== null ? (data.sessionPct / 100).toFixed(2) : '--';
+    weekEl.textContent = data.weeklyPct !== null ? (data.weeklyPct / 100).toFixed(2) : '--';
     preview.classList.add('visible');
 
     setStatus('Auto-sync active on this page. Or sync manually:', 'info');
@@ -243,13 +245,17 @@ async function doSync() {
   setStatus('<span class="spinner"></span> Syncing...', 'loading');
 
   try {
+    // Convert percentages to decimals (e.g., 25% -> 0.25)
+    const sessionDecimal = scrapedData.sessionPct !== null ? (scrapedData.sessionPct / 100).toFixed(2) : null;
+    const weeklyDecimal = scrapedData.weeklyPct !== null ? (scrapedData.weeklyPct / 100).toFixed(2) : null;
+
     const payload = {
       name: scrapedData.name,
       team: teamSelect.value,
       source: 'extension',
     };
-    if (scrapedData.sessionPct !== null) payload.sessionPct = scrapedData.sessionPct;
-    if (scrapedData.weeklyPct !== null) payload.weeklyPct = scrapedData.weeklyPct;
+    if (sessionDecimal !== null) payload.sessionPct = sessionDecimal;
+    if (weeklyDecimal !== null) payload.weeklyPct = weeklyDecimal;
     if (scrapedData.sessionResetsAt) payload.sessionResetsAt = scrapedData.sessionResetsAt;
     if (scrapedData.weeklyResetsAt) payload.weeklyResetsAt = scrapedData.weeklyResetsAt;
 
@@ -261,14 +267,16 @@ async function doSync() {
     const data = await res.json();
 
     if (data.ok) {
+      const sessionDisp = ((data.sessionPct || 0) / 100).toFixed(2);
+      const weeklyDisp = ((data.weeklyPct || 0) / 100).toFixed(2);
       await chrome.storage.local.set({
         claude_lb_team: teamSelect.value,
         last_sync_name: scrapedData.name,
-        last_sync_session: data.sessionPct || 0,
-        last_sync_weekly: data.weeklyPct || 0,
+        last_sync_session: sessionDecimal,
+        last_sync_weekly: weeklyDecimal,
         last_sync_time: Date.now(),
       });
-      setStatus('&#10003; Synced! Session: ' + (data.sessionPct || 0) + '%, Weekly: ' + (data.weeklyPct || 0) + '%', 'success');
+      setStatus('&#10003; Synced! Session: ' + sessionDisp + ', Weekly: ' + weeklyDisp, 'success');
       syncBtn.textContent = 'Synced!';
     } else {
       setStatus('Error: ' + (data.error || 'Unknown'), 'error');

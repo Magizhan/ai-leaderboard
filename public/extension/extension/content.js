@@ -99,8 +99,12 @@ async function scrapeAndSync() {
   const stored = await chrome.storage.local.get(['claude_lb_team']);
   const team = stored.claude_lb_team || 'NY';
 
+  // Convert percentages to decimals (e.g., 25% -> 0.25)
+  const sessionDecimal = sessionPct !== null ? (sessionPct / 100).toFixed(2) : null;
+  const weeklyDecimal = weeklyPct !== null ? (weeklyPct / 100).toFixed(2) : null;
+
   // Don't sync if we just synced the same values recently (avoid spam)
-  const cacheKey = `${name}_${sessionPct}_${weeklyPct}`;
+  const cacheKey = `${name}_${sessionDecimal}_${weeklyDecimal}`;
   const lastSync = await chrome.storage.local.get(['last_sync_key', 'last_sync_time']);
   const now = Date.now();
   if (lastSync.last_sync_key === cacheKey && lastSync.last_sync_time && (now - lastSync.last_sync_time) < 60000) {
@@ -110,8 +114,8 @@ async function scrapeAndSync() {
   // Sync to leaderboard
   try {
     const payload = { name, team, source: 'extension' };
-    if (sessionPct !== null) payload.sessionPct = sessionPct;
-    if (weeklyPct !== null) payload.weeklyPct = weeklyPct;
+    if (sessionDecimal !== null) payload.sessionPct = sessionDecimal;
+    if (weeklyDecimal !== null) payload.weeklyPct = weeklyDecimal;
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;
     if (weeklyResetsAt) payload.weeklyResetsAt = weeklyResetsAt;
 
@@ -123,13 +127,13 @@ async function scrapeAndSync() {
     const data = await res.json();
 
     if (data.ok) {
-      // Save sync state
+      // Save sync state (store decimals for display consistency)
       await chrome.storage.local.set({
         last_sync_key: cacheKey,
         last_sync_time: now,
         last_sync_name: name,
-        last_sync_session: sessionPct,
-        last_sync_weekly: weeklyPct,
+        last_sync_session: sessionDecimal,
+        last_sync_weekly: weeklyDecimal,
       });
       // Notify background to update badge
       chrome.runtime.sendMessage({

@@ -945,10 +945,11 @@
       "while((m=re.exec(b))!==null)all.push(parseInt(m[1]));" +
       "var sp=all[0]||null,wp=all[1]||null;" +
       "if(!sp&&!wp){alert('No usage data found. Open claude.ai/settings/usage first.');return;}" +
-      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%'))return;" +
-      "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
+      "var spDec=sp?(sp/100).toFixed(2):null,wpDec=wp?(wp/100).toFixed(2):null;" +
+      "if(!confirm('Sync as '+n+' ('+t+')?\\nSession: '+(spDec||'--')+'  Weekly: '+(wpDec||'--')))return;" +
+      "var p={name:n,team:t,source:'console'};if(spDec)p.sessionPct=spDec;if(wpDec)p.weeklyPct=wpDec;" +
       "fetch('" + API_BASE + "/api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})" +
-      ".then(r=>r.json()).then(d=>{if(d.ok)alert('Synced! '+n+' - Session: '+(d.sessionPct||0)+'%, Weekly: '+(d.weeklyPct||0)+'%');else alert('Error: '+(d.error||'Unknown'))})" +
+      ".then(r=>r.json()).then(d=>{if(d.ok){var s=((d.sessionPct||0)/100).toFixed(2),w=((d.weeklyPct||0)/100).toFixed(2);alert('Synced! '+n+' - Session: '+s+', Weekly: '+w);}else alert('Error: '+(d.error||'Unknown'))})" +
       ".catch(e=>alert('Failed: '+e.message))" +
       "})()";
   }
@@ -959,14 +960,14 @@
   }
 
   // ============================================================
-  // RANK SYSTEM
+  // RANK SYSTEM (works with decimals, e.g., 1.0 = 100%)
   // ============================================================
-  function getRank(pct) {
-    if (pct >= 100) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
-    if (pct >= 80)  return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
-    if (pct >= 60)  return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
-    if (pct >= 40)  return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
-    if (pct >= 20)  return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
+  function getRank(val) {
+    if (val >= 1.0) return { title: 'LEGENDARY', icon: '\u{1f451}', cls: 'rank-legendary' };
+    if (val >= 0.8) return { title: 'DIAMOND',   icon: '\u{1f48e}', cls: 'rank-diamond' };
+    if (val >= 0.6) return { title: 'PLATINUM',  icon: '\u{2b50}',  cls: 'rank-platinum' };
+    if (val >= 0.4) return { title: 'GOLD',      icon: '\u{1f31f}', cls: 'rank-gold' };
+    if (val >= 0.2) return { title: 'SILVER',    icon: '\u{26a1}',  cls: 'rank-silver' };
     return                  { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
   }
 
