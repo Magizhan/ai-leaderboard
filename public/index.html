@@ -1705,7 +1705,7 @@
     // Session history table
     html += `<div class="detail-section">
       <div class="detail-section-title">Session History Log</div>
-      ${renderSessionHistoryTable(history)}
+      ${renderSessionHistoryTable(history, 20, user)}
     </div>`;
 
     // Weekly history chart
@@ -1919,17 +1919,25 @@
   // ============================================================
   // HISTORY DATA TABLE
   // ============================================================
-  function renderSessionHistoryTable(history, maxRows = 20) {
+  function renderSessionHistoryTable(history, maxRows = 20, user = null) {
     if (!history || history.length === 0) return '<p style="color:var(--text-dim);font-size:0.75rem;">No data yet</p>';
     const rows = history.slice(-maxRows).reverse();
+    // Compute effective session for entries at 100% with extra usage
+    const planCost = (user && user.budget && user.numPlans) ? user.budget / user.numPlans : 200;
+    const extraSpent = user ? (user.extraUsageSpent || 0) : 0;
     let html = `<div class="detail-table-wrap"><table class="detail-table">
       <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Weekly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
-    rows.forEach(h => {
+    rows.forEach((h, i) => {
       const ts = h.timestamp ? new Date(h.timestamp).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '--';
+      let sessionDisplay = Math.round(h.sessionPct || 0);
+      // Apply extra usage to the most recent entry if at 100%
+      if (i === 0 && extraSpent > 0 && sessionDisplay >= 100) {
+        sessionDisplay = Math.round(100 + (extraSpent / planCost) * 100);
+      }
       html += `<tr>
         <td>${ts}</td>
         <td style="color:var(--text-dim)">${h.sessionSlot || '--'}</td>
-        <td style="color:var(--accent-orange)">${Math.round(h.sessionPct || 0)}%</td>
+        <td style="color:var(--accent-orange)">${sessionDisplay}%</td>
         <td style="color:var(--accent-purple)">${Math.round(h.weeklyPct || 0)}%</td>
         <td>${h.source || '--'}</td>
       </tr>`;

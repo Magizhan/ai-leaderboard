@@ -393,13 +393,21 @@ async function logUsage(body, env) {
   }
 
   const lastEntry = history.length > 0 ? history[history.length - 1] : null;
+  const nowMs = Date.now();
 
-  // Detect session reset: if session usage dropped significantly, it's a new session
-  const sessionReset = lastEntry && newSessionPct < (lastEntry.sessionPct || 0) - 1;
-  const weeklyReset = lastEntry && newWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
+  // Determine if session has expired based on sessionResetsAt
+  const sessionExpired = existing.sessionResetsAt && new Date(existing.sessionResetsAt).getTime() <= nowMs;
+  const weeklyExpired = existing.weeklyResetsAt && new Date(existing.weeklyResetsAt).getTime() <= nowMs;
+
+  // Session drop is only valid if session timer has expired
+  const sessionDropped = lastEntry && newSessionPct < (lastEntry.sessionPct || 0) - 1;
+  const weeklyDropped = lastEntry && newWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
+  const sessionReset = sessionDropped && sessionExpired;
+  const weeklyReset = weeklyDropped && weeklyExpired;
 
   if (lastEntry && !sessionReset && !weeklyReset && lastEntry.sessionSlot === currentSlot) {
-    // Same session, no reset: only allow increase (monotonic)
+    // Same session, no valid reset: enforce monotonic increase
+    // If session dropped but timer hasn't expired, keep the higher value
     newSessionPct = Math.max(newSessionPct, lastEntry.sessionPct || 0);
     newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
     // Update in place
@@ -408,8 +416,7 @@ async function logUsage(body, env) {
     lastEntry.timestamp = now;
     lastEntry.source = source;
   } else {
-    // New session slot or reset detected: append new entry
-    // On session reset, only reset session; preserve weekly unless it also reset
+    // New session slot or valid reset: append new entry
     if (sessionReset && !weeklyReset && lastEntry) {
       newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
     }
@@ -577,11 +584,22 @@ async function getLeaderboardData(env) {
     const sessionSparkline = sparklineEntries.map(e => e.sessionPct || 0);
     const weeklySparkline = sparklineEntries.map(e => e.weeklyPct || 0);
 
+    // Auto-reset: if session/weekly timer has expired, show 0 instead of stale value
+    const nowMs = Date.now();
+    let displaySessionPct = usage ? (usage.sessionPct || 0) : 0;
+    let displayWeeklyPct = usage ? (usage.weeklyPct || usage.pct || 0) : 0;
+    if (usage && usage.sessionResetsAt && new Date(usage.sessionResetsAt).getTime() <= nowMs) {
+      displaySessionPct = 0;
+    }
+    if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
+      displayWeeklyPct = 0;
+    }
+
     return {
       ...u,
       budget,
-      sessionPct: usage ? (usage.sessionPct || 0) : 0,
-      weeklyPct: usage ? (usage.weeklyPct || usage.pct || 0) : 0,
+      sessionPct: displaySessionPct,
+      weeklyPct: displayWeeklyPct,
       lastUpdated: usage ? usage.timestamp : null,
       source: usage ? usage.source : null,
       sessionSparkline,
