@@ -1275,8 +1275,8 @@
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
       document.getElementById(tid + 'BarVal').textContent = Math.round(weeklyPct) + '%';
 
-      // Mini team battle (show weekly)
-      document.getElementById(tid + 'MiniPct').textContent = Math.round(weeklyPct) + '%';
+      // Mini team battle (show session — more dynamic/real-time)
+      document.getElementById(tid + 'MiniPct').textContent = Math.round(sessionPct) + '%';
     });
 
     const updatedText = 'Last updated: ' + new Date().toLocaleString();
@@ -1559,7 +1559,7 @@
       const lbl = d[labelKey] || '';
       let tooltipText = `${lbl}\\n${label || valueKey}: ${val1}`;
       if (val2 !== null) tooltipText += `\\n${label2 || valueKey2}: ${val2}`;
-      svg += `<rect x="${stripX.toFixed(1)}" y="${padT}" width="${stripW.toFixed(1)}" height="${ch}" fill="transparent" class="chart-hover-zone" data-idx="${i}" data-tooltip="${escHtml(tooltipText)}" data-x="${x.toFixed(1)}" style="cursor:crosshair;"/>`;
+      svg += `<rect x="${Math.max(0, stripX).toFixed(1)}" y="0" width="${stripW.toFixed(1)}" height="${height}" fill="transparent" class="chart-hover-zone" data-idx="${i}" data-tooltip="${escHtml(tooltipText)}" data-x="${x.toFixed(1)}" style="cursor:crosshair;"/>`;
     });
 
     drawLine(valueKey, color, label);
