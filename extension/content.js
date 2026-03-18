@@ -108,6 +108,10 @@ async function scrapeAndSync() {
   // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
   if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
+  // Detect plan type (Max 5x, Max 20x, etc.)
+  const planMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
+  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 5}` : null;
+
   // Get saved team preference (default to NY)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
   const team = stored.claude_lb_team || 'NY';
@@ -123,6 +127,7 @@ async function scrapeAndSync() {
   // Sync via background service worker (avoids CORS — CF Access blocks OPTIONS preflight)
   try {
     const payload = { name, team, source: 'extension' };
+    if (planType) payload.planType = planType;
     if (sessionPct !== null) payload.sessionPct = sessionPct;
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;
     if (sessionResetsAt) payload.sessionResetsAt = sessionResetsAt;

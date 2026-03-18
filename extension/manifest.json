@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Claude Usage Sync",
-  "version": "1.6",
+  "version": "1.7",
   "description": "Auto-syncs your Claude usage to the team leaderboard on a schedule",
   "permissions": ["activeTab", "scripting", "storage", "alarms", "tabs", "cookies"],
   "host_permissions": ["https://leaderboard.magizhan.work/*"],

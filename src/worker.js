@@ -342,7 +342,7 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType } = body;
   const name = body.name ? sanitizeString(body.name) : undefined;
   const source = sanitizeSource(body.source);
 
@@ -521,6 +521,7 @@ async function logUsage(body, env) {
     extraUsageLimit: newExtraUsageLimit,
     extraUsagePct: newExtraUsagePct,
     weeklyBaseline: newWeeklyBaseline,
+    planType: planType || existing.planType || null,
   };
 
   // Update weekly aggregation
@@ -650,6 +651,7 @@ async function getLeaderboardData(env) {
       extraUsageSpent: usage ? (usage.extraUsageSpent || null) : null,
       extraUsageLimit: usage ? (usage.extraUsageLimit || null) : null,
       extraUsagePct: usage ? (usage.extraUsagePct || null) : null,
+      planType: usage ? (usage.planType || null) : null,
     };
   }));
 

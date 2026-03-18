@@ -291,7 +291,11 @@ function scrapeUsagePage() {
   // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
   if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
-  return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct };
+  // Detect plan type
+  const planMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
+  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 5}` : null;
+
+  return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType };
 }
 
 // ============================================================
@@ -315,6 +319,7 @@ async function doSync() {
     if (scrapedData.extraUsageSpent !== null) payload.extraUsageSpent = scrapedData.extraUsageSpent;
     if (scrapedData.extraUsageLimit !== null) payload.extraUsageLimit = scrapedData.extraUsageLimit;
     if (scrapedData.extraUsagePct !== null) payload.extraUsagePct = scrapedData.extraUsagePct;
+    if (scrapedData.planType) payload.planType = scrapedData.planType;
 
     // Route through background service worker to avoid CORS (CF Access blocks OPTIONS preflight)
     const result = await chrome.runtime.sendMessage({
