@@ -370,9 +370,18 @@ async function logUsage(body, env) {
     newWeeklyPct = parseFloat(pct);
   }
 
-  // Clamp to valid range
-  newSessionPct = Math.max(0, Math.min(200, isNaN(newSessionPct) ? 0 : newSessionPct));
-  newWeeklyPct = Math.max(0, Math.min(200, isNaN(newWeeklyPct) ? 0 : newWeeklyPct));
+  // Clamp to valid range (allow up to numPlans * 100 for multi-plan users)
+  const maxPct = user.numPlans * 100;
+  newSessionPct = Math.max(0, Math.min(maxPct, isNaN(newSessionPct) ? 0 : newSessionPct));
+  newWeeklyPct = Math.max(0, Math.min(maxPct, isNaN(newWeeklyPct) ? 0 : newWeeklyPct));
+
+  // Multi-plan accumulation: add baseline from previous plans
+  // weeklyBaseline stores the peak weekly % from previous plans in the cycle
+  const weeklyBaseline = existing.weeklyBaseline || 0;
+  if (user.numPlans > 1 && weeklyPct !== undefined) {
+    newWeeklyPct = weeklyBaseline + parseFloat(weeklyPct);
+    newWeeklyPct = Math.min(newWeeklyPct, maxPct);
+  }
 
   const now = new Date().toISOString();
   const currentSlot = getSessionSlot(now);
@@ -464,6 +473,24 @@ async function logUsage(body, env) {
     }
   }
 
+  // Multi-plan: detect plan switch (raw weekly dropped) and update baseline
+  let newWeeklyBaseline = weeklyBaseline;
+  if (user.numPlans > 1 && weeklyPct !== undefined) {
+    const rawWeekly = parseFloat(weeklyPct);
+    const prevRawWeekly = (existing.weeklyPct || 0) - weeklyBaseline;
+    // If raw weekly dropped significantly, user switched to a new plan
+    // Save the previous accumulated total as the new baseline
+    if (rawWeekly < prevRawWeekly - 5) {
+      newWeeklyBaseline = existing.weeklyPct || 0;
+      // Recompute with new baseline
+      newWeeklyPct = Math.min(newWeeklyBaseline + rawWeekly, maxPct);
+    }
+  }
+  // Reset weekly baseline when weekly timer expires (new billing week)
+  if (weeklyExpired) {
+    newWeeklyBaseline = 0;
+  }
+
   // Extra usage fields (pass through if provided)
   const newExtraUsageSpent = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : (existing.extraUsageSpent || null);
   const newExtraUsageLimit = extraUsageLimit !== undefined ? parseFloat(extraUsageLimit) : (existing.extraUsageLimit || null);
@@ -482,6 +509,7 @@ async function logUsage(body, env) {
     extraUsageSpent: newExtraUsageSpent,
     extraUsageLimit: newExtraUsageLimit,
     extraUsagePct: newExtraUsagePct,
+    weeklyBaseline: newWeeklyBaseline,
   };
 
   // Update weekly aggregation
