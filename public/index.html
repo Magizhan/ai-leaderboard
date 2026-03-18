@@ -307,6 +307,12 @@
   .lb-team-tag.nc { background: rgba(34, 197, 94, 0.12); color: var(--nc-color); border: 1px solid rgba(34, 197, 94, 0.25); }
   .lb-team-tag.hs { background: rgba(245, 158, 11, 0.12); color: var(--hs-color); border: 1px solid rgba(245, 158, 11, 0.25); }
   .lb-team-tag.jp { background: rgba(225, 29, 72, 0.12); color: var(--jp-color); border: 1px solid rgba(225, 29, 72, 0.25); }
+  .lb-plan-tag {
+    font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .lb-plan-tag.max5 { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+  .lb-plan-tag.max20 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
 
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
@@ -690,7 +696,7 @@
 
     <div class="last-updated" id="lastUpdated">Last updated: --</div>
     <div style="text-align:center;margin-top:12px;padding-bottom:8px;">
-      <a href="/extension/claude-usage-sync.zip" download style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#7c3aed,#3b82f6);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Download Extension v1.6</a>
+      <a href="/extension/claude-usage-sync-v1.7.zip" download style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#7c3aed,#3b82f6);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Download Extension v1.7</a>
       <div style="font-size:0.65rem;color:#475569;margin-top:6px;">Unzip &rarr; chrome://extensions &rarr; Developer mode &rarr; Load unpacked</div>
     </div>
   </div>
@@ -974,16 +980,21 @@
       "var esm=b.match(/\\$(\\d+(?:\\.\\d{1,2})?)\\s*spent/i),es=esm?parseFloat(esm[1]):null;" +
       "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
       "var ep=(esm&&all.length>=4)?all[3]:null;" +
+      // Detect plan type
+      "var pm=b.match(/(Free|Pro|Max)\\s*(?:\\((\\d+)×\\s*usage\\))?/i),pt='unknown',pmt=1;" +
+      "if(pm){if(pm[1].toLowerCase()==='free')pt='free';else if(pm[1].toLowerCase()==='pro')pt='pro';else if(pm[1].toLowerCase()==='max'){pmt=pm[2]?parseInt(pm[2]):5;pt='max'+pmt;}}" +
+      "if(pt==='free'||pt==='pro'){alert('Free/Pro plans not tracked. Only Max plans.');return;}" +
+      "var nf=pmt===5?4:1,nsp=sp!==null?sp/nf:null,nwp=wp!==null?wp/nf:null;" +
       // Confirm
-      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
+      "var pn=pmt===5?' (Max 5× normalized)':' (Max 20×)',msg='Sync as '+n+' ('+t+')'+pn+'?\\nSession: '+(nsp||'--')+'%  Weekly: '+(nwp||'--')+'%';" +
       "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
       "if(!confirm(msg))return;" +
       // Build payload
-      "var p={name:n,team:t,source:'console'};if(sp)p.sessionPct=sp;if(wp)p.weeklyPct=wp;" +
+      "var p={name:n,team:t,source:'console',planType:pt,planMultiplier:pmt};if(nsp!==null)p.sessionPct=nsp;if(nwp!==null)p.weeklyPct=nwp;" +
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
-      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
+      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(nsp||'--')+'%, Weekly: '+(nwp||'--')+'%');" +
       "else alert('Sync failed. Please try again.')" +
       "})()";
   }
@@ -1158,6 +1169,7 @@
           <div class="lb-name">${fire}${escHtml(u.name)}</div>
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
+            ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
             <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
             ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
