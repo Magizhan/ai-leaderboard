@@ -1348,16 +1348,20 @@
     const count = parseInt(document.getElementById('addPlanCount').value) || 1;
     if (!userId) return toast('Select a user', true);
 
-    const d = await apiFetch('/api/users/' + userId + '/plans', {
-      method: 'POST',
-      body: JSON.stringify({ count }),
-    });
-    if (d.ok) {
-      closeModal('addPlan');
-      render(true);
-      toast('Added ' + count + ' plan(s). Now ' + d.numPlans + ' plans.');
-    } else {
-      toast(d.error || 'Failed', true);
+    try {
+      const d = await apiFetch('/api/users/' + userId + '/plans', {
+        method: 'POST',
+        body: JSON.stringify({ count }),
+      });
+      if (d && d.ok) {
+        closeModal('addPlan');
+        render(true);
+        toast('Added ' + count + ' plan(s). Now ' + d.numPlans + ' plans.');
+      } else {
+        toast((d && d.error) || 'Failed to add plans', true);
+      }
+    } catch (e) {
+      toast('Error: ' + e.message, true);
     }
   }
 
@@ -1367,13 +1371,17 @@
     const userName = document.getElementById('removeUserSelect').selectedOptions[0]?.text || 'user';
     if (!confirm('Are you sure you want to permanently remove ' + userName + '? This cannot be undone.')) return;
 
-    const d = await apiFetch('/api/users/' + userId, { method: 'DELETE' });
-    if (d.ok) {
-      closeModal('removeUser');
-      render(true);
-      toast('Removed ' + (d.removed || 'user'));
-    } else {
-      toast(d.error || 'Failed', true);
+    try {
+      const d = await apiFetch('/api/users/' + userId, { method: 'DELETE' });
+      if (d && d.ok) {
+        closeModal('removeUser');
+        render(true);
+        toast('Removed ' + (d.removed || 'user'));
+      } else {
+        toast((d && d.error) || 'Failed', true);
+      }
+    } catch (e) {
+      toast('Error: ' + e.message, true);
     }
   }
 
