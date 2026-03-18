@@ -1733,9 +1733,17 @@
       </div>`;
     }
 
-    // Week start config
+    // Settings
     html += `<div class="detail-section">
       <div class="detail-section-title">Settings</div>
+      <div class="detail-config">
+        <label>Plans:</label>
+        <select onchange="updateNumPlans('${escAttr(user.id)}', this.value)">
+          ${[1,2,3,4,5].map(n =>
+            `<option value="${n}" ${n === (user.numPlans || 1) ? 'selected' : ''}>${n} plan${n > 1 ? 's' : ''} ($${n * 200}/mo)</option>`
+          ).join('')}
+        </select>
+      </div>
       <div class="detail-config">
         <label>Week starts on:</label>
         <select onchange="updateWeekStart('${escAttr(user.id)}', this.value)">
@@ -1755,12 +1763,41 @@
     detailPanelOpen = false;
   }
 
+  async function updateNumPlans(userId, numPlans) {
+    try {
+      const users = await apiFetch('/api/users');
+      const user = users.find(u => u.id === userId);
+      if (!user) return toast('User not found', true);
+      const diff = parseInt(numPlans) - (user.numPlans || 1);
+      if (diff > 0) {
+        await apiFetch('/api/users/' + userId + '/plans', {
+          method: 'POST',
+          body: JSON.stringify({ count: diff }),
+        });
+      } else if (diff < 0) {
+        // Set directly via config endpoint
+        await apiFetch('/api/users/' + userId + '/config', {
+          method: 'PUT',
+          body: JSON.stringify({ numPlans: parseInt(numPlans) }),
+        });
+      }
+      toast('Plans updated to ' + numPlans);
+      render(true);
+    } catch (e) {
+      toast('Error: ' + e.message, true);
+    }
+  }
+
   async function updateWeekStart(userId, day) {
-    await apiFetch('/api/users/' + userId + '/config', {
-      method: 'PUT',
-      body: JSON.stringify({ weekStartDay: day }),
-    });
-    toast('Week start updated to ' + day);
+    try {
+      await apiFetch('/api/users/' + userId + '/config', {
+        method: 'PUT',
+        body: JSON.stringify({ weekStartDay: day }),
+      });
+      toast('Week start updated to ' + day);
+    } catch (e) {
+      toast('Error: ' + e.message, true);
+    }
   }
 
   // ============================================================

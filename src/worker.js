@@ -282,6 +282,17 @@ async function setUserConfig(id, body, env) {
   if (body.weekStartDay && validDays.includes(body.weekStartDay.toLowerCase())) {
     existing.weekStartDay = body.weekStartDay.toLowerCase();
   }
+  // Allow setting numPlans via config endpoint
+  if (body.numPlans !== undefined) {
+    const numPlans = Math.max(1, Math.min(10, parseInt(body.numPlans) || 1));
+    const users = await kvGet(env, 'users', []);
+    const user = users.find(u => u.id === id);
+    if (user) {
+      user.numPlans = numPlans;
+      await kvPut(env, 'users', users);
+      invalidateLeaderboardCache(env);
+    }
+  }
   await kvPut(env, `userconfig:${id}`, existing);
   return jsonResponse({ ok: true, ...existing });
 }
