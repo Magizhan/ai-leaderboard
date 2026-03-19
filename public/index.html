@@ -980,21 +980,16 @@
       "var esm=b.match(/\\$(\\d+(?:\\.\\d{1,2})?)\\s*spent/i),es=esm?parseFloat(esm[1]):null;" +
       "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
       "var ep=(esm&&all.length>=4)?all[3]:null;" +
-      // Detect plan type
-      "var pm=b.match(/(Free|Pro|Max)\\s*(?:\\((\\d+)×\\s*usage\\))?/i),pt='unknown',pmt=1;" +
-      "if(pm){if(pm[1].toLowerCase()==='free')pt='free';else if(pm[1].toLowerCase()==='pro')pt='pro';else if(pm[1].toLowerCase()==='max'){pmt=pm[2]?parseInt(pm[2]):20;pt='max'+pmt;}}" +
-      "if(pt==='free'||pt==='pro'){alert('Free/Pro plans not tracked. Only Max plans.');return;}" +
-      "var nf=pmt===5?4:1,nsp=sp!==null?sp/nf:null,nwp=wp!==null?wp/nf:null;" +
       // Confirm
-      "var pn=pmt===5?' (Max 5× normalized)':' (Max 20×)',msg='Sync as '+n+' ('+t+')'+pn+'?\\nSession: '+(nsp||'--')+'%  Weekly: '+(nwp||'--')+'%';" +
+      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
       "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
       "if(!confirm(msg))return;" +
-      // Build payload
-      "var p={name:n,team:t,source:'console',planType:pt,planMultiplier:pmt};if(nsp!==null)p.sessionPct=nsp;if(nwp!==null)p.weeklyPct=nwp;" +
+      // Build payload — send raw values, server handles per-plan tracking
+      "var p={name:n,team:t,source:'console'};if(sp!==null)p.sessionPct=sp;if(wp!==null)p.weeklyPct=wp;" +
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
-      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(nsp||'--')+'%, Weekly: '+(nwp||'--')+'%');" +
+      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
       "else alert('Sync failed. Please try again.')" +
       "})()";
   }

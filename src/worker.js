@@ -370,42 +370,124 @@ async function logUsage(body, env) {
     }
   }
 
-  // Get existing usage to preserve values not being updated
+  // Get existing usage record
   const existing = await kvGet(env, `usage:${user.id}`, {});
+  const now = new Date().toISOString();
+  const nowMs = Date.now();
+  const numPlans = user.numPlans || 1;
 
-  let newSessionPct = sessionPct !== undefined ? parseFloat(sessionPct) : (existing.sessionPct || 0);
-  let newWeeklyPct = weeklyPct !== undefined ? parseFloat(weeklyPct) : (pct !== undefined ? parseFloat(pct) : (existing.weeklyPct || 0));
+  // --- Migrate old flat format to per-plan format ---
+  let plans = existing.plans ? existing.plans.map(p => ({ ...p })) : null;
+  let activePlan = existing.activePlan || 0;
+
+  if (!plans) {
+    // Migration: create plans array from flat fields
+    const migrated = {
+      sessionPct: existing.sessionPct || 0,
+      weeklyPct: existing.weeklyPct || 0,
+      sessionResetsAt: existing.sessionResetsAt || null,
+      weeklyResetsAt: existing.weeklyResetsAt || null,
+      planType: existing.planType || null,
+      extraUsageSpent: existing.extraUsageSpent || null,
+      extraUsageLimit: existing.extraUsageLimit || null,
+      extraUsagePct: existing.extraUsagePct || null,
+      lastSyncAt: existing.timestamp || null,
+    };
+    plans = [migrated];
+    // Pad to numPlans
+    while (plans.length < numPlans) {
+      plans.push({
+        sessionPct: 0, weeklyPct: 0,
+        sessionResetsAt: null, weeklyResetsAt: null,
+        planType: null, extraUsageSpent: null, extraUsageLimit: null, extraUsagePct: null,
+        lastSyncAt: null,
+      });
+    }
+    activePlan = 0;
+  }
+
+  // Ensure plans array matches numPlans (pad if user added plans)
+  while (plans.length < numPlans) {
+    plans.push({
+      sessionPct: 0, weeklyPct: 0,
+      sessionResetsAt: null, weeklyResetsAt: null,
+      planType: null, extraUsageSpent: null, extraUsageLimit: null, extraUsagePct: null,
+      lastSyncAt: null,
+    });
+  }
+
+  // --- Parse incoming values ---
+  let incomingSession = sessionPct !== undefined ? parseFloat(sessionPct) : undefined;
+  let incomingWeekly = weeklyPct !== undefined ? parseFloat(weeklyPct) : (pct !== undefined ? parseFloat(pct) : undefined);
 
   // Backwards compat: if only `pct` was sent (old bookmarklet), treat as weeklyPct
   if (pct !== undefined && weeklyPct === undefined && sessionPct === undefined) {
-    newWeeklyPct = parseFloat(pct);
+    incomingWeekly = parseFloat(pct);
   }
 
-  // Clamp to valid range (allow up to numPlans * 100 for multi-plan users)
-  const maxPct = user.numPlans * 100;
-  newSessionPct = Math.max(0, Math.min(maxPct, isNaN(newSessionPct) ? 0 : newSessionPct));
-  newWeeklyPct = Math.max(0, Math.min(maxPct, isNaN(newWeeklyPct) ? 0 : newWeeklyPct));
+  // Clamp individual plan values to 0-100
+  if (incomingSession !== undefined) incomingSession = Math.max(0, Math.min(100, isNaN(incomingSession) ? 0 : incomingSession));
+  if (incomingWeekly !== undefined) incomingWeekly = Math.max(0, Math.min(100, isNaN(incomingWeekly) ? 0 : incomingWeekly));
 
-  // Multi-plan accumulation: add baseline from previous plans
-  // weeklyBaseline stores the peak weekly % from previous plans in the cycle
-  const weeklyBaseline = existing.weeklyBaseline || 0;
-  if (user.numPlans > 1 && weeklyPct !== undefined) {
-    newWeeklyPct = weeklyBaseline + parseFloat(weeklyPct);
-    newWeeklyPct = Math.min(newWeeklyPct, maxPct);
+  // --- Determine if timers expired (check active plan's timers) ---
+  const activePlanData = plans[activePlan] || plans[0];
+  const sessionExpired = activePlanData.sessionResetsAt && new Date(activePlanData.sessionResetsAt).getTime() <= nowMs;
+  const weeklyExpired = activePlanData.weeklyResetsAt && new Date(activePlanData.weeklyResetsAt).getTime() <= nowMs;
+
+  // --- Weekly reset: zero ALL plan slots ---
+  if (weeklyExpired) {
+    for (const p of plans) {
+      p.weeklyPct = 0;
+    }
   }
 
-  const now = new Date().toISOString();
-  const currentSlot = getSessionSlot(now);
+  // --- Plan switch detection (numPlans > 1) ---
+  if (numPlans > 1 && incomingWeekly !== undefined) {
+    const prevWeekly = activePlanData.weeklyPct || 0;
+    const weeklyDropped = incomingWeekly < prevWeekly - 5;
+    // Weekly dropped significantly but weekly timer NOT expired = plan switch
+    if (weeklyDropped && !weeklyExpired) {
+      // Find best matching plan slot (closest weeklyPct) or LRU
+      let bestIdx = -1;
+      let bestDiff = Infinity;
+      for (let i = 0; i < plans.length; i++) {
+        if (i === activePlan) continue;
+        const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIdx = i;
+        }
+      }
+      // If no close match found (diff > 20), use LRU (oldest lastSyncAt)
+      if (bestIdx === -1 || bestDiff > 20) {
+        let lruIdx = -1;
+        let lruTime = Infinity;
+        for (let i = 0; i < plans.length; i++) {
+          if (i === activePlan) continue;
+          const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
+          if (t < lruTime) {
+            lruTime = t;
+            lruIdx = i;
+          }
+        }
+        if (lruIdx >= 0) bestIdx = lruIdx;
+      }
+      if (bestIdx >= 0) activePlan = bestIdx;
+    }
+  }
 
-  // --- Monotonic increase within same session slot ---
-  // Load history to check current slot values
+  // Get the plan slot we're updating
+  const plan = plans[activePlan] || plans[0];
+
+  // --- Monotonic increase within same session (using history) ---
   let history = await kvGet(env, `history:${user.id}`, []);
+  const currentSlot = getSessionSlot(now);
 
   // Lazy migration: seed history with existing usage if empty
   if (history.length === 0 && existing.timestamp) {
     history.push({
-      sessionPct: existing.sessionPct || 0,
-      weeklyPct: existing.weeklyPct || 0,
+      sessionPct: existing.sessionPct || existing.combinedSessionPct || 0,
+      weeklyPct: existing.weeklyPct || existing.combinedWeeklyPct || 0,
       timestamp: existing.timestamp,
       sessionSlot: getSessionSlot(existing.timestamp),
       source: existing.source || 'manual',
@@ -413,115 +495,126 @@ async function logUsage(body, env) {
   }
 
   const lastEntry = history.length > 0 ? history[history.length - 1] : null;
-  const nowMs = Date.now();
 
-  // Determine if session has expired based on sessionResetsAt
-  const sessionExpired = existing.sessionResetsAt && new Date(existing.sessionResetsAt).getTime() <= nowMs;
-  const weeklyExpired = existing.weeklyResetsAt && new Date(existing.weeklyResetsAt).getTime() <= nowMs;
+  // Update active plan's values
+  if (incomingSession !== undefined) {
+    if (sessionExpired) {
+      plan.sessionPct = incomingSession;
+    } else if (lastEntry && lastEntry.sessionSlot === currentSlot) {
+      // Same session slot: enforce monotonic increase for active plan only
+      plan.sessionPct = Math.max(incomingSession, plan.sessionPct || 0);
+    } else {
+      plan.sessionPct = incomingSession;
+    }
+  }
 
-  // Session drop is only valid if session timer has expired
-  const sessionDropped = lastEntry && newSessionPct < (lastEntry.sessionPct || 0) - 1;
-  const weeklyDropped = lastEntry && newWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
-  const sessionReset = sessionDropped && sessionExpired;
-  const weeklyReset = weeklyDropped && weeklyExpired;
+  if (incomingWeekly !== undefined) {
+    if (weeklyExpired) {
+      // Already zeroed above; set to incoming
+      plan.weeklyPct = incomingWeekly;
+    } else if (lastEntry && lastEntry.sessionSlot === currentSlot) {
+      // Same session slot: enforce monotonic increase for active plan only
+      plan.weeklyPct = Math.max(incomingWeekly, plan.weeklyPct || 0);
+    } else {
+      plan.weeklyPct = incomingWeekly;
+    }
+  }
 
-  if (lastEntry && !sessionReset && !weeklyReset && lastEntry.sessionSlot === currentSlot) {
-    // Same session, no valid reset: enforce monotonic increase
-    // If session dropped but timer hasn't expired, keep the higher value
-    newSessionPct = Math.max(newSessionPct, lastEntry.sessionPct || 0);
-    newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
-    // Update in place
-    lastEntry.sessionPct = newSessionPct;
-    lastEntry.weeklyPct = newWeeklyPct;
+  // --- Update plan metadata ---
+  if (sessionResetsAt) plan.sessionResetsAt = sessionResetsAt;
+  if (weeklyResetsAt) plan.weeklyResetsAt = weeklyResetsAt;
+  if (planType) plan.planType = planType;
+  if (extraUsageSpent !== undefined) plan.extraUsageSpent = parseFloat(extraUsageSpent);
+  if (extraUsageLimit !== undefined) plan.extraUsageLimit = parseFloat(extraUsageLimit);
+  if (extraUsagePct !== undefined) plan.extraUsagePct = parseFloat(extraUsagePct);
+  plan.lastSyncAt = now;
+
+  // --- Compute combined totals ---
+  // sessionPct = active plan's session (only one session active at a time)
+  const combinedSessionPct = plan.sessionPct || 0;
+  // weeklyPct = sum of all plans' weekly
+  const combinedWeeklyPct = plans.reduce((sum, p) => sum + (p.weeklyPct || 0), 0);
+  // totalExtraUsageSpent = sum of all plans
+  const totalExtraUsageSpent = plans.reduce((sum, p) => sum + (p.extraUsageSpent || 0), 0);
+
+  // --- Infer reset times (from active plan) ---
+  let sessionResetSource = existing.sessionResetSource || null;
+  let weeklyResetSource = existing.weeklyResetSource || null;
+
+  if (sessionResetsAt) {
+    sessionResetSource = 'extension';
+  } else if (incomingSession !== undefined && existing.plans) {
+    const prevSession = (existing.plans[existing.activePlan || 0] || {}).sessionPct || 0;
+    if (incomingSession < prevSession - 1) {
+      plan.sessionResetsAt = new Date(nowMs + 5 * 3600000).toISOString();
+      sessionResetSource = 'estimated';
+    }
+  }
+
+  if (weeklyResetsAt) {
+    weeklyResetSource = 'extension';
+  } else if (incomingWeekly !== undefined && existing.plans) {
+    const prevWeekly = (existing.plans[existing.activePlan || 0] || {}).weeklyPct || 0;
+    if (incomingWeekly < prevWeekly - 1 && weeklyExpired) {
+      plan.weeklyResetsAt = new Date(nowMs + 7 * 86400000).toISOString();
+      weeklyResetSource = 'estimated';
+    }
+  }
+
+  // --- Update history ---
+  const sessionDroppedHist = lastEntry && combinedSessionPct < (lastEntry.sessionPct || 0) - 1;
+  const weeklyDroppedHist = lastEntry && combinedWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
+  const sessionResetHist = sessionDroppedHist && sessionExpired;
+  const weeklyResetHist = weeklyDroppedHist && weeklyExpired;
+
+  let histSessionPct = combinedSessionPct;
+  let histWeeklyPct = combinedWeeklyPct;
+
+  if (lastEntry && !sessionResetHist && !weeklyResetHist && lastEntry.sessionSlot === currentSlot) {
+    histSessionPct = Math.max(combinedSessionPct, lastEntry.sessionPct || 0);
+    histWeeklyPct = Math.max(combinedWeeklyPct, lastEntry.weeklyPct || 0);
+    lastEntry.sessionPct = histSessionPct;
+    lastEntry.weeklyPct = histWeeklyPct;
     lastEntry.timestamp = now;
     lastEntry.source = source;
   } else {
-    // New session slot or valid reset: append new entry
-    if (sessionReset && !weeklyReset && lastEntry) {
-      newWeeklyPct = Math.max(newWeeklyPct, lastEntry.weeklyPct || 0);
+    if (sessionResetHist && !weeklyResetHist && lastEntry) {
+      histWeeklyPct = Math.max(combinedWeeklyPct, lastEntry.weeklyPct || 0);
     }
     history.push({
-      sessionPct: newSessionPct,
-      weeklyPct: newWeeklyPct,
+      sessionPct: histSessionPct,
+      weeklyPct: histWeeklyPct,
       timestamp: now,
       sessionSlot: currentSlot,
       source,
     });
   }
 
-  // Trim history to max entries
   if (history.length > MAX_HISTORY) {
     history = history.slice(history.length - MAX_HISTORY);
   }
 
-  // --- Infer reset times from usage drops (fallback when extension doesn't provide them) ---
-  let inferredSessionResetsAt = existing.sessionResetsAt || null;
-  let inferredWeeklyResetsAt = existing.weeklyResetsAt || null;
-  let sessionResetSource = existing.sessionResetSource || null;
-  let weeklyResetSource = existing.weeklyResetSource || null;
-
-  if (sessionResetsAt) {
-    // Extension provided real data
-    inferredSessionResetsAt = sessionResetsAt;
-    sessionResetSource = 'extension';
-  } else if (sessionPct !== undefined && existing.sessionPct !== undefined) {
-    // Detect session reset: usage dropped = new session started
-    if (parseFloat(sessionPct) < (existing.sessionPct || 0) - 1) {
-      // New session just started, estimate reset at now + 5 hours
-      inferredSessionResetsAt = new Date(Date.now() + 5 * 3600000).toISOString();
-      sessionResetSource = 'estimated';
-    }
-  }
-
-  if (weeklyResetsAt) {
-    inferredWeeklyResetsAt = weeklyResetsAt;
-    weeklyResetSource = 'extension';
-  } else if (weeklyPct !== undefined && existing.weeklyPct !== undefined) {
-    // Detect weekly reset: weekly usage dropped = new week started
-    if (parseFloat(weeklyPct) < (existing.weeklyPct || 0) - 1) {
-      inferredWeeklyResetsAt = new Date(Date.now() + 7 * 86400000).toISOString();
-      weeklyResetSource = 'estimated';
-    }
-  }
-
-  // Multi-plan: detect plan switch (raw weekly dropped) and update baseline
-  let newWeeklyBaseline = weeklyBaseline;
-  if (user.numPlans > 1 && weeklyPct !== undefined) {
-    const rawWeekly = parseFloat(weeklyPct);
-    const prevRawWeekly = (existing.weeklyPct || 0) - weeklyBaseline;
-    // If raw weekly dropped significantly, user switched to a new plan
-    // Save the previous accumulated total as the new baseline
-    if (rawWeekly < prevRawWeekly - 5) {
-      newWeeklyBaseline = existing.weeklyPct || 0;
-      // Recompute with new baseline
-      newWeeklyPct = Math.min(newWeeklyBaseline + rawWeekly, maxPct);
-    }
-  }
-  // Reset weekly baseline when weekly timer expires (new billing week)
-  if (weeklyExpired) {
-    newWeeklyBaseline = 0;
-  }
-
-  // Extra usage fields (pass through if provided)
-  const newExtraUsageSpent = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : (existing.extraUsageSpent || null);
-  const newExtraUsageLimit = extraUsageLimit !== undefined ? parseFloat(extraUsageLimit) : (existing.extraUsageLimit || null);
-  const newExtraUsagePct = extraUsagePct !== undefined ? parseFloat(extraUsagePct) : (existing.extraUsagePct || null);
-
+  // --- Build usage data ---
   const usageData = {
     userId: user.id,
-    sessionPct: newSessionPct,
-    weeklyPct: newWeeklyPct,
+    activePlan,
+    plans,
+    combinedSessionPct,
+    combinedWeeklyPct,
+    totalExtraUsageSpent,
+    // Top-level backward compat fields
+    sessionPct: combinedSessionPct,
+    weeklyPct: combinedWeeklyPct,
     timestamp: now,
     source,
-    sessionResetsAt: inferredSessionResetsAt,
-    weeklyResetsAt: inferredWeeklyResetsAt,
+    sessionResetsAt: plan.sessionResetsAt || null,
+    weeklyResetsAt: plan.weeklyResetsAt || null,
     sessionResetSource,
     weeklyResetSource,
-    extraUsageSpent: newExtraUsageSpent,
-    extraUsageLimit: newExtraUsageLimit,
-    extraUsagePct: newExtraUsagePct,
-    weeklyBaseline: newWeeklyBaseline,
-    planType: planType || existing.planType || null,
+    planType: plan.planType || null,
+    extraUsageSpent: plan.extraUsageSpent || null,
+    extraUsageLimit: plan.extraUsageLimit || null,
+    extraUsagePct: plan.extraUsagePct || null,
   };
 
   // Update weekly aggregation
@@ -612,6 +705,8 @@ async function getLeaderboardData(env) {
   const users = await kvGet(env, 'users', []);
   const planCost = parseInt(env.PLAN_COST || '200');
 
+  const nowMs = Date.now();
+
   const board = await Promise.all(users.map(async (u) => {
     const [usage, history] = await Promise.all([
       kvGet(env, `usage:${u.id}`, null),
@@ -624,15 +719,29 @@ async function getLeaderboardData(env) {
     const sessionSparkline = sparklineEntries.map(e => e.sessionPct || 0);
     const weeklySparkline = sparklineEntries.map(e => e.weeklyPct || 0);
 
-    // Auto-reset: if session/weekly timer has expired, show 0 instead of stale value
-    const nowMs = Date.now();
-    let displaySessionPct = usage ? (usage.sessionPct || 0) : 0;
-    let displayWeeklyPct = usage ? (usage.weeklyPct || usage.pct || 0) : 0;
+    // Read combined values (new format) or fall back to flat fields (unmigrated)
+    let displaySessionPct = usage
+      ? (usage.combinedSessionPct !== undefined ? usage.combinedSessionPct : (usage.sessionPct || 0))
+      : 0;
+    let displayWeeklyPct = usage
+      ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
+      : 0;
+
+    // Auto-reset: if session timer expired, show 0 for combined session
     if (usage && usage.sessionResetsAt && new Date(usage.sessionResetsAt).getTime() <= nowMs) {
       displaySessionPct = 0;
     }
     if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
       displayWeeklyPct = 0;
+    }
+
+    // Determine planType from active plan or top-level
+    let activePlanType = null;
+    if (usage && usage.plans && usage.plans.length > 0) {
+      const ap = usage.plans[usage.activePlan || 0];
+      activePlanType = ap ? (ap.planType || null) : null;
+    } else if (usage) {
+      activePlanType = usage.planType || null;
     }
 
     return {
@@ -648,37 +757,29 @@ async function getLeaderboardData(env) {
       weeklyResetsAt: usage ? (usage.weeklyResetsAt || null) : null,
       sessionResetSource: usage ? (usage.sessionResetSource || null) : null,
       weeklyResetSource: usage ? (usage.weeklyResetSource || null) : null,
-      extraUsageSpent: usage ? (usage.extraUsageSpent || null) : null,
+      extraUsageSpent: usage ? (usage.totalExtraUsageSpent || usage.extraUsageSpent || null) : null,
       extraUsageLimit: usage ? (usage.extraUsageLimit || null) : null,
       extraUsagePct: usage ? (usage.extraUsagePct || null) : null,
-      planType: usage ? (usage.planType || null) : null,
+      planType: activePlanType,
+      plans: usage ? (usage.plans || null) : null,
     };
   }));
 
-  // Normalize: Max 5x = 1/4 capacity of Max 20x
-  function normFactor(planType) { return planType === 'max5' ? 4 : 1; }
-  function normPct(u) {
-    const nf = normFactor(u.planType);
-    return { sessionPct: u.sessionPct / nf, weeklyPct: u.weeklyPct / nf };
-  }
-
   function teamStats(teamUsers) {
-    const normed = teamUsers.map(normPct);
     return {
       members: teamUsers.length,
-      avgSessionPct: normed.length > 0 ? normed.reduce((s, n) => s + n.sessionPct, 0) / normed.length : 0,
-      avgWeeklyPct: normed.length > 0 ? normed.reduce((s, n) => s + n.weeklyPct, 0) / normed.length : 0,
+      avgSessionPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.sessionPct, 0) / teamUsers.length : 0,
+      avgWeeklyPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.weeklyPct, 0) / teamUsers.length : 0,
     };
   }
 
-  const allNormed = board.map(normPct);
   const result = {
     users: board,
     stats: {
       totalUsers: board.length,
       totalBudget: board.reduce((s, u) => s + u.budget, 0),
-      avgSessionPct: allNormed.length > 0 ? allNormed.reduce((s, n) => s + n.sessionPct, 0) / allNormed.length : 0,
-      avgWeeklyPct: allNormed.length > 0 ? allNormed.reduce((s, n) => s + n.weeklyPct, 0) / allNormed.length : 0,
+      avgSessionPct: board.length > 0 ? board.reduce((s, u) => s + u.sessionPct, 0) / board.length : 0,
+      avgWeeklyPct: board.length > 0 ? board.reduce((s, u) => s + u.weeklyPct, 0) / board.length : 0,
     },
     teams: {
       NY: teamStats(board.filter(u => u.team === 'NY')),
