@@ -453,9 +453,11 @@ async function logUsage(body, env) {
 
   if (!plans) {
     // Migration: create plans array from flat fields
+    // Strip weeklyBaseline and cap at 100 (old hack inflated values)
+    const rawWeekly = (existing.weeklyPct || 0) - (existing.weeklyBaseline || 0);
     const migrated = {
-      sessionPct: existing.sessionPct || 0,
-      weeklyPct: existing.weeklyPct || 0,
+      sessionPct: Math.min(existing.sessionPct || 0, 100),
+      weeklyPct: Math.max(0, Math.min(rawWeekly, 100)),
       sessionResetsAt: existing.sessionResetsAt || null,
       weeklyResetsAt: existing.weeklyResetsAt || null,
       planType: existing.planType || null,
@@ -599,6 +601,10 @@ async function logUsage(body, env) {
   if (extraUsageLimit !== undefined) plan.extraUsageLimit = parseFloat(extraUsageLimit);
   if (extraUsagePct !== undefined) plan.extraUsagePct = parseFloat(extraUsagePct);
   plan.lastSyncAt = now;
+
+  // Cap per-plan values at 100 (single plan can't exceed its own limit)
+  plan.sessionPct = Math.min(plan.sessionPct || 0, 100);
+  plan.weeklyPct = Math.min(plan.weeklyPct || 0, 100);
 
   // --- Compute combined totals ---
   // sessionPct = active plan's session (only one session active at a time)

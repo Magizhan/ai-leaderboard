@@ -1141,13 +1141,8 @@
   function effectivePct(u, key) {
     const raw = u[key] || 0;
     const nf = planNormFactor(u);
-    const norm = raw / nf;
-
-    if (raw >= 100 && u.extraUsageSpent > 0 && key === 'sessionPct') {
-      const planCost = (u.budget && u.numPlans) ? u.budget / u.numPlans : 200;
-      return norm + (u.extraUsageSpent / planCost) * 100 / nf;
-    }
-    return norm;
+    return raw / nf;
+    // Extra usage shown as a tag, not baked into the percentage
   }
 
   /** Format percentage as multiplier: 100% → "1.0x", 25% → "0.25x" */
