@@ -227,6 +227,56 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 // ============================================================
+// Plan detection — scrape billing page for plan type
+// ============================================================
+
+/**
+ * Open claude.ai/settings/billing in a hidden tab, scrape plan info,
+ * cache in chrome.storage.local. Runs on install/update and periodically.
+ */
+async function detectPlanType() {
+  let tab;
+  try {
+    tab = await chrome.tabs.create({
+      url: 'https://claude.ai/settings/billing',
+      active: false,
+    });
+  } catch (e) {
+    return;
+  }
+
+  // Wait for page to load
+  await new Promise(r => setTimeout(r, 5000));
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const text = document.body.innerText || '';
+        // Match "5x more usage" or "20x more usage"
+        const match = text.match(/(\d+)x\s+more\s+usage/i);
+        if (match) return `max${parseInt(match[1])}`;
+        // Match "Max (5× usage)" or "Max (20× usage)"
+        const match2 = text.match(/Max\s*\((\d+)[×x]\s*usage\)/i);
+        if (match2) return `max${parseInt(match2[1])}`;
+        // Match "Max plan" without multiplier
+        if (text.match(/Max\s+plan/i)) return 'max20';
+        return null;
+      },
+    });
+
+    const planType = results[0]?.result;
+    if (planType) {
+      await chrome.storage.local.set({ detected_plan_type: planType, plan_detected_at: Date.now() });
+    }
+  } catch (e) {
+    // Page may not be accessible (not logged in, etc.)
+  } finally {
+    try { await chrome.tabs.remove(tab.id); } catch (e) { /* already closed */ }
+  }
+}
+
+// ============================================================
 // On install/update
 // ============================================================
 
@@ -253,5 +303,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (!jwt) {
     // Prompt auth on install
     triggerAuth();
+  }
+
+  // Detect plan type from billing page (after a short delay to let auth complete)
+  const planStore = await chrome.storage.local.get(['detected_plan_type']);
+  if (!planStore.detected_plan_type) {
+    setTimeout(detectPlanType, 15000); // Wait 15s for auth to settle
   }
 });

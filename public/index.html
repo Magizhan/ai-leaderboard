@@ -1132,30 +1132,34 @@
 
   /**
    * Normalize usage relative to one Max 20x plan (the base).
+   * Returns a multiplier: 1.0x = 100% of one Max 20x plan.
    *
-   * Max 5x = 1/4 capacity of Max 20x.
-   * normFactor = 4 for max5, 1 for max20/unknown.
-   *
-   * Examples:
-   *   1 Max 20x at 100% → 100/1 = 100%
-   *   1 Max 5x  at 100% → 100/4 = 25%
-   *   2 Max 5x  at 200% (accumulated) → 200/4 = 50%
+   * Max 5x = 1/4 capacity of Max 20x → normFactor = 4.
+   * Display: "0.25x" for Max 5x at 100%, "1.0x" for Max 20x at 100%.
    */
   function planNormFactor(u) {
     return u.planType === 'max5' ? 4 : 1;
   }
 
+  /** Returns effective usage as a percentage (for internal sorting/ranking) */
   function effectivePct(u, key) {
     const raw = u[key] || 0;
     const nf = planNormFactor(u);
     const norm = raw / nf;
 
-    // Add extra usage on top when session is maxed (raw >= 100%)
     if (raw >= 100 && u.extraUsageSpent > 0 && key === 'sessionPct') {
       const planCost = (u.budget && u.numPlans) ? u.budget / u.numPlans : 200;
       return norm + (u.extraUsageSpent / planCost) * 100 / nf;
     }
     return norm;
+  }
+
+  /** Format percentage as multiplier: 100% → "1.0x", 25% → "0.25x" */
+  function fmtMultiplier(pct) {
+    const x = pct / 100;
+    if (x >= 10) return Math.round(x) + 'x';
+    if (x >= 1) return x.toFixed(1) + 'x';
+    return x.toFixed(2) + 'x';
   }
 
   function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
@@ -1192,11 +1196,11 @@
         </div>
         <div class="lb-sparkline">${renderSparkline(sparkData, sparkColor)}</div>
         <div class="lb-plans">
-          ${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+          ${fmtMultiplier(pct)} <span class="sub">(${otherLabel}: ${fmtMultiplier(otherPct)})</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
           <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>
         </div>
         <div class="lb-usage-bar"><div class="lb-usage-fill ${barClass}" style="width:${Math.min(barWidth, 100)}%"></div></div>
-        <div class="lb-pct" style="color:${pctColor(pct)}">${Math.round(pct)}%</div>
+        <div class="lb-pct" style="color:${pctColor(pct)}">${fmtMultiplier(pct)}</div>
       </div>
     `;
   }
@@ -1244,12 +1248,12 @@
 
       // Update percentage
       const pctEl = row.querySelector('.lb-pct');
-      if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = pctColor(pct); }
+      if (pctEl) { pctEl.textContent = fmtMultiplier(pct); pctEl.style.color = pctColor(pct); }
 
       // Update plans/details
       const plansEl = row.querySelector('.lb-plans');
       if (plansEl) {
-        plansEl.innerHTML = `${Math.round(pct)}% <span class="sub">(${otherLabel}: ${Math.round(otherPct)}%)</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
+        plansEl.innerHTML = `${fmtMultiplier(pct)} <span class="sub">(${otherLabel}: ${fmtMultiplier(otherPct)})</span>${u.extraUsageSpent ? `<span class="extra-usage-tag">+$${u.extraUsageSpent.toFixed(0)}</span>` : ''}
           <div class="lb-updated">${u.numPlans} plan${u.numPlans > 1 ? 's' : ''} &middot; $${u.budget}${u.extraUsageLimit ? ' &middot; $' + u.extraUsageLimit + ' extra limit' : ''}</div>`;
       }
 
@@ -1280,8 +1284,8 @@
     renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
 
     // Stats
-    document.getElementById('statAvgUsage').textContent = Math.round(stats.avgSessionPct || 0) + '%';
-    document.getElementById('statAvgWeekly').textContent = Math.round(stats.avgWeeklyPct || 0) + '%';
+    document.getElementById('statAvgUsage').textContent = fmtMultiplier(stats.avgSessionPct || 0);
+    document.getElementById('statAvgWeekly').textContent = fmtMultiplier(stats.avgWeeklyPct || 0);
     const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
     document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0) + (totalExtraSpent > 0 ? ' + $' + totalExtraSpent.toFixed(0) : '');
     document.getElementById('statUsers').textContent = stats.totalUsers;
@@ -1298,13 +1302,13 @@
       const sessionPct = teamData.avgSessionPct || 0;
 
       // Full team battle
-      document.getElementById(tid + 'Pct').textContent = Math.round(weeklyPct) + '%';
+      document.getElementById(tid + 'Pct').textContent = fmtMultiplier(weeklyPct);
       document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = Math.round(weeklyPct) + '%';
+      document.getElementById(tid + 'BarVal').textContent = fmtMultiplier(weeklyPct);
 
       // Mini team battle (show session — more dynamic/real-time)
-      document.getElementById(tid + 'MiniPct').textContent = Math.round(sessionPct) + '%';
+      document.getElementById(tid + 'MiniPct').textContent = fmtMultiplier(sessionPct);
     });
 
     const updatedText = 'Last updated: ' + new Date().toLocaleString();
