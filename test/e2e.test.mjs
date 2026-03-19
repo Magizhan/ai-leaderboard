@@ -122,33 +122,49 @@ async function testMonotonicIncrease() {
 async function testSessionReset() {
   console.log('\n▸ Usage — session reset detection');
 
-  // First set a high session value
+  // Set a high session value with a reset time in the past (expired session)
+  const pastReset = new Date(Date.now() - 60000).toISOString(); // 1 min ago
   await api('/api/usage', 'POST', {
     name: TEST_USER, sessionPct: 30, weeklyPct: 40, source: 'extension',
+    sessionResetsAt: pastReset,
   });
 
-  // Simulate session reset: session drops significantly, weekly stays/goes up
+  // Drop within expired session — should be accepted
   const reset = await api('/api/usage', 'POST', {
     name: TEST_USER, sessionPct: 4, weeklyPct: 42, source: 'extension',
   });
-  assertEq(reset.data.sessionPct, 4, 'Session reset accepted (dropped from 30 to 4)');
+  assertEq(reset.data.sessionPct, 4, 'Session reset accepted (expired timer + drop)');
   assert(reset.data.weeklyPct >= 42, 'Weekly preserved/increased after session reset');
+
+  // Drop within active session — should be REJECTED (monotonic)
+  const futureReset = new Date(Date.now() + 3600000).toISOString(); // 1 hr from now
+  await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 20, weeklyPct: 45, source: 'extension',
+    sessionResetsAt: futureReset,
+  });
+  const rejected = await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 5, weeklyPct: 45, source: 'extension',
+  });
+  assertEq(rejected.data.sessionPct, 20, 'Session drop rejected within active session');
 }
 
 async function testWeeklyReset() {
   console.log('\n▸ Usage — weekly reset detection');
 
-  // Set high values
+  // Set high values with expired weekly timer
+  const pastWeekly = new Date(Date.now() - 60000).toISOString();
+  const pastSession = new Date(Date.now() - 60000).toISOString();
   await api('/api/usage', 'POST', {
     name: TEST_USER, sessionPct: 50, weeklyPct: 80, source: 'extension',
+    sessionResetsAt: pastSession, weeklyResetsAt: pastWeekly,
   });
 
-  // Simulate weekly reset: both drop
+  // Both drop with expired timers — should be accepted
   const reset = await api('/api/usage', 'POST', {
     name: TEST_USER, sessionPct: 2, weeklyPct: 2, source: 'extension',
   });
   assertEq(reset.data.sessionPct, 2, 'Session accepted after weekly reset');
-  assertEq(reset.data.weeklyPct, 2, 'Weekly reset accepted (dropped from 80 to 2)');
+  assertEq(reset.data.weeklyPct, 2, 'Weekly reset accepted (expired timer + drop)');
 }
 
 async function testAutoCreateUser() {
@@ -289,6 +305,88 @@ async function testInputValidation() {
   assertEq(noName.status, 400, 'Empty name returns 400');
 }
 
+async function testSendBeacon() {
+  console.log('\n▸ Usage — sendBeacon (text/plain body)');
+
+  const beaconUser = `_test_beacon_${Date.now()}`;
+  const res = await fetch(`${API_BASE}/api/usage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ name: beaconUser, team: 'NY', sessionPct: 12, weeklyPct: 34, source: 'console' }),
+  });
+  const data = await res.json();
+  assertEq(data.ok, true, 'sendBeacon (text/plain) accepted');
+  assertEq(data.sessionPct, 12, 'sendBeacon session % correct');
+  assertEq(data.weeklyPct, 34, 'sendBeacon weekly % correct');
+
+  // Clean up
+  const list = await api('/api/users');
+  const user = list.data.find(u => u.name === beaconUser);
+  if (user) await api(`/api/users/${user.id}`, 'DELETE');
+}
+
+async function testPlanType() {
+  console.log('\n▸ Usage — plan type storage');
+
+  // Send with planType
+  const { data } = await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 20, weeklyPct: 30, source: 'extension', planType: 'max5',
+  });
+  assertEq(data.ok, true, 'Usage with planType accepted');
+  assertEq(data.planType, 'max5', 'planType stored correctly');
+
+  // Update to max20
+  const { data: d2 } = await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 25, weeklyPct: 35, source: 'extension', planType: 'max20',
+  });
+  assertEq(d2.planType, 'max20', 'planType updated to max20');
+}
+
+async function testDataIntegrity() {
+  console.log('\n▸ Data integrity — users array never shrinks');
+
+  // Get current user count
+  const before = await api('/api/users');
+  const countBefore = before.data.length;
+
+  // Add a user
+  const added = await api('/api/users', 'POST', { name: `_test_integrity_${Date.now()}`, team: 'NY' });
+  assert(added.data.id, 'Integrity test user created');
+
+  // Verify count increased
+  const after = await api('/api/users');
+  assert(after.data.length >= countBefore + 1, 'User count increased after add');
+
+  // Delete the test user
+  await api(`/api/users/${added.data.id}`, 'DELETE');
+
+  // Verify original users still exist
+  const final = await api('/api/users');
+  assert(final.data.length >= countBefore, 'Original users preserved after delete');
+}
+
+async function testMultiPlanAccumulation() {
+  console.log('\n▸ Usage — multi-plan accumulation');
+
+  // Set test user to 2 plans
+  await api(`/api/users/${testUserId}/config`, 'PUT', { numPlans: 2 });
+
+  // First sync: 80% weekly
+  await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 50, weeklyPct: 80, source: 'extension',
+  });
+
+  // Max clamp should be 200 (2 plans * 100)
+  const clamped = await api('/api/usage', 'POST', {
+    name: TEST_USER, sessionPct: 250, weeklyPct: 250, source: 'extension',
+  });
+  assert(clamped.data.sessionPct <= 200, 'Session clamped to numPlans * 100');
+  assert(clamped.data.weeklyPct <= 200, 'Weekly clamped to numPlans * 100');
+
+  // Reset to 1 plan for other tests
+  await api(`/api/users/${testUserId}/config`, 'PUT', { numPlans: 1 });
+}
+
 async function testCleanup() {
   console.log('\n▸ Cleanup');
 
@@ -325,6 +423,10 @@ async function run() {
     await testUserConfig();
     await testExportImport();
     await testInputValidation();
+    await testSendBeacon();
+    await testPlanType();
+    await testDataIntegrity();
+    await testMultiPlanAccumulation();
   } catch (e) {
     console.error('\n  FATAL:', e.message);
     failed++;

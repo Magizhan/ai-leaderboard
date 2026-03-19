@@ -853,7 +853,20 @@ async function kvGet(env, key, defaultVal) {
   return val !== null ? val : defaultVal;
 }
 
-async function kvPut(env, key, val) {
+async function kvPut(env, key, val, { allowShrink = false } = {}) {
+  // Safety: never shrink the users array by more than 1 (prevents accidental data loss from stale writes)
+  // allowShrink=true is used by deleteUser (intentional single removal)
+  if (key === 'users' && Array.isArray(val) && !allowShrink) {
+    const existing = await kvGet(env, 'users', []);
+    if (val.length < existing.length - 1) {
+      // Lost more than 1 user — merge to prevent data loss
+      const valMap = new Map(val.map(u => [u.id, u]));
+      const merged = existing.map(u => valMap.get(u.id) || u);
+      const existingIds = new Set(existing.map(u => u.id));
+      val.forEach(u => { if (!existingIds.has(u.id)) merged.push(u); });
+      val = merged;
+    }
+  }
   await env.LEADERBOARD_KV.put(key, JSON.stringify(val));
 }
 
