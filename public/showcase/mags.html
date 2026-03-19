@@ -263,7 +263,7 @@
     <h1>What One Person + Claude Max Can Do</h1>
     <p class="subtitle"><strong>Mags</strong> &nbsp;|&nbsp; Mac Mini M4 + claude-fleet + Claude Max</p>
     <div class="stats-bar">
-      <div class="stat-item"><div class="stat-value" data-target="76">0</div><div class="stat-label">PRs</div></div>
+      <div class="stat-item"><div class="stat-value" id="hero-pr-count" data-target="80">0</div><div class="stat-label">PRs</div></div>
       <div class="stat-item"><div class="stat-value" data-target="268">0</div><div class="stat-label">Reports</div></div>
       <div class="stat-item"><div class="stat-value" data-target="16">0</div><div class="stat-label">Projects</div></div>
       <div class="stat-item"><div class="stat-value" data-target="9">0</div><div class="stat-label">Repos</div></div>
@@ -533,7 +533,7 @@ async function fetchPRs() {
     const closed = allPRs.filter(p => p.state === 'closed' && !(p.pull_request && p.pull_request.merged_at)).length;
 
     // Update hero PR count
-    const prStat = document.querySelector('.stat-value[data-target="76"]');
+    const prStat = document.getElementById('hero-pr-count');
     if (prStat) prStat.dataset.target = allPRs.length;
 
     document.getElementById('pr-summary').innerHTML = `
