@@ -517,31 +517,41 @@ async function logUsage(body, env) {
   // --- Plan switch detection (numPlans > 1) ---
   if (numPlans > 1 && incomingWeekly !== undefined) {
     const prevWeekly = activePlanData.weeklyPct || 0;
-    const weeklyDropped = incomingWeekly < prevWeekly - 5;
-    // Weekly dropped significantly but weekly timer NOT expired = plan switch
-    if (weeklyDropped && !weeklyExpired) {
-      // Find best matching plan slot (closest weeklyPct) or LRU
+    const prevExtra = activePlanData.extraUsageSpent || 0;
+    const prevWeeklyReset = activePlanData.weeklyResetsAt || '';
+    const inExtra = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : prevExtra;
+    const inWeeklyReset = weeklyResetsAt || prevWeeklyReset;
+
+    // Signals that this is a different plan:
+    // 1. Weekly dropped significantly (but timer not expired)
+    const weeklyDropped = incomingWeekly < prevWeekly - 5 && !weeklyExpired;
+    // 2. Extra usage changed significantly (different $ amount)
+    const extraChanged = Math.abs(inExtra - prevExtra) > 20;
+    // 3. Weekly reset timer is different (different plans have different schedules)
+    const resetDiffers = inWeeklyReset && prevWeeklyReset &&
+      inWeeklyReset !== prevWeeklyReset &&
+      Math.abs(new Date(inWeeklyReset).getTime() - new Date(prevWeeklyReset).getTime()) > 3600000;
+    // 4. Session fresh (0%) while weekly jumped up (switched to a more-used plan)
+    const sessionFreshWeeklyJumped = incomingSession <= 1 && incomingWeekly > prevWeekly + 20;
+
+    const isPlanSwitch = weeklyDropped || (extraChanged && resetDiffers) || sessionFreshWeeklyJumped;
+
+    if (isPlanSwitch) {
+      // Find best matching plan slot
       let bestIdx = -1;
       let bestDiff = Infinity;
       for (let i = 0; i < plans.length; i++) {
         if (i === activePlan) continue;
         const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          bestIdx = i;
-        }
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
       }
-      // If no close match found (diff > 20), use LRU (oldest lastSyncAt)
+      // If no close match (diff > 20), use LRU (oldest lastSyncAt)
       if (bestIdx === -1 || bestDiff > 20) {
-        let lruIdx = -1;
-        let lruTime = Infinity;
+        let lruIdx = -1, lruTime = Infinity;
         for (let i = 0; i < plans.length; i++) {
           if (i === activePlan) continue;
           const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
-          if (t < lruTime) {
-            lruTime = t;
-            lruIdx = i;
-          }
+          if (t < lruTime) { lruTime = t; lruIdx = i; }
         }
         if (lruIdx >= 0) bestIdx = lruIdx;
       }
