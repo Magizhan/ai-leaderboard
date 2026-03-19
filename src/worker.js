@@ -648,14 +648,14 @@ async function logUsage(body, env) {
     }
   }
 
-  // --- Update history ---
-  const sessionDroppedHist = lastEntry && combinedSessionPct < (lastEntry.sessionPct || 0) - 1;
-  const weeklyDroppedHist = lastEntry && combinedWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
+  // --- Update history (store active plan's raw values, not combined) ---
+  let histSessionPct = plan.sessionPct || 0;
+  let histWeeklyPct = plan.weeklyPct || 0;
+
+  const sessionDroppedHist = lastEntry && histSessionPct < (lastEntry.sessionPct || 0) - 1;
+  const weeklyDroppedHist = lastEntry && histWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
   const sessionResetHist = sessionDroppedHist && sessionExpired;
   const weeklyResetHist = weeklyDroppedHist && weeklyExpired;
-
-  let histSessionPct = combinedSessionPct;
-  let histWeeklyPct = combinedWeeklyPct;
 
   if (lastEntry && !sessionResetHist && !weeklyResetHist && lastEntry.sessionSlot === currentSlot) {
     histSessionPct = Math.max(combinedSessionPct, lastEntry.sessionPct || 0);
