@@ -110,7 +110,7 @@ async function scrapeAndSync() {
 
   // Detect plan type (Max 5x, Max 20x, etc.)
   const planMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
-  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 5}` : null;
+  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 20}` : null;
 
   // Get saved team preference (default to NY)
   const stored = await chrome.storage.local.get(['claude_lb_team']);

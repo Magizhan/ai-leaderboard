@@ -293,7 +293,7 @@ function scrapeUsagePage() {
 
   // Detect plan type
   const planMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
-  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 5}` : null;
+  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 20}` : null;
 
   return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType };
 }
