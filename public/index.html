@@ -1131,19 +1131,30 @@
   }
 
   /**
-   * Compute effective usage including extra spend.
-   * Plan cost per plan = budget / numPlans (typically $200).
-   * When session is at 100% and extra usage is active:
-   *   effective = 100 + (extraUsageSpent / planCost) * 100
-   * e.g. $208 extra on a $200 plan = 100 + 104 = 204%
+   * Normalize plan usage: Max 20x is the base (1x), Max 5x = 1/4 capacity.
+   * A Max 5x user at 100% = 25% normalized (relative to Max 20x).
+   */
+  function planNormFactor(u) {
+    if (u.planType === 'max5') return 4; // Max 5x has 1/4 the capacity of Max 20x
+    return 1; // max20 or unknown = no normalization
+  }
+
+  /**
+   * Compute effective usage: normalize by plan type + add extra spend.
+   * 1. Normalize: Max 5x values divided by 4 (relative to Max 20x base)
+   * 2. Extra usage: when session at 100% (raw), add extraUsageSpent / planCost
    */
   function effectivePct(u, key) {
-    const base = u[key] || 0;
-    if (base >= 100 && u.extraUsageSpent > 0 && key === 'sessionPct') {
+    const raw = u[key] || 0;
+    const norm = raw / planNormFactor(u);
+
+    // Add extra usage on top when session is maxed (raw 100%)
+    if (raw >= 100 && u.extraUsageSpent > 0 && key === 'sessionPct') {
       const planCost = (u.budget && u.numPlans) ? u.budget / u.numPlans : 200;
-      return 100 + (u.extraUsageSpent / planCost) * 100;
+      const extraPct = (u.extraUsageSpent / planCost) * 100 / planNormFactor(u);
+      return norm + extraPct;
     }
-    return base;
+    return norm;
   }
 
   function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
@@ -1158,7 +1169,9 @@
     const fire = pct >= 80 ? '<span class="fire-icon">\u{1f525}</span> ' : '';
     const ago = timeAgo(u.lastUpdated);
     const teamCls = TEAM_CSS[u.team] || 'ny';
-    const sparkData = u[sparkKey] || [];
+    const rawSparkData = u[sparkKey] || [];
+    const nf = planNormFactor(u);
+    const sparkData = nf > 1 ? rawSparkData.map(v => v / nf) : rawSparkData;
     const sparkColor = pctColor(pct);
     const safeId = escAttr(u.id);
 
@@ -1221,7 +1234,9 @@
       const pct = effectivePct(u, pctKey);
       const otherPct = effectivePct(u, otherPctKey);
       const rank = getRank(pct);
-      const sparkData = u[sparkKey] || [];
+      const rawSparkData = u[sparkKey] || [];
+      const nf = planNormFactor(u);
+      const sparkData = nf > 1 ? rawSparkData.map(v => v / nf) : rawSparkData;
       const sparkColor = pctColor(pct);
       const ago = timeAgo(u.lastUpdated);
       const barClass = getBarClass(pct);

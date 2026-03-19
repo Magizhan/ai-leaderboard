@@ -655,21 +655,30 @@ async function getLeaderboardData(env) {
     };
   }));
 
+  // Normalize: Max 5x = 1/4 capacity of Max 20x
+  function normFactor(planType) { return planType === 'max5' ? 4 : 1; }
+  function normPct(u) {
+    const nf = normFactor(u.planType);
+    return { sessionPct: u.sessionPct / nf, weeklyPct: u.weeklyPct / nf };
+  }
+
   function teamStats(teamUsers) {
+    const normed = teamUsers.map(normPct);
     return {
       members: teamUsers.length,
-      avgSessionPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.sessionPct, 0) / teamUsers.length : 0,
-      avgWeeklyPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.weeklyPct, 0) / teamUsers.length : 0,
+      avgSessionPct: normed.length > 0 ? normed.reduce((s, n) => s + n.sessionPct, 0) / normed.length : 0,
+      avgWeeklyPct: normed.length > 0 ? normed.reduce((s, n) => s + n.weeklyPct, 0) / normed.length : 0,
     };
   }
 
+  const allNormed = board.map(normPct);
   const result = {
     users: board,
     stats: {
       totalUsers: board.length,
       totalBudget: board.reduce((s, u) => s + u.budget, 0),
-      avgSessionPct: board.length > 0 ? board.reduce((s, u) => s + u.sessionPct, 0) / board.length : 0,
-      avgWeeklyPct: board.length > 0 ? board.reduce((s, u) => s + u.weeklyPct, 0) / board.length : 0,
+      avgSessionPct: allNormed.length > 0 ? allNormed.reduce((s, n) => s + n.sessionPct, 0) / allNormed.length : 0,
+      avgWeeklyPct: allNormed.length > 0 ? allNormed.reduce((s, n) => s + n.weeklyPct, 0) / allNormed.length : 0,
     },
     teams: {
       NY: teamStats(board.filter(u => u.team === 'NY')),
