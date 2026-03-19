@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects & Strategies — Claude Usage Leaderboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-card-hover: #22223a;
+    --accent-orange: #f97316;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+    --border-subtle: #161625;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    z-index: 0;
+    animation: bgPulse 10s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  .header { text-align: center; padding: 40px 0 16px; }
+  .header h1 {
+    font-size: 2.2rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+  }
+  .header .subtitle { color: var(--text-secondary); font-size: 0.95rem; font-weight: 400; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-secondary); text-decoration: none; font-size: 0.8rem;
+    font-weight: 500; margin-bottom: 16px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent-purple); }
+
+  /* Quote */
+  .quote-block {
+    background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent-purple);
+    border-radius: 12px; padding: 20px 24px; margin: 20px 0 32px;
+    font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary); font-style: italic;
+  }
+  .quote-block .author { color: var(--accent-purple); font-style: normal; font-weight: 600; margin-top: 10px; display: block; font-size: 0.8rem; }
+
+  /* Section */
+  .section { margin-bottom: 40px; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .section-header h2 { font-size: 1.3rem; font-weight: 800; }
+
+  /* Buttons */
+  .btn {
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    color: white;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3); }
+  .btn-sm { padding: 5px 12px; font-size: 0.7rem; border-radius: 6px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-ghost:hover { border-color: var(--accent-purple); color: var(--text-primary); }
+  .btn-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+  /* Cards grid */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; transition: all 0.3s;
+  }
+  .card:hover { border-color: rgba(168, 85, 247, 0.3); transform: translateY(-2px); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-title { font-size: 1rem; font-weight: 700; }
+  .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .card-meta { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .card-desc { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+  .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  .badge-orange { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); }
+  .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+  .badge-pink { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
+
+  .card-link { color: var(--accent-blue); font-size: 0.78rem; text-decoration: none; font-weight: 500; }
+  .card-link:hover { text-decoration: underline; }
+
+  /* Empty */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; width: 90%; max-width: 460px; animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif;
+    font-size: 0.85rem; outline: none; transition: border-color 0.2s; resize: vertical;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent-purple); }
+  .form-group select option { background: var(--bg-card); color: var(--text-primary); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* Submit section */
+  .command-block {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-top: 12px;
+  }
+  .command-block h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
+  .command-block code {
+    display: block; background: var(--bg-primary); border: 1px solid var(--border-subtle);
+    border-radius: 8px; padding: 12px 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; color: var(--accent-cyan); line-height: 1.8; white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 12px; left: 12px; background: var(--bg-card);
+    border: 1px solid var(--accent-green); color: var(--text-primary); padding: 12px 20px;
+    border-radius: 10px; font-size: 0.85rem; font-weight: 600; z-index: 2000;
+    max-width: 400px; margin-left: auto;
+    animation: toastIn 0.4s ease, toastOut 0.4s ease 2.5s forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(20px); } }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.6rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .modal { width: 95%; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/" class="back-link">&larr; Back to Leaderboard</a>
+
+  <div class="header">
+    <h1>Projects & Strategies</h1>
+    <p class="subtitle">What we're building and how we're using AI</p>
+  </div>
+
+  <div class="quote-block">
+    "In evolution, there were animals which were way more efficient without utilizing a big brain.. but mammals, humans even being clumsy in many ways, were able to surpass because of brain and ability to handle complexity. We have new big digital brains now. Whoever utilizes the exponential compute is going to be the winner."
+    <span class="author">— Vimal</span>
+  </div>
+
+  <!-- Projects Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Projects</h2>
+      <button class="btn btn-primary" onclick="openModal('project')">+ Add Project</button>
+    </div>
+    <div class="cards-grid" id="projects-grid">
+      <div class="empty-state"><div class="icon">📂</div><p>Loading projects...</p></div>
+    </div>
+  </div>
+
+  <!-- Strategies Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Strategies</h2>
+      <button class="btn btn-primary" onclick="openModal('strategy')">+ Add Strategy</button>
+    </div>
+    <div class="cards-grid" id="strategies-grid">
+      <div class="empty-state"><div class="icon">🧠</div><p>Loading strategies...</p></div>
+    </div>
+  </div>
+
+  <!-- Submit via WhatsApp/Slack -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Submit via Chat</h2>
+    </div>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">
+      You can also add projects and strategies by sending these commands in WhatsApp or Slack:
+    </p>
+    <div class="command-block">
+      <h4>Add a Project</h4>
+      <code>/project Name: X | Lead: @name | Description: X | Status: In Progress</code>
+    </div>
+    <div class="command-block" style="margin-top: 12px;">
+      <h4>Add a Strategy</h4>
+      <code>/strategy Title: X | Type: technique | Description: X | Impact: High</code>
+    </div>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <h3 id="modal-project-title">Add Project</h3>
+    <input type="hidden" id="project-edit-id">
+    <div class="form-group">
+      <label>Project Name</label>
+      <input type="text" id="project-name" placeholder="e.g. AI Leaderboard">
+    </div>
+    <div class="form-group">
+      <label>Lead</label>
+      <input type="text" id="project-lead" placeholder="e.g. @vimal">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="project-desc" rows="3" placeholder="Brief description..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="project-status">
+        <option value="In Progress">In Progress</option>
+        <option value="Launched">Launched</option>
+        <option value="Planning">Planning</option>
+        <option value="On Hold">On Hold</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Link (optional)</label>
+      <input type="url" id="project-link" placeholder="https://...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Strategy Modal -->
+<div class="modal-overlay" id="modal-strategy">
+  <div class="modal">
+    <h3 id="modal-strategy-title">Add Strategy</h3>
+    <input type="hidden" id="strategy-edit-id">
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="strategy-title" placeholder="e.g. Chain-of-thought prompting">
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="strategy-type">
+        <option value="technique">Technique</option>
+        <option value="pattern">Pattern</option>
+        <option value="tool">Tool</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="strategy-desc" rows="3" placeholder="How it works..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Impact</label>
+      <select id="strategy-impact">
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Example (optional)</label>
+      <textarea id="strategy-example" rows="2" placeholder="Usage example..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStrategy()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+
+  async function apiFetch(path, options = {}, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(API_BASE + path, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options,
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Non-JSON response (status ' + res.status + ')');
+        }
+        return await res.json();
+      } catch (e) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
+    }
+  }
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  // Status badge color map
+  function statusBadge(status) {
+    const map = { 'In Progress': 'badge-blue', 'Launched': 'badge-green', 'Planning': 'badge-orange', 'On Hold': 'badge-purple' };
+    return '<span class="badge ' + (map[status] || 'badge-blue') + '">' + esc(status) + '</span>';
+  }
+
+  function typeBadge(type) {
+    const map = { 'technique': 'badge-purple', 'pattern': 'badge-blue', 'tool': 'badge-orange' };
+    return '<span class="badge ' + (map[type] || 'badge-blue') + '">' + esc(type) + '</span>';
+  }
+
+  function impactBadge(impact) {
+    const map = { 'High': 'badge-pink', 'Medium': 'badge-orange', 'Low': 'badge-blue' };
+    return '<span class="badge ' + (map[impact] || 'badge-blue') + '">' + esc(impact) + ' impact</span>';
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ---- Render ----
+  let projectsData = [];
+  let strategiesData = [];
+
+  function renderProjects() {
+    const grid = document.getElementById('projects-grid');
+    if (!projectsData.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one!</p></div>';
+      return;
+    }
+    grid.innerHTML = projectsData.map(p => `
+      <div class="card">
+        <div class="card-top">
+          <div class="card-title">${esc(p.name)}</div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-ghost" onclick="editProject('${esc(p.id)}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteProject('${esc(p.id)}')">Delete</button>
+          </div>
+        </div>
+        <div class="card-meta">${esc(p.lead)} &middot; ${statusBadge(p.status)}</div>
+        <div class="card-desc">${esc(p.description)}</div>
+        ${p.link ? '<a class="card-link" href="' + esc(p.link) + '" target="_blank">View Link &rarr;</a>' : ''}
+      </div>
+    `).join('');
+  }
+
+  function renderStrategies() {
+    const grid = document.getElementById('strategies-grid');
+    if (!strategiesData.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">🧠</div><p>No strategies yet. Add one!</p></div>';
+      return;
+    }
+    grid.innerHTML = strategiesData.map(s => `
+      <div class="card">
+        <div class="card-top">
+          <div class="card-title">${esc(s.title)}</div>
+          <div class="card-actions">
+            <button class="btn btn-sm btn-ghost" onclick="editStrategy('${esc(s.id)}')">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteStrategy('${esc(s.id)}')">Delete</button>
+          </div>
+        </div>
+        <div class="card-meta">${typeBadge(s.type)} &middot; ${impactBadge(s.impact)}</div>
+        <div class="card-desc">${esc(s.description)}</div>
+        ${s.example ? '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;"><strong>Example:</strong> ' + esc(s.example) + '</div>' : ''}
+      </div>
+    `).join('');
+  }
+
+  // ---- Modals ----
+  function openModal(type) {
+    if (type === 'project') {
+      document.getElementById('modal-project-title').textContent = 'Add Project';
+      document.getElementById('project-edit-id').value = '';
+      document.getElementById('project-name').value = '';
+      document.getElementById('project-lead').value = '';
+      document.getElementById('project-desc').value = '';
+      document.getElementById('project-status').value = 'In Progress';
+      document.getElementById('project-link').value = '';
+      document.getElementById('modal-project').classList.add('active');
+    } else {
+      document.getElementById('modal-strategy-title').textContent = 'Add Strategy';
+      document.getElementById('strategy-edit-id').value = '';
+      document.getElementById('strategy-title').value = '';
+      document.getElementById('strategy-type').value = 'technique';
+      document.getElementById('strategy-desc').value = '';
+      document.getElementById('strategy-impact').value = 'High';
+      document.getElementById('strategy-example').value = '';
+      document.getElementById('modal-strategy').classList.add('active');
+    }
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+  }
+
+  // Close on backdrop click or Escape
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModals(); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModals();
+  });
+
+  // ---- CRUD: Projects ----
+  async function saveProject() {
+    const editId = document.getElementById('project-edit-id').value;
+    const body = {
+      name: document.getElementById('project-name').value.trim(),
+      lead: document.getElementById('project-lead').value.trim(),
+      description: document.getElementById('project-desc').value.trim(),
+      status: document.getElementById('project-status').value,
+      link: document.getElementById('project-link').value.trim(),
+    };
+    if (!body.name) { toast('Project name is required'); return; }
+    try {
+      if (editId) {
+        await apiFetch('/api/projects/' + editId, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+      }
+      closeModals();
+      toast(editId ? 'Project updated' : 'Project added');
+      await loadProjects();
+    } catch (e) {
+      toast('Error: ' + e.message);
+    }
+  }
+
+  function editProject(id) {
+    const p = projectsData.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modal-project-title').textContent = 'Edit Project';
+    document.getElementById('project-edit-id').value = p.id;
+    document.getElementById('project-name').value = p.name || '';
+    document.getElementById('project-lead').value = p.lead || '';
+    document.getElementById('project-desc').value = p.description || '';
+    document.getElementById('project-status').value = p.status || 'In Progress';
+    document.getElementById('project-link').value = p.link || '';
+    document.getElementById('modal-project').classList.add('active');
+  }
+
+  async function deleteProject(id) {
+    if (!confirm('Delete this project?')) return;
+    try {
+      await apiFetch('/api/projects/' + id, { method: 'DELETE' });
+      toast('Project deleted');
+      await loadProjects();
+    } catch (e) {
+      toast('Error: ' + e.message);
+    }
+  }
+
+  async function loadProjects() {
+    try {
+      const data = await apiFetch('/api/projects');
+      projectsData = data.projects || data || [];
+      renderProjects();
+    } catch (e) {
+      document.getElementById('projects-grid').innerHTML =
+        '<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one!</p></div>';
+      projectsData = [];
+    }
+  }
+
+  // ---- CRUD: Strategies ----
+  async function saveStrategy() {
+    const editId = document.getElementById('strategy-edit-id').value;
+    const body = {
+      title: document.getElementById('strategy-title').value.trim(),
+      type: document.getElementById('strategy-type').value,
+      description: document.getElementById('strategy-desc').value.trim(),
+      impact: document.getElementById('strategy-impact').value,
+      example: document.getElementById('strategy-example').value.trim(),
+    };
+    if (!body.title) { toast('Strategy title is required'); return; }
+    try {
+      if (editId) {
+        await apiFetch('/api/strategies/' + editId, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        await apiFetch('/api/strategies', { method: 'POST', body: JSON.stringify(body) });
+      }
+      closeModals();
+      toast(editId ? 'Strategy updated' : 'Strategy added');
+      await loadStrategies();
+    } catch (e) {
+      toast('Error: ' + e.message);
+    }
+  }
+
+  function editStrategy(id) {
+    const s = strategiesData.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('modal-strategy-title').textContent = 'Edit Strategy';
+    document.getElementById('strategy-edit-id').value = s.id;
+    document.getElementById('strategy-title').value = s.title || '';
+    document.getElementById('strategy-type').value = s.type || 'technique';
+    document.getElementById('strategy-desc').value = s.description || '';
+    document.getElementById('strategy-impact').value = s.impact || 'High';
+    document.getElementById('strategy-example').value = s.example || '';
+    document.getElementById('modal-strategy').classList.add('active');
+  }
+
+  async function deleteStrategy(id) {
+    if (!confirm('Delete this strategy?')) return;
+    try {
+      await apiFetch('/api/strategies/' + id, { method: 'DELETE' });
+      toast('Strategy deleted');
+      await loadStrategies();
+    } catch (e) {
+      toast('Error: ' + e.message);
+    }
+  }
+
+  async function loadStrategies() {
+    try {
+      const data = await apiFetch('/api/strategies');
+      strategiesData = data.strategies || data || [];
+      renderStrategies();
+    } catch (e) {
+      document.getElementById('strategies-grid').innerHTML =
+        '<div class="empty-state"><div class="icon">🧠</div><p>No strategies yet. Add one!</p></div>';
+      strategiesData = [];
+    }
+  }
+
+  // ---- Init ----
+  loadProjects();
+  loadStrategies();
+</script>
+</body>
+</html>

@@ -261,6 +261,77 @@ async function handleApi(path, request, env, url, auth) {
     return getTeamWeekly(team, limit, env);
   }
 
+  // Projects & Strategies CRUD
+  if (path === '/api/projects' && method === 'GET') return jsonResponse(await kvGet(env, 'projects', []));
+  if (path === '/api/projects' && method === 'POST') {
+    const body = await request.json();
+    const projects = await kvGet(env, 'projects', []);
+    const id = body.id || ('proj_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5));
+    const project = { id, name: sanitizeString(body.name, 100), lead: sanitizeString(body.lead, 50), description: sanitizeString(body.description, 500), status: body.status || 'In Progress', link: sanitizeString(body.link, 200), dateAdded: new Date().toISOString().slice(0, 10) };
+    if (!project.name) return jsonResponse({ error: 'Project name required' }, 400);
+    projects.push(project);
+    await kvPut(env, 'projects', projects);
+    return jsonResponse({ ok: true, ...project });
+  }
+  if (path.match(/^\/api\/projects\/[^/]+$/) && method === 'PUT') {
+    const id = path.split('/api/projects/')[1];
+    const body = await request.json();
+    const projects = await kvGet(env, 'projects', []);
+    const proj = projects.find(p => p.id === id);
+    if (!proj) return jsonResponse({ error: 'Project not found' }, 404);
+    if (body.name) proj.name = sanitizeString(body.name, 100);
+    if (body.lead) proj.lead = sanitizeString(body.lead, 50);
+    if (body.description) proj.description = sanitizeString(body.description, 500);
+    if (body.status) proj.status = body.status;
+    if (body.link) proj.link = sanitizeString(body.link, 200);
+    await kvPut(env, 'projects', projects);
+    return jsonResponse({ ok: true, ...proj });
+  }
+  if (path.match(/^\/api\/projects\/[^/]+$/) && method === 'DELETE') {
+    const id = path.split('/api/projects/')[1];
+    let projects = await kvGet(env, 'projects', []);
+    const removed = projects.find(p => p.id === id);
+    if (!removed) return jsonResponse({ error: 'Project not found' }, 404);
+    projects = projects.filter(p => p.id !== id);
+    await kvPut(env, 'projects', projects);
+    return jsonResponse({ ok: true, removed: removed.name });
+  }
+
+  if (path === '/api/strategies' && method === 'GET') return jsonResponse(await kvGet(env, 'strategies', []));
+  if (path === '/api/strategies' && method === 'POST') {
+    const body = await request.json();
+    const strategies = await kvGet(env, 'strategies', []);
+    const id = body.id || ('strat_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5));
+    const strategy = { id, title: sanitizeString(body.title, 100), type: body.type || 'technique', description: sanitizeString(body.description, 500), impact: body.impact || 'medium', example: sanitizeString(body.example, 300), dateAdded: new Date().toISOString().slice(0, 10) };
+    if (!strategy.title) return jsonResponse({ error: 'Strategy title required' }, 400);
+    strategies.push(strategy);
+    await kvPut(env, 'strategies', strategies);
+    return jsonResponse({ ok: true, ...strategy });
+  }
+  if (path.match(/^\/api\/strategies\/[^/]+$/) && method === 'PUT') {
+    const id = path.split('/api/strategies/')[1];
+    const body = await request.json();
+    const strategies = await kvGet(env, 'strategies', []);
+    const strat = strategies.find(s => s.id === id);
+    if (!strat) return jsonResponse({ error: 'Strategy not found' }, 404);
+    if (body.title) strat.title = sanitizeString(body.title, 100);
+    if (body.type) strat.type = body.type;
+    if (body.description) strat.description = sanitizeString(body.description, 500);
+    if (body.impact) strat.impact = body.impact;
+    if (body.example) strat.example = sanitizeString(body.example, 300);
+    await kvPut(env, 'strategies', strategies);
+    return jsonResponse({ ok: true, ...strat });
+  }
+  if (path.match(/^\/api\/strategies\/[^/]+$/) && method === 'DELETE') {
+    const id = path.split('/api/strategies/')[1];
+    let strategies = await kvGet(env, 'strategies', []);
+    const removed = strategies.find(s => s.id === id);
+    if (!removed) return jsonResponse({ error: 'Strategy not found' }, 404);
+    strategies = strategies.filter(s => s.id !== id);
+    await kvPut(env, 'strategies', strategies);
+    return jsonResponse({ ok: true, removed: removed.title });
+  }
+
   if (path === '/api/import' && method === 'POST') return importData(await request.json(), env);
   if (path === '/api/export' && method === 'GET') return exportData(env);
 
