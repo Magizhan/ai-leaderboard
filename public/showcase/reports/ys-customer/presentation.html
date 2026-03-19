@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yatri Sathi — Customer Pain Point Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #14141f;
+    --surface-2: #1e1e2e;
+    --border: #2a2a3e;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --accent: #6366f1;
+    --accent-2: #818cf8;
+    --red: #ef4444;
+    --orange: #f97316;
+    --yellow: #eab308;
+    --green: #22c55e;
+    --cyan: #06b6d4;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .slide.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+
+  h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--accent-2);
+  }
+
+  .subtitle {
+    font-size: 1.3rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-bottom: 32px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .tag-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+  .tag-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .tag-cyan { background: rgba(6,182,212,0.15); color: var(--cyan); }
+  .tag-purple { background: rgba(99,102,241,0.15); color: var(--accent-2); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card-accent {
+    border-left: 3px solid var(--accent);
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 28px 20px;
+  }
+
+  .stat-card .number {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .stat-card .label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  ul li {
+    padding: 6px 0;
+    padding-left: 20px;
+    position: relative;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+
+  .quote {
+    border-left: 3px solid var(--orange);
+    padding: 12px 20px;
+    background: rgba(249,115,22,0.06);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--text-dim);
+    margin: 8px 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bar-label {
+    width: 180px;
+    font-size: 0.85rem;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--text-dim);
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: var(--surface);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    transition: width 0.8s ease;
+  }
+
+  .bar-fill.red { background: linear-gradient(90deg, var(--red), #dc2626); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--orange), #ea580c); }
+  .bar-fill.yellow { background: linear-gradient(90deg, var(--yellow), #ca8a04); }
+  .bar-fill.green { background: linear-gradient(90deg, var(--green), #16a34a); }
+  .bar-fill.cyan { background: linear-gradient(90deg, var(--cyan), #0891b2); }
+  .bar-fill.purple { background: linear-gradient(90deg, var(--accent), #4f46e5); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  table th {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .nav button {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .nav button:hover { background: var(--border); }
+
+  .nav .counter {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    padding: 0 8px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    z-index: 100;
+  }
+
+  .comparison-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comparison-row .platform { width: 140px; font-weight: 500; font-size: 0.9rem; }
+  .comparison-row .rating {
+    font-size: 1.6rem;
+    font-weight: 800;
+    width: 60px;
+  }
+  .comparison-row .stars {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  .highlight-box {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 12px 0;
+  }
+
+  .tier {
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .tier-1 { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+  .tier-2 { background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); }
+  .tier-3 { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2); }
+
+  .flex-col { display: flex; flex-direction: column; gap: 12px; }
+  .flex-row { display: flex; gap: 16px; align-items: center; }
+  .flex-1 { flex: 1; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .text-dim { color: var(--text-dim); }
+  .text-sm { font-size: 0.85rem; }
+  .text-xs { font-size: 0.75rem; }
+  .fw-600 { font-weight: 600; }
+  .fw-700 { font-weight: 700; }
+
+  .title-slide {
+    background: radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 80%, rgba(6,182,212,0.05) 0%, transparent 50%);
+  }
+
+  .section-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: radial-gradient(ellipse at center, rgba(99,102,241,0.06) 0%, transparent 60%);
+  }
+
+  .section-slide h1 { font-size: 2.6rem; }
+
+  @media (max-width: 1200px) {
+    .slide { padding: 40px 48px; }
+    h1 { font-size: 2.4rem; }
+    h2 { font-size: 1.6rem; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide title-slide active">
+    <div>
+      <span class="tag tag-purple" style="margin-bottom: 20px">Customer Intelligence Report</span>
+      <h1 style="margin-top: 16px">Yatri Sathi<br><span style="color: var(--accent-2)">Pain Point Deep Dive</span></h1>
+      <p class="subtitle">Comprehensive analysis of user complaints, competitive gaps,<br>and technical root causes across all public channels</p>
+      <div class="flex-row mt-24" style="gap: 32px">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Platform</div>
+          <div class="fw-600 mt-8">West Bengal Transit App</div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Data Sources</div>
+          <div class="fw-600 mt-8">Play Store, App Store, Social Media, GitHub, News</div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
+          <div class="fw-600 mt-8">March 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: At a Glance -->
+  <div class="slide">
+    <h2>Yatri Sathi — At a Glance</h2>
+    <div class="grid-4 mt-16">
+      <div class="card stat-card">
+        <div class="number" style="color: var(--green)">32.9L</div>
+        <div class="label">Registered Users</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" style="color: var(--cyan)">1.42Cr</div>
+        <div class="label">Rides Completed</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" style="color: var(--accent-2)">89K</div>
+        <div class="label">Active Drivers</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" style="color: var(--orange)">19.5%</div>
+        <div class="label">Search → Trip Conversion</div>
+      </div>
+    </div>
+    <div class="grid-2 mt-24">
+      <div class="card">
+        <h3>Transit Modes</h3>
+        <ul>
+          <li>Ride-hailing (auto, cab, bike)</li>
+          <li>WBTC Bus ticketing (12-16 airport routes)</li>
+          <li>"Where Is My Bus" live tracking (60 govt buses)</li>
+          <li>Kolkata Metro — <span style="color:var(--red); font-weight:600">NOT integrated</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Tech Stack (NammaYatri Platform)</h3>
+        <ul>
+          <li>Backend: 40+ Haskell microservices</li>
+          <li>Frontend: React Native (ReScript + TypeScript)</li>
+          <li>Payments: Juspay HyperSDK</li>
+          <li>Bus integration: WBTC via EbixCash ETMs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: The Rating Discrepancy -->
+  <div class="slide">
+    <h2>The Rating Discrepancy</h2>
+    <p class="subtitle">App store ratings vs independent review platforms tell very different stories</p>
+    <div class="grid-2">
+      <div>
+        <div class="comparison-row">
+          <div class="platform">Google Play</div>
+          <div class="rating" style="color: var(--green)">4.91</div>
+          <div class="stars">200K+ ratings &middot; 3.3M downloads</div>
+        </div>
+        <div class="comparison-row">
+          <div class="platform">App Store</div>
+          <div class="rating" style="color: var(--green)">4.9</div>
+          <div class="stars">36K ratings &middot; 92.8% five-star</div>
+        </div>
+        <div class="comparison-row">
+          <div class="platform">JustDial</div>
+          <div class="rating" style="color: var(--red)">2.5</div>
+          <div class="stars">216 reviews (independent)</div>
+        </div>
+        <div class="comparison-row">
+          <div class="platform">SafarCabby</div>
+          <div class="rating" style="color: var(--red)">2.7</div>
+          <div class="stars">Independent aggregator</div>
+        </div>
+        <div class="comparison-row">
+          <div class="platform">Facebook</div>
+          <div class="rating" style="color: var(--orange)">52%</div>
+          <div class="stars">Recommend rate</div>
+        </div>
+      </div>
+      <div>
+        <div class="highlight-box">
+          <h3 style="color: var(--red); margin-bottom: 8px">2.4-point gap</h3>
+          <p class="text-sm" style="line-height: 1.6">
+            Consistent gap between app stores (4.9) and independent platforms (2.5) suggests either promotional review campaigns, selective moderation, or vastly different user demographics between platforms.
+          </p>
+          <p class="text-sm mt-16" style="line-height: 1.6; color: var(--text-dim)">
+            For reference, even Chennai One's initial 4.0 rating dropped as organic reviews increased. The true user sentiment is closer to the independent platform average.
+          </p>
+        </div>
+        <div class="card mt-16">
+          <h3>Sentiment Breakdown (All Sources)</h3>
+          <div class="bar-chart mt-8">
+            <div class="bar-row">
+              <div class="bar-label">Negative</div>
+              <div class="bar-track"><div class="bar-fill red" style="width:55%">55%</div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">Positive</div>
+              <div class="bar-track"><div class="bar-fill green" style="width:30%">30%</div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">Neutral</div>
+              <div class="bar-track"><div class="bar-fill purple" style="width:15%">15%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Top Complaints -->
+  <div class="slide">
+    <h2>Top Complaint Categories</h2>
+    <p class="subtitle">From ~3,000 negative reviews across Play Store, App Store, JustDial, Twitter, and news</p>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">Driver Cancellations</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:100%">~35% of complaints &middot; CRITICAL</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Extra Charges / Fare Fraud</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:86%">~30% &middot; CRITICAL</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Customer Support Broken</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:71%">~25% &middot; CRITICAL</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">GPS / Location Accuracy</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:43%">~15% &middot; HIGH</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Safety Concerns</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:29%">~10% &middot; HIGH</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">App Crashes / White Screen</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:29%">~10% &middot; HIGH</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Bus Tracker Issues</div>
+        <div class="bar-track"><div class="bar-fill yellow" style="width:23%">~8% &middot; MODERATE</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Booking Failures</div>
+        <div class="bar-track"><div class="bar-fill yellow" style="width:20%">~7% &middot; MODERATE</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Payment / Money Deducted</div>
+        <div class="bar-track"><div class="bar-fill yellow" style="width:17%">~6% &middot; MODERATE</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Refund Issues</div>
+        <div class="bar-track"><div class="bar-fill yellow" style="width:14%">~5% &middot; MODERATE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: User Voices -->
+  <div class="slide">
+    <h2>User Voices — Verbatim Complaints</h2>
+    <div class="grid-2">
+      <div class="flex-col">
+        <div>
+          <span class="tag tag-red mb-8">Safety</span>
+          <div class="quote mt-8">"Driver was texting someone in WhatsApp throughout the ride... driving at 50+ km/h with both hands on phone"</div>
+        </div>
+        <div>
+          <span class="tag tag-red">Money Lost</span>
+          <div class="quote mt-8">"Bike ride accident... wanted to claim insurance but couldn't because it was not working"</div>
+        </div>
+        <div>
+          <span class="tag tag-orange">Fare Fraud</span>
+          <div class="quote mt-8">"Same route showing 38km, then 47km, then 67km on different occasions"</div>
+        </div>
+        <div>
+          <span class="tag tag-orange">Support</span>
+          <div class="quote mt-8">"Complaints are auto-deleted or go unresponded"</div>
+        </div>
+      </div>
+      <div class="flex-col">
+        <div>
+          <span class="tag tag-orange">Ghost Bookings</span>
+          <div class="quote mt-8">"App shows cab a few kilometers away but never actually moves; ride gets cancelled a few minutes later"</div>
+        </div>
+        <div>
+          <span class="tag tag-orange">White Screen</span>
+          <div class="quote mt-8">"App sits there like a dead fish, pretending to load while doing absolutely nothing"</div>
+        </div>
+        <div>
+          <span class="tag tag-yellow">Driver Behavior</span>
+          <div class="quote mt-8">"AC charged but not provided. Driver said AC not working — then why accept AC booking?"</div>
+        </div>
+        <div>
+          <span class="tag tag-green">Positive (30%)</span>
+          <div class="quote mt-8" style="border-color: var(--green); background: rgba(34,197,94,0.06)">"40% cheaper than Uber/Ola consistently. One of the cleanest UIs when it works."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Section — Technical Root Causes -->
+  <div class="slide section-slide">
+    <span class="tag tag-red mb-16">Deep Dive</span>
+    <h1>Technical Root Causes</h1>
+    <p class="subtitle">Payment, QR, GPS, and infrastructure failures</p>
+  </div>
+
+  <!-- SLIDE 7: Payment RCA -->
+  <div class="slide">
+    <h2>Payment — "Money Deducted, No Ticket"</h2>
+    <p class="subtitle">#1 driver of 1-star reviews. Multiple open PRs attempt to fix architectural gaps.</p>
+    <div class="grid-2">
+      <div>
+        <table>
+          <tr><th>Root Cause</th><th>Status</th></tr>
+          <tr><td>No payment→ticket atomicity</td><td><span class="tag tag-yellow">PR #13988</span></td></tr>
+          <tr><td>Retry button was dead stub<br><span class="text-xs text-dim">"error: Logic yet to be decided" → HTTP 500</span></td><td><span class="tag tag-yellow">PR #13988</span></td></tr>
+          <tr><td>No auto-refund path</td><td><span class="tag tag-yellow">PR #13988</span></td></tr>
+          <tr><td>Duplicate Juspay webhooks → double charge</td><td><span class="tag tag-yellow">PR #14002</span></td></tr>
+          <tr><td>Bus pass race condition</td><td><span class="tag tag-yellow">PR #14004</span></td></tr>
+          <tr><td>PAYMENT_PENDING never times out</td><td><span class="tag tag-red">Unfixed</span></td></tr>
+          <tr><td>Quote expiry: only 5s buffer</td><td><span class="tag tag-red">Unfixed</span></td></tr>
+          <tr><td>Premium bus ~30% failure rate</td><td><span class="tag tag-yellow">PR #14007</span></td></tr>
+        </table>
+      </div>
+      <div class="flex-col">
+        <div class="card">
+          <h3>Hardcoded Risk Values</h3>
+          <ul>
+            <li>Booking poll interval: <strong>2000ms</strong> (rate limit risk)</li>
+            <li>Payment polling timeout: <strong>30s</strong></li>
+            <li>Quote validity buffer: <strong style="color:var(--red)">5 seconds</strong></li>
+            <li>PAYMENT_PENDING timeout: <strong style="color:var(--red)">NONE</strong></li>
+          </ul>
+        </div>
+        <div class="highlight-box">
+          <p class="text-sm fw-600" style="color: var(--red)">Architectural gap:</p>
+          <p class="text-sm mt-8">If payment succeeds but ticket generation fails, there is no compensating transaction. Every case requires manual customer support — which is itself non-functional.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: QR & Ticketing -->
+  <div class="slide">
+    <h2>QR Ticketing — Failure Taxonomy</h2>
+    <p class="subtitle">WBTC uses 3,056 EbixCash Android ETMs. Downtime is a recognized problem.</p>
+    <div class="grid-2">
+      <div>
+        <div class="card mb-16">
+          <h3>A. QR Generation Failures</h3>
+          <ul>
+            <li>Money deducted but no QR generated</li>
+            <li>App crashes before QR display</li>
+            <li>QR fails to load underground (no signal)</li>
+            <li>OTP activation timeout</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>B. QR Scanning Failures</h3>
+          <ul>
+            <li>ETM scanner cannot read QR (dirty lens, low brightness)</li>
+            <li>AFC gate hardware incompatibility</li>
+            <li>Static QR suspended by CMRL (Chennai)</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-16">
+          <h3>C. Validation Failures</h3>
+          <ul>
+            <li>30-minute ticket expiry with no refund path</li>
+            <li>Backend validation timeout</li>
+            <li>Server-side outage (common across all Beckn platforms)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>D. Human/Process Failures</h3>
+          <ul>
+            <li>Conductor unfamiliarity with ETMs<br><span class="text-xs text-dim">BMTC experience: #1 failure mode</span></li>
+            <li>Conductor refuses digital tickets</li>
+            <li>Peak-hour workload prevents scanning</li>
+          </ul>
+        </div>
+        <div class="highlight-box mt-16">
+          <p class="text-sm"><strong style="color:var(--orange)">Scale-up risk:</strong> Currently only 12-16 airport routes. These failures will explode as coverage expands city-wide.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: GPS & Tracking -->
+  <div class="slide">
+    <h2>GPS & Live Tracking — Two-Tier Problem</h2>
+    <div class="grid-2">
+      <div>
+        <div class="tier tier-1 mb-16">
+          <h3 style="color: var(--red)">Government Buses (60 buses, 16 routes)</h3>
+          <ul>
+            <li>Dedicated Vehicle Tracking Units (VTU) hardware</li>
+            <li>Reliable but limited coverage</li>
+            <li>Activation requires conductor QR scan (not automatic)</li>
+            <li>AIS-140 VLTD (regulatory) and WIMB (consumer) on separate infra — no data sharing</li>
+          </ul>
+        </div>
+        <div class="tier tier-2">
+          <h3 style="color: var(--orange)">Private Buses</h3>
+          <ul>
+            <li>Rely on driver mobile phone for tracking</li>
+            <li>Battery drain: app kills phone after ~2 trips</li>
+            <li>Drivers switch off phones → buses go dark</li>
+            <li>High data consumption (expensive for drivers)</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-16">
+          <h3>Fundamental Data Gaps</h3>
+          <ul>
+            <li><strong>No official GTFS data</strong> for Kolkata</li>
+            <li>Transit data fragmented across 5+ operators (WBTC, CTC, SBSTC, private)</li>
+            <li>"Where Is My Bus" covers only 60 of thousands of buses</li>
+            <li>No crowding or occupancy data</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Ride-Hailing Location Issues</h3>
+          <ul>
+            <li>Premature "arrived" detection → inflated fare via waiting charges</li>
+            <li>Ghost bookings: driver shown nearby but never moves</li>
+            <li>Geofence radius too large</li>
+            <li>Geocoding errors (e.g., Chitpur station pointing wrong)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: App Stability -->
+  <div class="slide">
+    <h2>App Stability & Performance</h2>
+    <div class="grid-2">
+      <div>
+        <div class="highlight-box mb-16">
+          <h3 style="color: var(--red)">White-Screen Bug (Dec 2025)</h3>
+          <p class="text-sm mt-8">Post-update white screen persisted <strong>2+ weeks</strong>, completely blocking all bookings. Unknown user impact. No crash reporting or alerting caught it — discovered via user complaints.</p>
+        </div>
+        <div class="card mb-16">
+          <h3>Missing Infrastructure</h3>
+          <ul>
+            <li>No Firebase Crashlytics or equivalent</li>
+            <li>No staged rollout or rollback capability</li>
+            <li>No crash reporting or alerting pipeline</li>
+            <li>Issues discovered via user complaints only</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Driver App Stale</h3>
+          <p class="text-sm mt-8" style="color: var(--text-dim)"><strong>14-month gap</strong> in driver app updates (last: Jan 2025, v1.4.28). Driver-side bugs directly cause passenger-side symptoms like ghost bookings and location issues.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-16">
+          <h3>Open Issues in GitHub</h3>
+          <ul>
+            <li><strong>75+ issues</strong> found across 15+ repos</li>
+            <li><strong>40+ open</strong>, many dating back to Aug-Oct 2023</li>
+            <li>Namma Yatri branding leaking into Yatri Sathi</li>
+            <li>CUG subscription UI defects</li>
+          </ul>
+        </div>
+        <div class="card mb-16">
+          <h3>Critical Open Bugs</h3>
+          <table>
+            <tr><td>#7637</td><td>Fare charges incorrect</td><td><span class="tag tag-red">Jul 2024</span></td></tr>
+            <tr><td>#7624</td><td>Rate card display wrong</td><td><span class="tag tag-red">Jul 2024</span></td></tr>
+            <tr><td>#7530</td><td>Invoice breaks (special zones)</td><td><span class="tag tag-orange">Jun 2024</span></td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Missing Feature: Kolkata Metro</h3>
+          <p class="text-sm mt-8" style="color: var(--text-dim)">Metro booking flag exists in codebase (<code>metroBookingEnable: false</code>) but no KMRC integration built. The "KMRL" code refers to Kochi Metro only.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Competitive Section -->
+  <div class="slide section-slide">
+    <span class="tag tag-cyan mb-16">Market Context</span>
+    <h1>Competitive Landscape</h1>
+    <p class="subtitle">What competitors do better — and Yatri Sathi's unique opportunity</p>
+  </div>
+
+  <!-- SLIDE 12: Competitive Analysis -->
+  <div class="slide">
+    <h2>Competitive Position</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Kolkata — Fragmented Market</h3>
+        <table>
+          <tr><th>App</th><th>Mode</th><th>Rating</th></tr>
+          <tr><td>Yatri Sathi</td><td>Ride-hailing + Bus (pilot)</td><td>4.91 (Play) / 2.5 (JD)</td></tr>
+          <tr><td>Aamar Kolkata Metro</td><td>Metro QR only</td><td>12.3L downloads</td></tr>
+          <tr><td>Stateyatra</td><td>SBSTC/WBTC routes</td><td>No live tracking</td></tr>
+          <tr><td>WBTC Ticket App</td><td>Intercity only</td><td>Limited features</td></tr>
+        </table>
+        <div class="card mt-16">
+          <h3 style="color: var(--green)">The Opportunity</h3>
+          <p class="text-sm mt-8">No single Kolkata app offers <strong>live bus tracking + metro QR + multimodal planning</strong>. Yatri Sathi can own this if it executes.</p>
+        </div>
+      </div>
+      <div>
+        <h3>What Competitors Do Better</h3>
+        <div class="card mb-16">
+          <table>
+            <tr><th>Feature</th><th>Who</th></tr>
+            <tr><td>Bus crowding indicator</td><td>Chalo</td></tr>
+            <tr><td>AI ETA prediction (75% accuracy)</td><td>Chalo</td></tr>
+            <tr><td>Offline QR tickets</td><td>DMRC Saarthi</td></tr>
+            <tr><td>One ticket across modes</td><td>Tummoc</td></tr>
+            <tr><td>Women's safety auto-alert SMS</td><td>m-Indicator</td></tr>
+            <tr><td>Offline mode</td><td>Chalo</td></tr>
+          </table>
+        </div>
+        <h3>Quick Wins (Already in Codebase)</h3>
+        <div class="card">
+          <ul>
+            <li>Enable metro booking <span class="text-dim">(flag flip)</span></li>
+            <li>Enable ticket cancellation <span class="text-dim">(config exists)</span></li>
+            <li>Enable bus ticket activation <span class="text-dim">(exists, disabled)</span></li>
+            <li>Multimodal journey planner <span class="text-dim">(modules exist)</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: The Three-Tier Problem -->
+  <div class="slide">
+    <h2>The Three-Tier Problem</h2>
+    <p class="subtitle">Issues span infrastructure, user experience, and human operations</p>
+    <div class="tier tier-1">
+      <div class="flex-row">
+        <div style="min-width: 180px">
+          <span class="tag tag-red">Tier 1 — Infrastructure</span>
+        </div>
+        <div>
+          <ul>
+            <li>Payment→ticket atomicity broken (no auto-refund, dead retry button)</li>
+            <li>Two-tier GPS tracking (govt VTU vs driver phones)</li>
+            <li>No GTFS data for Kolkata. No crash reporting pipeline</li>
+            <li>QR infrastructure unreliable (ETM downtime, 30-min expiry, no offline)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="tier tier-2">
+      <div class="flex-row">
+        <div style="min-width: 180px">
+          <span class="tag tag-orange">Tier 2 — User Experience</span>
+        </div>
+        <div>
+          <ul>
+            <li>White-screen bug blocked bookings for 2+ weeks</li>
+            <li>Ghost bookings, premature arrival detection, inflated fares</li>
+            <li>Bus tracker advertised but covers only 60 of thousands of buses</li>
+            <li>75+ open GitHub issues, some 2+ years old</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="tier tier-3">
+      <div class="flex-row">
+        <div style="min-width: 180px">
+          <span class="tag tag-yellow">Tier 3 — Operations</span>
+        </div>
+        <div>
+          <ul>
+            <li>Driver cancellations (#1 complaint, 35%) and extortion unchecked</li>
+            <li>Customer support completely non-functional (email only: yatrisathi.support@wb.gov.in)</li>
+            <li>Insurance claims broken despite being advertised</li>
+            <li>Driver app not updated in 14 months</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: Recommendations Section -->
+  <div class="slide section-slide">
+    <span class="tag tag-green mb-16">Action Plan</span>
+    <h1>Recommended Fix Priorities</h1>
+    <p class="subtitle">Staged by impact, urgency, and feasibility</p>
+  </div>
+
+  <!-- SLIDE 15: Priority Matrix -->
+  <div class="slide">
+    <h2>Fix Priority Matrix</h2>
+    <div style="overflow-y: auto; max-height: 75vh;">
+    <table>
+      <tr><th style="width:60px">Priority</th><th>Issue</th><th>Impact</th><th>Effort</th><th>Sprint</th></tr>
+      <tr>
+        <td><span class="tag tag-red">P0</span></td>
+        <td>Payment→ticket atomicity + auto-refund</td>
+        <td>Money loss, trust erosion</td>
+        <td>M</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">P0</span></td>
+        <td>PAYMENT_PENDING timeout + quote buffer</td>
+        <td>Stuck bookings indefinitely</td>
+        <td>S</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">P0</span></td>
+        <td>Crash reporting (Firebase Crashlytics)</td>
+        <td>Blind to all crashes</td>
+        <td>S</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">P0</span></td>
+        <td>Webhook idempotency (double charges)</td>
+        <td>Double UPI deductions</td>
+        <td>S</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-orange">P1</span></td>
+        <td>Driver accountability system</td>
+        <td>#1 complaint (35%)</td>
+        <td>L</td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-orange">P1</span></td>
+        <td>Customer support in-app (not just email)</td>
+        <td>#3 complaint (25%)</td>
+        <td>M</td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-orange">P1</span></td>
+        <td>Geofence radius fix (premature arrival)</td>
+        <td>Inflated fares via waiting charges</td>
+        <td>S</td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-orange">P1</span></td>
+        <td>Driver app update (14 months stale)</td>
+        <td>Root cause of ghost bookings</td>
+        <td>L</td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-yellow">P2</span></td>
+        <td>Enable Kolkata Metro integration</td>
+        <td>Major competitive gap</td>
+        <td>L</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-yellow">P2</span></td>
+        <td>Offline QR ticket viewing</td>
+        <td>Metro tunnel coverage</td>
+        <td>M</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-yellow">P2</span></td>
+        <td>Bus tracking expansion (beyond 60 buses)</td>
+        <td>Feature-gap perception</td>
+        <td>XL</td>
+        <td>3-4</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-cyan">P3</span></td>
+        <td>Multimodal journey planner</td>
+        <td>Competitive differentiator</td>
+        <td>L</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-cyan">P3</span></td>
+        <td>Insurance claims fix</td>
+        <td>Advertised but broken</td>
+        <td>M</td>
+        <td>4</td>
+      </tr>
+    </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: Next Steps -->
+  <div class="slide">
+    <h2>Next Steps</h2>
+    <div class="grid-2">
+      <div>
+        <div class="card mb-16">
+          <h3>Stage 2 — RCA Deep Dive + Fix Implementation</h3>
+          <p class="text-sm mt-8 text-dim">Ready to run. Clones the codebase (frontend + backend), traces exact code paths for each root cause, and implements fixes with git branches and commits.</p>
+          <ul class="mt-16">
+            <li>Payment fix (frontend + backend)</li>
+            <li>QR code fix (frontend + backend)</li>
+            <li>GPS / route fix</li>
+            <li>Booking reliability fix</li>
+            <li>Performance & stability fix</li>
+            <li>Accessibility & UX fix</li>
+            <li>iOS-specific fixes</li>
+            <li>Master priority matrix with sprint plan</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-16">
+          <h3>Stage 3 — Testing & Go-Live</h3>
+          <p class="text-sm mt-8 text-dim">After fixes are implemented.</p>
+          <ul class="mt-16">
+            <li>Consolidated audit report</li>
+            <li>Testing strategy (unit, integration, manual QA)</li>
+            <li>Phased deployment plan</li>
+            <li>Post-deploy monitoring setup</li>
+            <li>Success metrics & checkpoints</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Key Metrics to Move</h3>
+          <table>
+            <tr><td>Search→Trip Conversion</td><td>19.5% → 30%+</td></tr>
+            <tr><td>Payment Success Rate</td><td>Track baseline → 99%+</td></tr>
+            <tr><td>JustDial Rating</td><td>2.5 → 3.5+</td></tr>
+            <tr><td>Driver Cancellation Rate</td><td>Reduce by 50%</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prevSlide()">&#8592;</button>
+  <span class="counter" id="counter">1 / 16</span>
+  <button onclick="nextSlide()">&#8594;</button>
+</div>
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = ((n % total) + total) % total;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  function nextSlide() { showSlide(current + 1); }
+  function prevSlide() { showSlide(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+    if (e.key === 'End') { e.preventDefault(); showSlide(total - 1); }
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+  });
+
+  showSlide(0);
+</script>
+
+</body>
+</html>

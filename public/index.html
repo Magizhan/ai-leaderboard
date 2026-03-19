@@ -313,6 +313,11 @@
   }
   .lb-plan-tag.max5 { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
   .lb-plan-tag.max20 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .lb-outdated-tag {
+    font-size: 0.5rem; font-weight: 600; padding: 1px 5px; border-radius: 3px;
+    background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);
+    cursor: help;
+  }
 
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
@@ -926,6 +931,10 @@
 
 <script>
   const API_BASE = window.location.origin;
+  // Config: highlight users on outdated extension versions
+  // Set to true once Chrome Web Store v1.8 is published and ready
+  const SHOW_OUTDATED_EXTENSION_NUDGE = false;
+  const REQUIRED_EXTENSION_VERSION = '1.8';
   let currentTab = 'all';
   let boardType = 'session';
   let cachedData = null;
@@ -1179,6 +1188,7 @@
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
             ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
+            ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
             <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
             ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
@@ -1198,7 +1208,9 @@
 
   function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sparkKey = pctKey === 'sessionPct' ? 'sessionSparkline' : 'weeklySparkline';
-    const sorted = [...users].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
+    // Exclude Pro/Free plans — leaderboard is for Max plan GPU utilization only
+    const maxUsers = users.filter(u => !u.planType || u.planType.startsWith('max'));
+    const sorted = [...maxUsers].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
 
     let filtered = sorted;
     if (currentTab === 'ny') filtered = sorted.filter(u => u.team === 'NY');

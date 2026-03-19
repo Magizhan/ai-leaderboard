@@ -126,7 +126,8 @@ async function scrapeAndSync() {
 
   // Sync via background service worker (avoids CORS — CF Access blocks OPTIONS preflight)
   try {
-    const payload = { name, team, source: 'extension' };
+    const manifest = chrome.runtime.getManifest();
+    const payload = { name, team, source: 'extension', extensionVersion: manifest.version };
     if (planType) payload.planType = planType;
     if (sessionPct !== null) payload.sessionPct = sessionPct;
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;

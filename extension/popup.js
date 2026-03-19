@@ -307,10 +307,12 @@ async function doSync() {
   setStatus('<span class="spinner"></span> Syncing...', 'loading');
 
   try {
+    const manifest = chrome.runtime.getManifest();
     const payload = {
       name: scrapedData.name,
       team: teamSelect.value,
       source: 'extension',
+      extensionVersion: manifest.version,
     };
     if (scrapedData.sessionPct !== null) payload.sessionPct = scrapedData.sessionPct;
     if (scrapedData.weeklyPct !== null) payload.weeklyPct = scrapedData.weeklyPct;

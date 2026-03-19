@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purple Rides - Audit Insights & 2026 Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --purple-900: #2D0A5F;
+    --purple-800: #3D1180;
+    --purple-700: #5B21B6;
+    --purple-600: #7435FC;
+    --purple-500: #974DFF;
+    --purple-400: #B999FF;
+    --purple-300: #D4BFFF;
+    --purple-200: #E8DCFF;
+    --purple-100: #F5F0FF;
+    --green-500: #10B981;
+    --green-100: #D1FAE5;
+    --red-500: #EF4444;
+    --red-100: #FEE2E2;
+    --amber-500: #F59E0B;
+    --amber-100: #FEF3C7;
+    --gray-900: #111827;
+    --gray-700: #374151;
+    --gray-500: #6B7280;
+    --gray-300: #D1D5DB;
+    --gray-100: #F3F4F6;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--gray-900);
+    color: var(--gray-900);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 60px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide.active { display: flex; flex-direction: column; }
+
+  /* Slide backgrounds */
+  .bg-white { background: #fff; }
+  .bg-purple { background: linear-gradient(135deg, var(--purple-900) 0%, var(--purple-700) 50%, var(--purple-500) 100%); color: #fff; }
+  .bg-light { background: var(--purple-100); }
+  .bg-dark { background: linear-gradient(160deg, var(--gray-900) 0%, var(--purple-900) 100%); color: #fff; }
+
+  /* Typography */
+  .slide-title {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+  }
+  .slide-subtitle {
+    font-size: 22px;
+    font-weight: 400;
+    opacity: 0.8;
+    margin-bottom: 40px;
+    line-height: 1.4;
+  }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; }
+  h3 { font-size: 24px; font-weight: 600; margin-bottom: 16px; }
+  p, li { font-size: 18px; line-height: 1.6; color: var(--gray-700); }
+  .bg-purple p, .bg-purple li, .bg-dark p, .bg-dark li { color: rgba(255,255,255,0.9); }
+
+  /* Layout helpers */
+  .flex { display: flex; gap: 40px; flex: 1; }
+  .flex-col { flex-direction: column; }
+  .col { flex: 1; }
+  .center { align-items: center; justify-content: center; text-align: center; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+  .mt-auto { margin-top: auto; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-32 { margin-bottom: 32px; }
+  .flex-1 { flex: 1; }
+  .overflow-auto { overflow-y: auto; }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1px solid var(--gray-100);
+  }
+  .card-purple {
+    background: var(--purple-100);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid var(--purple-200);
+  }
+  .card-dark {
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+  }
+  .card-critical {
+    background: var(--red-100);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #FECACA;
+  }
+  .card-warning {
+    background: var(--amber-100);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #FDE68A;
+  }
+  .card-success {
+    background: var(--green-100);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #A7F3D0;
+  }
+
+  /* Stats */
+  .stat-number {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .stat-label {
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    opacity: 0.7;
+  }
+  .stat-number.purple { color: var(--purple-600); }
+  .stat-number.red { color: var(--red-500); }
+  .stat-number.green { color: var(--green-500); }
+  .stat-number.amber { color: var(--amber-500); }
+
+  /* Tags/Pills */
+  .pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .pill-critical { background: var(--red-100); color: var(--red-500); }
+  .pill-warning { background: var(--amber-100); color: #B45309; }
+  .pill-success { background: var(--green-100); color: #059669; }
+  .pill-purple { background: var(--purple-200); color: var(--purple-700); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th { text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); border-bottom: 2px solid var(--gray-300); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+
+  /* Timeline */
+  .timeline-item {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--purple-500);
+    margin-top: 4px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .timeline-dot::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 16px;
+    width: 2px;
+    height: 32px;
+    background: var(--purple-200);
+  }
+  .timeline-item:last-child .timeline-dot::after { display: none; }
+  .timeline-dot.q1 { background: var(--green-500); }
+  .timeline-dot.q2 { background: var(--purple-500); }
+  .timeline-dot.q3 { background: var(--amber-500); }
+  .timeline-dot.q4 { background: var(--purple-700); }
+
+  /* Progress bar */
+  .progress-bar { height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .progress-fill.red { background: var(--red-500); }
+  .progress-fill.amber { background: var(--amber-500); }
+  .progress-fill.green { background: var(--green-500); }
+  .progress-fill.purple { background: var(--purple-500); }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: var(--purple-600); transform: scale(1.1); }
+  .slide-counter {
+    position: fixed;
+    bottom: 32px;
+    left: 40px;
+    font-size: 14px;
+    color: var(--gray-500);
+    z-index: 100;
+    font-weight: 500;
+  }
+
+  /* Decorative */
+  .purple-circle {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--purple-400) 0%, transparent 70%);
+    opacity: 0.15;
+    right: -100px;
+    top: -100px;
+    pointer-events: none;
+  }
+
+  ul { padding-left: 24px; }
+  li { margin-bottom: 10px; }
+  li::marker { color: var(--purple-500); }
+
+  .icon-box {
+    width: 48px; height: 48px;
+    background: var(--purple-100);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  .bg-purple .icon-box, .bg-dark .icon-box { background: rgba(255,255,255,0.15); }
+
+  .quote {
+    font-size: 20px;
+    font-style: italic;
+    border-left: 4px solid var(--purple-400);
+    padding: 16px 24px;
+    margin: 16px 0;
+    background: var(--purple-100);
+    border-radius: 0 12px 12px 0;
+    color: var(--gray-700);
+  }
+
+  strong { font-weight: 600; }
+  .text-purple { color: var(--purple-600); }
+  .text-red { color: var(--red-500); }
+  .text-green { color: var(--green-500); }
+  .text-sm { font-size: 14px; }
+  .text-lg { font-size: 22px; }
+  .font-bold { font-weight: 700; }
+
+  .divider { height: 1px; background: var(--gray-200); margin: 24px 0; }
+  .bg-purple .divider, .bg-dark .divider { background: rgba(255,255,255,0.15); }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide bg-purple active" id="slide-1">
+  <div class="purple-circle" style="opacity:0.1;right:-200px;top:-200px;width:800px;height:800px;"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:800px;">
+    <div style="font-size:16px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;opacity:0.7;">NammaYatri + Enable India</div>
+    <div class="slide-title" style="font-size:64px;margin-bottom:20px;">Purple Rides</div>
+    <div class="slide-title" style="font-size:40px;font-weight:400;opacity:0.9;margin-bottom:32px;">Audit Insights & 2026 Roadmap</div>
+    <div class="divider" style="width:80px;background:rgba(255,255,255,0.5);height:3px;margin:24px 0;"></div>
+    <p style="font-size:20px;opacity:0.8;">Accessibility Rides for Persons with Disabilities</p>
+    <p style="font-size:16px;opacity:0.5;margin-top:12px;">March 18, 2026</p>
+  </div>
+</div>
+
+<!-- SLIDE 2: What We've Built -->
+<div class="slide bg-white" id="slide-2">
+  <h2 style="color:var(--purple-700);">What We've Built Together</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">Purple Rides launched October 2023 in partnership with Enable India</p>
+  <div class="grid-4" style="flex:1;">
+    <div class="card-purple" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="margin-bottom:16px;"><circle cx="32" cy="32" r="30" stroke="#7435FC" stroke-width="2" fill="#E8DCFF"/><path d="M20 38c0-3 2-5 5-5h14c3 0 5 2 5 5v4H20v-4z" fill="#7435FC"/><circle cx="32" cy="24" r="7" fill="#7435FC"/><path d="M15 44h34" stroke="#7435FC" stroke-width="2" stroke-linecap="round"/><path d="M22 44v4M42 44v4" stroke="#7435FC" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="stat-number purple">861K</div>
+      <div class="stat-label" style="color:var(--purple-700);">Trips Completed</div>
+      <p class="text-sm" style="margin-top:8px;color:var(--gray-500);">~40K rides/month currently</p>
+    </div>
+    <div class="card-purple" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="margin-bottom:16px;"><circle cx="32" cy="32" r="30" stroke="#7435FC" stroke-width="2" fill="#E8DCFF"/><circle cx="24" cy="22" r="5" fill="#7435FC"/><circle cx="40" cy="22" r="5" fill="#7435FC"/><circle cx="32" cy="36" r="6" fill="#7435FC"/><path d="M18 34c0-2 1-3.5 3-3.5h6c2 0 3 1.5 3 3.5" stroke="#7435FC" stroke-width="1.5"/><path d="M34 34c0-2 1-3.5 3-3.5h6c2 0 3 1.5 3 3.5" stroke="#7435FC" stroke-width="1.5"/><path d="M24 46c0-3 2-5 4-5h8c2 0 4 2 4 5" stroke="#7435FC" stroke-width="1.5"/></svg>
+      <div class="stat-number purple">478K</div>
+      <div class="stat-label" style="color:var(--purple-700);">PwD Users Registered</div>
+      <p class="text-sm" style="margin-top:8px;color:var(--gray-500);">291K Blind, 94K Locomotor, 29K Hearing</p>
+    </div>
+    <div class="card-purple" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="margin-bottom:16px;"><circle cx="32" cy="32" r="30" stroke="#7435FC" stroke-width="2" fill="#E8DCFF"/><rect x="22" y="18" width="20" height="14" rx="3" fill="#7435FC"/><path d="M26 36h12v8H26z" fill="#B999FF"/><path d="M30 32v4M34 32v4" stroke="#7435FC" stroke-width="1.5"/><circle cx="28" cy="25" r="2" fill="#E8DCFF"/><path d="M32 23l6 4H32z" fill="#E8DCFF"/><path d="M20 46h24" stroke="#7435FC" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="stat-number purple">242K</div>
+      <div class="stat-label" style="color:var(--purple-700);">Drivers Trained</div>
+      <p class="text-sm" style="margin-top:8px;color:var(--gray-500);">Nano video modules (60-90s each)</p>
+    </div>
+    <div class="card-purple" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="margin-bottom:16px;"><circle cx="32" cy="32" r="30" stroke="#7435FC" stroke-width="2" fill="#E8DCFF"/><path d="M32 18v2M32 44v2M18 32h2M44 32h2" stroke="#7435FC" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="32" r="10" stroke="#7435FC" stroke-width="2"/><path d="M32 26v6l4 4" stroke="#7435FC" stroke-width="2" stroke-linecap="round"/><path d="M24 20l-2-2M40 20l2-2M24 44l-2 2M40 44l2 2" stroke="#B999FF" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="stat-number purple" style="font-size:44px;">128K</div>
+      <div class="stat-label" style="color:var(--purple-700);">Drivers Earned Coins</div>
+      <p class="text-sm" style="margin-top:8px;color:var(--gray-500);">3.1M total coins awarded</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;display:flex;gap:32px;align-items:center;">
+    <div style="flex:1;">
+      <h3 style="color:var(--purple-700);margin-bottom:8px;">Growth Since Launch</h3>
+      <div style="display:flex;gap:24px;align-items:flex-end;height:100px;margin-top:16px;">
+        <div style="text-align:center;"><div style="width:48px;height:12px;background:var(--purple-200);border-radius:4px 4px 0 0;"></div><p class="text-sm" style="color:var(--gray-500);margin-top:4px;">Oct'23</p><p style="font-size:12px;color:var(--purple-600);font-weight:700;">6K</p></div>
+        <div style="text-align:center;"><div style="width:48px;height:28px;background:var(--purple-300);border-radius:4px 4px 0 0;"></div><p class="text-sm" style="color:var(--gray-500);margin-top:4px;">Feb'24</p><p style="font-size:12px;color:var(--purple-600);font-weight:700;">40K</p></div>
+        <div style="text-align:center;"><div style="width:48px;height:56px;background:var(--purple-400);border-radius:4px 4px 0 0;"></div><p class="text-sm" style="color:var(--gray-500);margin-top:4px;">Mid'24</p><p style="font-size:12px;color:var(--purple-600);font-weight:700;">150K</p></div>
+        <div style="text-align:center;"><div style="width:48px;height:100px;background:var(--purple-600);border-radius:4px 4px 0 0;"></div><p class="text-sm" style="color:var(--gray-500);margin-top:4px;">Jan'25</p><p style="font-size:12px;color:var(--purple-600);font-weight:700;">300K</p></div>
+      </div>
+    </div>
+    <div style="width:2px;height:100px;background:var(--gray-200);"></div>
+    <div>
+      <h3 style="color:var(--purple-700);margin-bottom:12px;">Competitor Landscape</h3>
+      <div style="display:flex;gap:16px;">
+        <div style="text-align:center;"><div class="pill pill-critical" style="margin-bottom:4px;">Uber WAV</div><p class="text-sm" style="color:var(--gray-500);">Ghost option</p></div>
+        <div style="text-align:center;"><div class="pill pill-critical" style="margin-bottom:4px;">Ola</div><p class="text-sm" style="color:var(--gray-500);">Nothing</p></div>
+        <div style="text-align:center;"><div class="pill pill-warning" style="margin-bottom:4px;">Rapido</div><p class="text-sm" style="color:var(--gray-500);">Court ordered</p></div>
+        <div style="text-align:center;"><div class="pill pill-success" style="margin-bottom:4px;">NammaYatri</div><p class="text-sm" style="color:var(--gray-500);">Proactive leader</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Real Data from Production -->
+<div class="slide bg-white" id="slide-3">
+  <h2 style="color:var(--purple-700);">Purple Rides: Live Data & Insights</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">From production ClickHouse, Open Data Dashboard, and internal Slack</p>
+  <div class="flex" style="flex:1;gap:24px;overflow:hidden;">
+    <div style="flex:1.2;display:flex;flex-direction:column;gap:16px;">
+      <div class="card-purple">
+        <h3 style="color:var(--purple-800);margin-bottom:12px;">Live from ClickHouse (as of today)</h3>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="text-align:center;flex:1;"><div class="stat-number purple" style="font-size:28px;">861K</div><p class="text-sm" style="color:var(--purple-700);">Total rides</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number purple" style="font-size:28px;">~40K</div><p class="text-sm" style="color:var(--purple-700);">Per month</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number purple" style="font-size:28px;">128K</div><p class="text-sm" style="color:var(--purple-700);">Drivers</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number purple" style="font-size:28px;">3.1M</div><p class="text-sm" style="color:var(--purple-700);">Coins</p></div>
+        </div>
+        <h3 style="color:var(--purple-800);margin-top:16px;margin-bottom:8px;">Rides by Disability Type</h3>
+        <div style="margin-bottom:4px;display:flex;justify-content:space-between;font-size:12px;"><span>Blind / Low Vision</span><strong>500,817 rides (67%)</strong></div>
+        <div class="progress-bar" style="height:10px;margin-bottom:8px;"><div class="progress-fill purple" style="width:67%;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span>Locomotor Disability</span><strong>194,811 rides (26%)</strong></div>
+        <div class="progress-bar" style="height:10px;margin-bottom:8px;"><div class="progress-fill purple" style="width:26%;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span>Hearing Impairment</span><strong>55,944 rides (7%)</strong></div>
+        <div class="progress-bar" style="height:10px;"><div class="progress-fill purple" style="width:7%;"></div></div>
+      </div>
+      <div class="card">
+        <h3>Purple Rides by City (Top 12)</h3>
+        <table style="font-size:11px;">
+          <thead><tr><th>City</th><th style="text-align:right;">Rides</th><th style="text-align:right;">Riders</th></tr></thead>
+          <tr style="background:var(--purple-100);"><td style="font-weight:700;">Bangalore</td><td style="text-align:right;font-weight:700;">412K</td><td style="text-align:right;">39K</td></tr>
+          <tr><td style="font-weight:600;">Kolkata</td><td style="text-align:right;">142K</td><td style="text-align:right;">32K</td></tr>
+          <tr><td>Tumakuru</td><td style="text-align:right;">63K</td><td style="text-align:right;">3.7K</td></tr>
+          <tr><td>Gulbarga</td><td style="text-align:right;">33K</td><td style="text-align:right;">3.2K</td></tr>
+          <tr><td>Siliguri</td><td style="text-align:right;">23K</td><td style="text-align:right;">474</td></tr>
+          <tr><td>Chennai</td><td style="text-align:right;">16K</td><td style="text-align:right;">3.2K</td></tr>
+          <tr><td>Bhubaneshwar</td><td style="text-align:right;">12K</td><td style="text-align:right;">1.7K</td></tr>
+          <tr><td>Mysore</td><td style="text-align:right;">4.9K</td><td style="text-align:right;">1.1K</td></tr>
+          <tr><td>Kochi</td><td style="text-align:right;">4.8K</td><td style="text-align:right;">500</td></tr>
+          <tr><td>Delhi</td><td style="text-align:right;">3.0K</td><td style="text-align:right;">1.2K</td></tr>
+          <tr><td>Hyderabad</td><td style="text-align:right;">2.0K</td><td style="text-align:right;">937</td></tr>
+          <tr><td style="color:var(--gray-500);">+39 more cities</td><td style="text-align:right;color:var(--gray-500);">...</td><td style="text-align:right;color:var(--gray-500);">...</td></tr>
+        </table>
+        <p class="text-sm" style="color:var(--purple-600);margin-top:6px;font-weight:600;">50+ cities already have purple rides!</p>
+      </div>
+      <div class="card-critical" style="padding:16px;">
+        <p class="text-sm" style="color:var(--gray-700);"><strong class="text-red">Dec 8, 2024:</strong> disability_tag stopped updating in production. Purple ride tracking on Open Data broke. Took days to detect and fix. <em>"We have stopped updating Purple Rides in Today data and AllTime data since its not getting captured"</em> &mdash; Srinivas, #production-issues</p>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <h3>Top PwD Riders</h3>
+        <table style="font-size:12px;">
+          <thead><tr><th>Name</th><th>Disability</th><th style="text-align:right;">Rides</th></tr></thead>
+          <tr style="background:var(--purple-100);"><td style="font-weight:700;">Kailash Barman</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;font-weight:700;color:var(--purple-600);">11,951</td></tr>
+          <tr><td>Dayal</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;">2,135</td></tr>
+          <tr><td>Mk</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Locomotor</span></td><td style="text-align:right;">2,062</td></tr>
+          <tr><td>Shipsnta Singha</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;">1,561</td></tr>
+          <tr><td>Vishal</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;">1,263</td></tr>
+          <tr><td>Lakshmi</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;">1,236</td></tr>
+          <tr><td>Anitha</td><td><span class="pill pill-purple" style="font-size:9px;padding:1px 6px;">Blind</span></td><td style="text-align:right;">1,155</td></tr>
+        </table>
+        <p class="text-sm" style="color:var(--gray-500);margin-top:8px;">Kailash has taken <strong>11,951 rides</strong> &mdash; ~14 rides/day, every day since launch</p>
+      </div>
+      <div class="card">
+        <h3>Top Purple Ride Drivers</h3>
+        <table style="font-size:12px;">
+          <thead><tr><th>Name</th><th style="text-align:right;">Rides</th><th style="text-align:right;">Coins</th></tr></thead>
+          <tr style="background:var(--purple-100);"><td style="font-weight:700;">Venkatesh</td><td style="text-align:right;">7,779</td><td style="text-align:right;font-weight:700;color:var(--purple-600);">38,895</td></tr>
+          <tr><td>Manjunath</td><td style="text-align:right;">6,665</td><td style="text-align:right;">33,325</td></tr>
+          <tr><td>Manjunatha</td><td style="text-align:right;">6,000</td><td style="text-align:right;">30,000</td></tr>
+          <tr><td>Ramesh</td><td style="text-align:right;">5,815</td><td style="text-align:right;">29,075</td></tr>
+          <tr><td>Nagaraj</td><td style="text-align:right;">5,490</td><td style="text-align:right;">27,450</td></tr>
+          <tr><td>Sadiq Pasha</td><td style="text-align:right;">5,140</td><td style="text-align:right;">25,700</td></tr>
+          <tr><td>Mahaboob Pasha</td><td style="text-align:right;">4,801</td><td style="text-align:right;">24,005</td></tr>
+        </table>
+        <p class="text-sm" style="color:var(--gray-500);margin-top:8px;"><strong>128,463</strong> unique drivers. Top driver Venkatesh: 7,779 purple rides!</p>
+      </div>
+      <div class="card" style="background:var(--purple-100);border-color:var(--purple-200);">
+        <h3 style="color:var(--purple-800);">User Stories</h3>
+        <div class="quote" style="font-size:12px;padding:8px 12px;margin:6px 0;">
+          "Drivers text me instead of calling, and payments are smooth. The ride is seamless." &mdash; <strong>Narasimha</strong>, deaf rider
+        </div>
+        <div class="quote" style="font-size:12px;padding:8px 12px;margin:6px 0;">
+          "The option to indicate my disability and thoughtful app customizations make every ride a breeze." &mdash; <strong>Ms. Mallika</strong>, 32, visually impaired, 40+ rides
+        </div>
+        <div class="quote" style="font-size:12px;padding:8px 12px;margin:6px 0;">
+          "Being able to assist individuals with disabilities brings me immense joy" &mdash; <strong>Mr. Murthy</strong>, auto driver
+        </div>
+        <div class="quote" style="font-size:12px;padding:8px 12px;margin:6px 0;">
+          "A memorable moment was helping a visually impaired couple safely reach their bus stop" &mdash; <strong>Mr. Adarsh</strong>, auto driver
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Honest Assessment -->
+<div class="slide bg-white" id="slide-4">
+  <h2>Honest Assessment: Where We Stand</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">A comprehensive audit reveals we've built the foundation, but momentum has stalled</p>
+  <div class="grid-3" style="flex:1;">
+    <div class="card-critical" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="#FEE2E2" stroke="#EF4444" stroke-width="2"/><path d="M16 16l16 16M32 16L16 32" stroke="#EF4444" stroke-width="3" stroke-linecap="round"/></svg>
+        <div>
+          <div class="stat-number red" style="font-size:44px;">55+</div>
+          <div class="stat-label" style="color:var(--red-500);">Open Bugs</div>
+        </div>
+      </div>
+      <div class="divider" style="background:#FECACA;"></div>
+      <p class="text-sm" style="color:var(--gray-700);">35+ from September 2023 &mdash; <strong>2.5 years old</strong>. Many are screen reader / TalkBack issues that directly affect blind users.</p>
+      <div style="margin-top:auto;padding-top:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-bottom:4px;"><span>TalkBack bugs</span><span>15</span></div>
+        <div class="progress-bar"><div class="progress-fill red" style="width:27%;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:8px;margin-bottom:4px;"><span>UI/UX bugs</span><span>22</span></div>
+        <div class="progress-bar"><div class="progress-fill red" style="width:40%;"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:8px;margin-bottom:4px;"><span>Driver-side bugs</span><span>13</span></div>
+        <div class="progress-bar"><div class="progress-fill red" style="width:24%;"></div></div>
+      </div>
+    </div>
+    <div class="card-purple" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="#E8DCFF" stroke="#7435FC" stroke-width="2"/><rect x="12" y="28" width="6" height="10" fill="#7435FC"/><rect x="21" y="22" width="6" height="16" fill="#7435FC"/><rect x="30" y="14" width="6" height="24" fill="#7435FC"/></svg>
+        <div>
+          <div class="stat-number purple" style="font-size:36px;">861K</div>
+          <div class="stat-label" style="color:var(--purple-700);">Rides in ClickHouse</div>
+        </div>
+      </div>
+      <div class="divider" style="background:var(--purple-200);"></div>
+      <p class="text-sm" style="color:var(--gray-700);"><strong>Live ClickHouse data</strong> &mdash; Metabase dashboards exist but no Purple-specific view yet.</p>
+      <div style="margin-top:12px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--gray-700);">Blind / Low Vision</span><strong style="color:var(--purple-600);">500K rides</strong></div>
+        <div class="progress-bar" style="height:6px;margin-bottom:8px;"><div class="progress-fill purple" style="width:67%;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--gray-700);">Locomotor</span><strong style="color:var(--purple-600);">195K rides</strong></div>
+        <div class="progress-bar" style="height:6px;margin-bottom:8px;"><div class="progress-fill purple" style="width:26%;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--gray-700);">Hearing</span><strong style="color:var(--purple-600);">56K rides</strong></div>
+        <div class="progress-bar" style="height:6px;"><div class="progress-fill purple" style="width:7%;"></div></div>
+      </div>
+      <div style="margin-top:auto;padding-top:12px;font-size:12px;color:var(--gray-500);">Growth: 3K/mo (Mar'24) &rarr; 40K/mo (Jan'26)</div>
+    </div>
+    <div class="card-warning" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/><path d="M24 14l12 20H12z" fill="#F59E0B"/><path d="M24 24v-4" stroke="#FEF3C7" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="29" r="1.5" fill="#FEF3C7"/></svg>
+        <div>
+          <div class="stat-number amber" style="font-size:44px;">!</div>
+          <div class="stat-label" style="color:#B45309;">No Feedback Loop</div>
+        </div>
+      </div>
+      <div class="divider" style="background:#FDE68A;"></div>
+      <p class="text-sm" style="color:var(--gray-700);">478K users but <strong>no accessible feedback channel</strong>. Internal complaints go unheard. 55+ GitHub issues unresolved since 2023.</p>
+      <div style="margin-top:auto;padding-top:16px;font-size:13px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="color:var(--red-500);font-weight:700;">&#x2717;</span> <span style="color:var(--gray-700);">No Purple-specific feedback channel</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="color:var(--red-500);font-weight:700;">&#x2717;</span> <span style="color:var(--gray-700);">General accessibility complaints unresolved</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="color:var(--red-500);font-weight:700;">&#x2717;</span> <span style="color:var(--gray-700);">App Store: "accessibility features not indicated"</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="color:#B45309;font-weight:700;">&#x26A0;</span> <span style="color:var(--gray-700);">Platform complaints amplified for PwD users</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;background:var(--gray-100);border:none;">
+    <p style="text-align:center;font-size:18px;color:var(--gray-700);"><strong>The irony:</strong> The screens designed to help disabled users are themselves inaccessible to screen readers. <code>setFocus()</code> is completely commented out. 15+ UI elements have <code>accessibilityLabel={undefined}</code>.</p>
+  </div>
+</div>
+
+<!-- SLIDE 4: Critical Findings -->
+<div class="slide bg-white" id="slide-5">
+  <h2>Top Critical Findings</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">From backend, mobile, analytics, and GitHub audit</p>
+  <div style="flex:1;overflow-y:auto;">
+    <table>
+      <thead>
+        <tr><th style="width:60px;">ID</th><th>Issue</th><th style="width:100px;">Severity</th><th style="width:120px;">Category</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>P-01</strong></td><td><code>setFocus()</code> entirely commented out &mdash; screen readers can't be directed to modals</td><td><span class="pill pill-critical">Critical</span></td><td>Mobile App</td></tr>
+        <tr><td><strong>P-02</strong></td><td>15+ disability UI elements have <code>accessibilityLabel={undefined}</code></td><td><span class="pill pill-critical">Critical</span></td><td>Mobile App</td></tr>
+        <tr><td><strong>P-03</strong></td><td>Driver accessibility popups have zero accessibility attributes</td><td><span class="pill pill-critical">Critical</span></td><td>Mobile App</td></tr>
+        <tr><td><strong>P-04</strong></td><td>Disability tag lost during search &rarr; booking pipeline (fixed 6+ times, regressed)</td><td><span class="pill pill-critical">Critical</span></td><td>Backend</td></tr>
+        <tr><td><strong>P-05</strong></td><td>No driver opt-in/training mechanism &mdash; purple rides auto-assigned</td><td><span class="pill pill-warning">High</span></td><td>Design Gap</td></tr>
+        <tr><td><strong>P-06</strong></td><td>No monetary incentives for drivers (only 5 coins &asymp; negligible)</td><td><span class="pill pill-warning">High</span></td><td>Design Gap</td></tr>
+        <tr><td><strong>P-07</strong></td><td>No wheelchair-accessible vehicle filter for locomotor disability</td><td><span class="pill pill-warning">High</span></td><td>Missing Feature</td></tr>
+        <tr><td><strong>P-08</strong></td><td>Only 4 disability types in DB, but 13 in ONDC protocol</td><td><span class="pill pill-warning">High</span></td><td>Backend</td></tr>
+        <tr><td><strong>P-09</strong></td><td>Bengaluru only &mdash; no expansion in 2.5 years</td><td><span class="pill pill-warning">High</span></td><td>Growth</td></tr>
+        <tr><td><strong>P-10</strong></td><td>Purple Rides data missing from ClickHouse &mdash; no analytics possible</td><td><span class="pill pill-critical">Critical</span></td><td>Data</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SLIDE: React Migration Regression -->
+<div class="slide bg-white" id="slide-6">
+  <h2>React Migration: What We Lost</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">The PureScript app had mature Purple Ride features (~180 files). The React migration (Jun 2024) broke or dropped several.</p>
+  <div class="flex" style="flex:1;gap:32px;">
+    <div class="col">
+      <div class="card-success" style="margin-bottom:16px;">
+        <h3 style="color:#059669;">PureScript Had (Working)</h3>
+        <ul style="font-size:14px;">
+          <li><strong>"Purple Ride Champion"</strong> confetti badge for drivers</li>
+          <li><strong>Disability onboarding banner</strong> on customer home</li>
+          <li><strong>Driver education banner</strong> with video carousel</li>
+          <li><strong>Call button disabled</strong> for hearing-impaired riders</li>
+          <li><strong>Chat auto-skip</strong> for blind riders</li>
+          <li><strong>Auto-scroll disabled</strong> for low-vision users</li>
+          <li><strong>Repeat-ride timer skipped</strong> for blind users</li>
+          <li><strong>Per-vehicle, per-city</strong> disability tutorial videos</li>
+          <li><strong>Post-ride assistance survey</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card-critical" style="margin-bottom:16px;">
+        <h3 style="color:var(--red-500);">Lost or Broken in React</h3>
+        <ul style="font-size:14px;">
+          <li><strong>Both banners commented out</strong> &mdash; onboarding + driver education removed Sep 2024</li>
+          <li><strong>setFocus() commented out</strong> &mdash; screen readers can't focus modals</li>
+          <li><strong>15+ accessibilityLabel={undefined}</strong> &mdash; screen readers silenced</li>
+          <li><strong>Hearing/blind guards may be missing</strong> &mdash; call-disable & chat-skip were PureScript-only</li>
+          <li><strong>DISABILITY_NAME lost on logout</strong> &mdash; React login may not re-hydrate</li>
+          <li><strong>3 urgent video fix commits</strong> needed within weeks of migration</li>
+        </ul>
+      </div>
+      <div class="card-warning">
+        <p class="text-sm" style="color:#92400E;"><strong>Jun 2024 migration:</strong> 4,152 lines changed in Flow.purs. No React equivalent created for the PureScript disability popup flow. Purple features were deprioritized during the transition.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: The Disability Tag Fragility -->
+<div class="slide bg-light" id="slide-7">
+  <h2 style="color:var(--purple-800);">Root Cause: Disability Tag Fragility</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">The disability tag passes through 6+ layers &mdash; and keeps breaking</p>
+  <div class="flex" style="flex:1;">
+    <div class="col">
+      <div class="card" style="height:100%;">
+        <h3>The Pipeline</h3>
+        <div style="font-family:monospace;font-size:14px;line-height:2.2;color:var(--gray-700);">
+          <div>Rider Profile <span style="color:var(--purple-500);">&rarr;</span> SearchRequest</div>
+          <div style="padding-left:20px;">SearchRequest <span style="color:var(--purple-500);">&rarr;</span> Beckn Protocol</div>
+          <div style="padding-left:40px;">Beckn <span style="color:var(--purple-500);">&rarr;</span> BPP SearchRequest</div>
+          <div style="padding-left:60px;">BPP Search <span style="color:var(--purple-500);">&rarr;</span> Select</div>
+          <div style="padding-left:80px;">Select <span style="color:var(--purple-500);">&rarr;</span> Booking</div>
+          <div style="padding-left:100px;">Booking <span style="color:var(--purple-500);">&rarr;</span> Ride</div>
+        </div>
+        <div class="divider"></div>
+        <p class="text-sm"><strong class="text-red">Dec 2024:</strong> 12 commits in 7 days just to fix disability tag propagation. One change broke it, fix broke something else, then had to add it back.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card-critical" style="margin-bottom:16px;">
+        <h3 style="color:var(--red-500);">No Integration Tests</h3>
+        <p class="text-sm">Zero end-to-end tests for the purple ride flow. Each fix is a gamble.</p>
+      </div>
+      <div class="card-warning" style="margin-bottom:16px;">
+        <h3 style="color:#B45309;">No Accessibility Testing</h3>
+        <p class="text-sm">No WCAG audit. No automated screen reader tests. Apple App Store says "developer has not indicated accessibility features."</p>
+      </div>
+      <div class="card-success">
+        <h3 style="color:#059669;">What Works Well</h3>
+        <p class="text-sm">Beckn/ONDC integration is solid. Driver coin rewards work. 7-language translations. Communication interception (call/chat swap) for deaf & blind users.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Silence is Not Satisfaction -->
+<div class="slide bg-dark" id="slide-8">
+  <div class="purple-circle" style="opacity:0.08;right:-200px;bottom:-200px;width:600px;height:600px;"></div>
+  <h2>Silence Is Not Satisfaction</h2>
+  <p class="slide-subtitle">177,000 users. Zero organic feedback. Why?</p>
+  <div class="grid-2" style="flex:1;">
+    <div>
+      <div class="card-dark" style="margin-bottom:20px;">
+        <div class="icon-box">&#x1F50D;</div>
+        <h3 style="color:#fff;">What We Searched</h3>
+        <ul style="color:rgba(255,255,255,0.7);">
+          <li>Twitter/X, Reddit, Google Play, App Store</li>
+          <li>Disability advocacy forums</li>
+          <li>Consumer complaint portals</li>
+          <li>News articles and academic papers</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <div class="icon-box">&#x1F4CA;</div>
+        <h3 style="color:#fff;">What We Found</h3>
+        <ul style="color:rgba(255,255,255,0.7);">
+          <li>15 institutional press articles (all positive)</li>
+          <li>4 curated testimonials (in partner publications)</li>
+          <li>1 IIM Bangalore academic paper</li>
+          <li><strong style="color:var(--red-500);">Zero organic user voice</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card-dark" style="height:100%;">
+        <div class="icon-box">&#x26A0;&#xFE0F;</div>
+        <h3 style="color:#fff;">Why This Matters</h3>
+        <div class="quote" style="background:rgba(255,255,255,0.06);border-color:var(--purple-400);color:rgba(255,255,255,0.85);">
+          "Users with disabilities may face barriers to posting reviews. The user base may share feedback through offline channels we can't reach."
+        </div>
+        <p style="margin-top:20px;color:rgba(255,255,255,0.8);font-size:17px;">We need to <strong>build feedback channels</strong> that are actually accessible &mdash; voice notes, WhatsApp bots, in-app ratings designed for assistive technology.</p>
+        <p style="margin-top:16px;color:rgba(255,255,255,0.8);font-size:17px;">We need <strong>Enable India's help</strong> to conduct structured user interviews and connect with PwD communities.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: The Opportunity -->
+<div class="slide bg-purple" id="slide-9">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="slide-title" style="font-size:52px;max-width:900px;">We're the only ones doing this.<br>Now we need to do it <em>right</em>.</div>
+    <div class="divider" style="width:80px;height:3px;background:rgba(255,255,255,0.5);margin:32px 0;"></div>
+    <div class="grid-3" style="margin-top:20px;">
+      <div class="card-dark">
+        <p style="font-size:28px;font-weight:700;color:#fff;">Uber WAV</p>
+        <p style="color:rgba(255,255,255,0.6);margin-top:8px;">"Ghost option" &mdash; 50 vehicles, largely unavailable. Community petition to bring it back.</p>
+      </div>
+      <div class="card-dark">
+        <p style="font-size:28px;font-weight:700;color:#fff;">Ola</p>
+        <p style="color:rgba(255,255,255,0.6);margin-top:8px;">Zero accessibility features. No disability disclosure. Completely absent from this space.</p>
+      </div>
+      <div class="card-dark">
+        <p style="font-size:28px;font-weight:700;color:#fff;">Rapido</p>
+        <p style="color:rgba(255,255,255,0.6);margin-top:8px;">Delhi HC: "Make app accessible or pack up." 170 WCAG errors found. Forced, not willing.</p>
+      </div>
+    </div>
+    <p style="margin-top:32px;font-size:22px;opacity:0.9;max-width:800px;">India has <strong>26.8 million PwD</strong> (Census 2011). The real number is likely 2-3x higher. This isn't charity &mdash; it's a massive underserved market that only we are positioned to serve.</p>
+  </div>
+</div>
+
+<!-- SLIDE 8: 2026 Roadmap Overview -->
+<div class="slide bg-white" id="slide-10">
+  <h2 style="color:var(--purple-700);">2026 Roadmap: Purple Rides</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">Four quarters, three phases: Fix &rarr; Grow &rarr; Scale</p>
+  <div class="flex" style="flex:1;gap:32px;">
+    <div style="flex:2;overflow-y:auto;">
+      <div class="timeline-item">
+        <div class="timeline-dot q1" style="width:20px;height:20px;"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <h3 style="margin:0;">Q1-Q2: Fix the Foundation</h3>
+            <span class="pill pill-critical">Urgent</span>
+          </div>
+          <ul style="font-size:16px;">
+            <li>Fix all critical screen reader bugs (setFocus, accessibilityLabel)</li>
+            <li>Add disability_tag to ClickHouse &mdash; enable analytics</li>
+            <li>Integration tests for disability tag pipeline</li>
+            <li>Close 55+ stale issues (triage with Mustaq)</li>
+            <li>Accessible feedback channels (in-app, WhatsApp)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot q2" style="width:20px;height:20px;"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <h3 style="margin:0;">Q2-Q3: Grow the Experience</h3>
+            <span class="pill pill-purple">Build</span>
+          </div>
+          <ul style="font-size:16px;">
+            <li>Driver opt-in + training certification system</li>
+            <li>Monetary incentives for Purple Ride drivers</li>
+            <li>Wheelchair-accessible vehicle tagging & filtering</li>
+            <li>Expand disability types (4 &rarr; 13 per ONDC)</li>
+            <li>WCAG audit + remediation</li>
+            <li>Purple Rides analytics dashboard</li>
+          </ul>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot q3" style="width:20px;height:20px;"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <h3 style="margin:0;">Q3-Q4: Scale & Impact</h3>
+            <span class="pill pill-success">Expand</span>
+          </div>
+          <ul style="font-size:15px;">
+            <li>Fully activate 10 cities with training, awareness, local partnerships</li>
+            <li><strong>Chennai One:</strong> Purple-accessible multimodal (auto + metro + bus)</li>
+            <li><strong>Public transport:</strong> Accessible bus/metro ticketing across all apps</li>
+            <li>Priority driver matching for Purple Rides</li>
+            <li>TurnPlus swivel seat: 300 &rarr; 2,000 vehicles</li>
+            <li>Hospital &amp; rehabilitation center partnerships</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div class="card-purple" style="margin-bottom:16px;">
+        <h3 style="color:var(--purple-800);">2026 Targets</h3>
+        <div style="margin-bottom:16px;">
+          <p class="text-sm" style="color:var(--purple-700);font-weight:600;">Purple Ride Volume</p>
+          <div class="stat-number purple" style="font-size:36px;">1.5M rides</div>
+          <div class="progress-bar"><div class="progress-fill purple" style="width:57%;"></div></div>
+          <p class="text-sm" style="color:var(--gray-500);">861K today &rarr; 1.5M by Dec 2026</p>
+        </div>
+        <div style="margin-bottom:16px;">
+          <p class="text-sm" style="color:var(--purple-700);font-weight:600;">Cities Activated</p>
+          <div class="stat-number purple" style="font-size:36px;">10 cities</div>
+          <div class="progress-bar"><div class="progress-fill purple" style="width:20%;"></div></div>
+          <p class="text-sm" style="color:var(--gray-500);">50+ have rides, ~5 activated &rarr; 10 fully activated</p>
+        </div>
+        <div style="margin-bottom:16px;">
+          <p class="text-sm" style="color:var(--purple-700);font-weight:600;">Open Bugs</p>
+          <div class="stat-number green" style="font-size:36px;">&lt;5</div>
+          <div class="progress-bar"><div class="progress-fill red" style="width:100%;"></div></div>
+          <p class="text-sm" style="color:var(--gray-500);">55+ today &rarr; &lt;5 by Q2</p>
+        </div>
+        <div>
+          <p class="text-sm" style="color:var(--purple-700);font-weight:600;">Accessible Vehicles</p>
+          <div class="stat-number purple" style="font-size:36px;">2,000</div>
+          <div class="progress-bar"><div class="progress-fill purple" style="width:15%;"></div></div>
+          <p class="text-sm" style="color:var(--gray-500);">300 today &rarr; 2,000 by Dec 2026</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: Q1-Q2 Detail -->
+<div class="slide bg-white" id="slide-11">
+  <h2>Q1-Q2: Fix the Foundation <span class="pill pill-critical" style="vertical-align:middle;">Now</span></h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">Make what we have actually work for the people it's meant to serve</p>
+  <div class="grid-2" style="flex:1;">
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="icon-box">&#x1F4F1;</div>
+        <h3>Mobile App Accessibility</h3>
+        <table style="font-size:14px;">
+          <tr><td>Fix <code>setFocus()</code></td><td><span class="pill pill-critical" style="font-size:11px;">Week 1</span></td></tr>
+          <tr><td>Remove <code>accessibilityLabel={undefined}</code> (15+ instances)</td><td><span class="pill pill-critical" style="font-size:11px;">Week 1</span></td></tr>
+          <tr><td>Add a11y attrs to driver popups</td><td><span class="pill pill-critical" style="font-size:11px;">Week 2</span></td></tr>
+          <tr><td>Fix hardcoded English string matching</td><td><span class="pill pill-warning" style="font-size:11px;">Week 3</span></td></tr>
+          <tr><td>Focus traps in modals</td><td><span class="pill pill-warning" style="font-size:11px;">Week 4</span></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="icon-box">&#x1F9EA;</div>
+        <h3>Testing & Quality</h3>
+        <table style="font-size:14px;">
+          <tr><td>Integration tests: disability tag pipeline</td><td><span class="pill pill-critical" style="font-size:11px;">Week 2-4</span></td></tr>
+          <tr><td>WCAG automated audit setup</td><td><span class="pill pill-warning" style="font-size:11px;">Month 2</span></td></tr>
+          <tr><td>Screen reader testing in CI/CD</td><td><span class="pill pill-warning" style="font-size:11px;">Month 3</span></td></tr>
+          <tr><td>Triage all 55+ open issues with Mustaq</td><td><span class="pill pill-warning" style="font-size:11px;">Month 1</span></td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="icon-box">&#x1F4CA;</div>
+        <h3>Analytics & Data</h3>
+        <table style="font-size:14px;">
+          <tr><td>Add <code>disability_tag</code> to ClickHouse tables</td><td><span class="pill pill-critical" style="font-size:11px;">Week 1-2</span></td></tr>
+          <tr><td>Kafka sync for disability data</td><td><span class="pill pill-warning" style="font-size:11px;">Week 3-4</span></td></tr>
+          <tr><td>Purple Rides dashboard (Grafana)</td><td><span class="pill pill-warning" style="font-size:11px;">Month 2</span></td></tr>
+          <tr><td>Define SLAs (pickup time, cancel rate)</td><td><span class="pill pill-purple" style="font-size:11px;">Month 2</span></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="icon-box">&#x1F4AC;</div>
+        <h3>Feedback & Community</h3>
+        <table style="font-size:14px;">
+          <tr><td>In-app accessible feedback (voice notes)</td><td><span class="pill pill-warning" style="font-size:11px;">Month 2</span></td></tr>
+          <tr><td>WhatsApp feedback bot for PwD users</td><td><span class="pill pill-purple" style="font-size:11px;">Month 3</span></td></tr>
+          <tr><td>User interviews via Enable India</td><td><span class="pill pill-success" style="font-size:11px;">Ongoing</span></td></tr>
+          <tr><td>Declare a11y features on App Store</td><td><span class="pill pill-success" style="font-size:11px;">Week 1</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: Q3-Q4 Growth -->
+<div class="slide bg-light" id="slide-12">
+  <h2 style="color:var(--purple-800);">Q2-Q4: Grow & Scale</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">From Bengaluru pilot to India-wide accessible mobility platform</p>
+  <div class="grid-3" style="flex:1;">
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div class="icon-box">&#x1F698;</div>
+      <h3>Driver Ecosystem</h3>
+      <ul style="font-size:15px;flex:1;">
+        <li><strong>Opt-in training:</strong> Structured certification via video + quiz</li>
+        <li><strong>Monetary incentives:</strong> Per-ride bonus for Purple Rides (not just 5 coins)</li>
+        <li><strong>Vehicle tagging:</strong> Wheelchair-accessible flag + TurnPlus swivel seat expansion</li>
+        <li><strong>Driver scoring:</strong> wasOfferedAssistance feedback drives quality ranking</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div class="icon-box">&#x1F30D;</div>
+      <h3>City Activation & Multi-Modal</h3>
+      <ul style="font-size:14px;flex:1;">
+        <li><strong>50+ cities have rides</strong> but most lack training &amp; activation</li>
+        <li><strong>Activate:</strong> Chennai, Delhi, Hyderabad, Kochi, Kolkata (142K rides already!)</li>
+        <li><strong>Chennai One:</strong> Accessible multimodal &mdash; auto + metro + bus with Purple support</li>
+        <li><strong>Public transport:</strong> Bus ticketing, metro, train accessibility</li>
+        <li>Local disability org partnerships per city</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div class="icon-box">&#x1F91D;</div>
+      <h3>Partnerships</h3>
+      <ul style="font-size:15px;flex:1;">
+        <li><strong>Enable India:</strong> Deeper co-design, user research, testing</li>
+        <li><strong>Hospitals:</strong> Appointment ride scheduling</li>
+        <li><strong>Rehabilitation centers:</strong> Regular commute packages</li>
+        <li><strong>Government:</strong> RPWD Act compliance, subsidized rides</li>
+        <li><strong>TurnPlus:</strong> Scale to 2,000 accessible vehicles</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;background:var(--purple-700);border:none;color:#fff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h3 style="color:#fff;margin-bottom:4px;">ONDC Leadership</h3>
+        <p style="color:rgba(255,255,255,0.8);">Push accessibility standards at the protocol level. Every ONDC-compatible app benefits. NammaYatri writes the standard.</p>
+      </div>
+      <div class="pill" style="background:rgba(255,255,255,0.2);color:#fff;font-size:16px;padding:8px 20px;">First Mover Advantage</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: Mustaq's Role -->
+<div class="slide bg-white" id="slide-13">
+  <h2 style="color:var(--purple-700);">New Energy: Mustaq Steps Up</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">A person with disability leading the charge for accessibility</p>
+  <div class="flex" style="flex:1;">
+    <div class="col">
+      <div class="card-purple" style="height:100%;display:flex;flex-direction:column;">
+        <h3 style="color:var(--purple-800);">Mustaq's Proposed Role</h3>
+        <div class="divider" style="background:var(--purple-300);"></div>
+        <ul style="color:var(--gray-700);font-size:17px;flex:1;">
+          <li><strong>Purple Rides Owner</strong> &mdash; single point of accountability</li>
+          <li><strong>Bug Triage Lead</strong> &mdash; prioritize and close 55+ open issues</li>
+          <li><strong>Accessibility QA</strong> &mdash; real-world testing with assistive technology, every sprint</li>
+          <li><strong>User Advocate</strong> &mdash; bridge between Enable India community and engineering</li>
+          <li><strong>Enable India Liaison</strong> &mdash; regular updates, co-design sessions</li>
+          <li><strong>WCAG Champion</strong> &mdash; drive the accessibility audit and remediation</li>
+        </ul>
+        <div class="quote" style="margin-top:auto;">
+          "Nothing about us without us" &mdash; Disability Rights Movement
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Why This Matters</h3>
+        <p style="font-size:17px;">Having a PwD team member owning Purple Rides means:</p>
+        <ul style="margin-top:12px;">
+          <li>Real-world testing catches what automated tools miss</li>
+          <li>Lived experience informs design decisions</li>
+          <li>Credibility with the PwD community and partners</li>
+          <li>Dedicated focus &mdash; not a side project anymore</li>
+        </ul>
+      </div>
+      <div class="card-success">
+        <h3 style="color:#059669;">Immediate Actions (This Week)</h3>
+        <ul style="font-size:15px;">
+          <li>Mustaq triages all 55+ open issues</li>
+          <li>Screen reader walkthrough of entire Purple Ride flow</li>
+          <li>First feedback report to Enable India</li>
+          <li>Fix setFocus() and accessibilityLabel bugs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: Ask for Enable India -->
+<div class="slide bg-dark" id="slide-14">
+  <div class="purple-circle" style="opacity:0.05;left:-200px;top:-200px;width:800px;height:800px;"></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:900px;">
+    <h2 style="font-size:44px;margin-bottom:32px;">What We Need From Enable India</h2>
+    <div class="grid-2" style="gap:24px;">
+      <div class="card-dark">
+        <div style="font-size:36px;margin-bottom:12px;">1</div>
+        <h3 style="color:#fff;">User Research Access</h3>
+        <p style="color:rgba(255,255,255,0.7);">Connect us with 20-30 PwD users for structured interviews. We need to hear what's working and what's not &mdash; the silence online is deafening.</p>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:36px;margin-bottom:12px;">2</div>
+        <h3 style="color:#fff;">Accessibility Testing Partners</h3>
+        <p style="color:rgba(255,255,255,0.7);">Testers with different disabilities (visual, hearing, locomotor) to validate fixes before release. Mustaq leads, community validates.</p>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:36px;margin-bottom:12px;">3</div>
+        <h3 style="color:#fff;">Driver Training Content</h3>
+        <p style="color:rgba(255,255,255,0.7);">Help design deeper training modules. Current 60-90 second videos are a start, but IIM Bangalore recommended gamification, VR, and hands-on workshops.</p>
+      </div>
+      <div class="card-dark">
+        <div style="font-size:36px;margin-bottom:12px;">4</div>
+        <h3 style="color:#fff;">City Expansion Network</h3>
+        <p style="color:rgba(255,255,255,0.7);">Introductions to disability organizations in Delhi, Chennai, Hyderabad for our Q3-Q4 expansion. Local partners are essential.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE: Real Experience — What Can Be Better -->
+<div class="slide bg-white" id="slide-15">
+  <h2 style="color:var(--purple-700);">Real Experience: What Can Be Better</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">A developer with disability shared their ride experience (video) &mdash; and it shows the gaps</p>
+  <div class="flex" style="flex:1;gap:32px;">
+    <div class="col">
+      <div class="card-warning" style="margin-bottom:16px;">
+        <h3 style="color:#92400E;">The Experience Today</h3>
+        <ul style="font-size:15px;color:var(--gray-700);">
+          <li>Driver <strong>doesn't know what to do</strong> when they arrive &mdash; no training video played before accepting</li>
+          <li>No <strong>contextual guidance in local language</strong> at pickup</li>
+          <li>Communication barriers persist &mdash; drivers still try to call deaf riders</li>
+          <li>No proactive assistance &mdash; rider has to explain their needs every time</li>
+          <li>Nano training videos exist but are <strong>not shown at the right moment</strong></li>
+        </ul>
+      </div>
+      <div class="card-critical">
+        <h3 style="color:var(--red-500);">What's Missing for Riders</h3>
+        <ul style="font-size:14px;color:var(--gray-700);">
+          <li>No <strong>real-time status</strong> in accessible format (vibration patterns for blind users)</li>
+          <li>No <strong>emergency SOS</strong> designed for PwD (deaf user can't call 112)</li>
+          <li>No <strong>preferred driver</strong> option to rebook a good driver</li>
+          <li>No <strong>scheduled/recurring rides</strong> for regular commutes (hospital, work)</li>
+          <li>No <strong>companion ride</strong> mode for caregivers</li>
+          <li>No <strong>wheelchair-accessible vehicle</strong> filter</li>
+          <li>App Store doesn't declare accessibility features</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card-success" style="margin-bottom:16px;">
+        <h3 style="color:#059669;">Suggested Improvements — Driver Side</h3>
+        <ul style="font-size:14px;color:var(--gray-700);">
+          <li><strong>Nano video before acceptance:</strong> Show 30s disability-specific video in local language <em>before</em> driver accepts, not after</li>
+          <li><strong>Pickup guidance card:</strong> Visual checklist at pickup (horn once for blind, text for deaf, assist wheelchair)</li>
+          <li><strong>Local language training:</strong> All 14 supported languages, not just English/Kannada</li>
+          <li><strong>Driver opt-in + certification:</strong> Trained drivers get priority for purple rides + monetary bonus</li>
+          <li><strong>Post-ride feedback loop:</strong> "Did you offer assistance?" with real consequences for scoring</li>
+          <li><strong>Purple Ride Champion badge:</strong> Bring back the confetti badge from PureScript!</li>
+        </ul>
+      </div>
+      <div class="card-success">
+        <h3 style="color:#059669;">Suggested Improvements — Rider Side</h3>
+        <ul style="font-size:14px;color:var(--gray-700);">
+          <li><strong>Haptic navigation:</strong> Vibration patterns for ride status (assigned, arriving, arrived)</li>
+          <li><strong>Voice-first booking:</strong> "Book my usual ride" via voice command</li>
+          <li><strong>Accessible SOS:</strong> One-tap emergency with pre-filled disability info sent to responders</li>
+          <li><strong>Favourite drivers:</strong> Rebook drivers who provided great assistance</li>
+          <li><strong>Scheduled rides:</strong> Recurring bookings for hospital/therapy/work commutes</li>
+          <li><strong>Ride rating for accessibility:</strong> Separate accessibility rating from general ride rating</li>
+          <li><strong>Onboarding video for riders:</strong> "How Purple Rides works" in accessible format</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE: Chennai One — Accessibility Opportunity -->
+<div class="slide bg-light" id="slide-16">
+  <h2 style="color:var(--purple-800);">Chennai One: The Multimodal Accessibility Opportunity</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">India's first unified ticketing app — but disability advocates say it's not accessible enough</p>
+  <div class="flex" style="flex:1;gap:32px;">
+    <div class="col">
+      <div class="card-critical" style="margin-bottom:16px;">
+        <h3 style="color:var(--red-500);">What Advocates Are Saying</h3>
+        <ul style="font-size:14px;color:var(--gray-700);">
+          <li><strong>Screen reader incompatible</strong> &mdash; Freedom of Movement Coalition and Prof. Raghuram (Disability Rights Alliance) flagged issues before launch</li>
+          <li><strong>Sathish Kumar</strong> (disability activist): <em>"The app only asks whether the user is disabled but does nothing meaningful with that information"</em></li>
+          <li><strong>No low-floor bus marking</strong> &mdash; wheelchair users can't identify accessible buses</li>
+          <li><strong>No station accessibility data</strong> &mdash; no lift/escalator info, no accessible entrance mapping</li>
+          <li><strong>Apple App Store:</strong> "developer has not indicated accessibility features"</li>
+        </ul>
+      </div>
+      <div class="card" style="background:var(--amber-100);border-color:#FDE68A;">
+        <h3 style="color:#92400E;">The Physical Reality</h3>
+        <p style="font-size:14px;color:var(--gray-700);"><strong>10 of 3,740</strong> MTC buses are disabled-friendly (0.3%). Only <strong>9 of 158</strong> suburban railway stations have wheelchair facilities. The app can't fix infrastructure, but it can help navigate it.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card-success" style="margin-bottom:16px;">
+        <h3 style="color:#059669;">What We Can Do — Purple + Chennai One</h3>
+        <ul style="font-size:14px;color:var(--gray-700);">
+          <li><strong>Accessible ticketing UI:</strong> Apply Purple Rides accessibility fixes to the ticketing flow</li>
+          <li><strong>Low-floor bus tags:</strong> Mark accessible buses in the route planner</li>
+          <li><strong>Station accessibility map:</strong> Crowdsource lift/ramp/entrance data per station</li>
+          <li><strong>Multimodal Purple journey:</strong> Auto &rarr; metro &rarr; bus with accessibility support at each leg</li>
+          <li><strong>Real-time alerts:</strong> "Lift at X station is out of service" for wheelchair users</li>
+          <li><strong>First/last mile:</strong> Purple Ride auto to/from metro station</li>
+        </ul>
+      </div>
+      <div class="card-purple">
+        <h3 style="color:var(--purple-800);">Why This Matters</h3>
+        <p style="font-size:14px;color:var(--gray-700);">Chennai One is high-visibility. Media has already flagged accessibility gaps. If we make it the <strong>most accessible public transport app in India</strong>, it becomes the template for every city. Enable India can help us get it right.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE: Action Items by Team -->
+<div class="slide bg-white" id="slide-17">
+  <h2 style="color:var(--purple-700);">Action Items by Team</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">Who needs to do what — clear ownership for Purple Rides 2026</p>
+  <div class="grid-3" style="flex:1;overflow-y:auto;">
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:16px;">&#x1F4BB;</div>
+        <h3 style="margin:0;">Engineering</h3>
+      </div>
+      <ul style="font-size:13px;flex:1;">
+        <li>Fix 4 critical screen reader bugs (Week 1)</li>
+        <li>Fix 9 high-priority accessibility bugs (Week 2-4)</li>
+        <li>Integration tests for disability tag pipeline</li>
+        <li>Accessibility test suite in CI/CD</li>
+        <li>Add missing 8 ONDC disability types</li>
+        <li>Purple Rides Metabase dashboard</li>
+        <li>Chennai One accessible ticketing</li>
+        <li>Restore PureScript features lost in React migration</li>
+        <li>Type-safe DisabilityTag ADT (prevent regressions)</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:16px;">&#x1F3A5;</div>
+        <h3 style="margin:0;">Content</h3>
+      </div>
+      <ul style="font-size:13px;flex:1;">
+        <li>Driver nano training videos in <strong>all 14 languages</strong></li>
+        <li>Rider onboarding video: "How Purple Rides Works"</li>
+        <li>Per-city activation content packs</li>
+        <li>Chennai One accessibility guide for users</li>
+        <li>World Disability Day 2026 campaign (Dec 3)</li>
+        <li>Restore driver education banners (commented out Sep 2024)</li>
+        <li>YouTube video offline fallback (static images)</li>
+      </ul>
+      <div class="divider"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:16px;">&#x1F4E3;</div>
+        <h3 style="margin:0;">PR / Comms</h3>
+      </div>
+      <ul style="font-size:13px;">
+        <li>Publish impact report: 861K rides, 478K users, 50+ cities</li>
+        <li>IIM Bangalore follow-up study pitch</li>
+        <li>Enable India co-branded campaign</li>
+        <li>Proactive WCAG audit announcement</li>
+        <li>Chennai One accessibility story</li>
+        <li>Declare accessibility features on App Store</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:16px;">&#x1F50D;</div>
+        <h3 style="margin:0;">QA (Mustaq)</h3>
+      </div>
+      <ul style="font-size:13px;flex:1;">
+        <li>Triage all 55+ open GitHub issues</li>
+        <li>Screen reader walkthrough every sprint</li>
+        <li>Real-device TalkBack + VoiceOver testing</li>
+        <li>Chennai One accessibility audit</li>
+        <li>First feedback report to Enable India</li>
+        <li>Test all 50+ city configs for purple ride support</li>
+      </ul>
+      <div class="divider"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:16px;">&#x1F3A8;</div>
+        <h3 style="margin:0;">Design</h3>
+      </div>
+      <ul style="font-size:13px;">
+        <li>WCAG audit + color contrast fixes</li>
+        <li>Haptic navigation patterns for blind users</li>
+        <li>Accessible SOS flow</li>
+        <li>Wheelchair vehicle filter UX</li>
+        <li>Favourite / preferred driver UX</li>
+        <li>Station accessibility map UI (Chennai One)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE: Accelerating with AI -->
+<div class="slide bg-dark" id="slide-18">
+  <div class="purple-circle" style="opacity:0.06;left:-200px;bottom:-200px;width:700px;height:700px;"></div>
+  <h2 style="font-size:40px;">Accelerating with AI: claude-fleet</h2>
+  <p class="slide-subtitle">We don't need months. We have Claude Max + parallel sessions.</p>
+  <div class="flex" style="flex:1;gap:28px;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+      <div class="card-dark">
+        <h3 style="color:#fff;">What We Already Did — Today</h3>
+        <table style="font-size:13px;color:rgba(255,255,255,0.8);">
+          <tr><td>Full audit (6 parallel agents)</td><td style="text-align:right;color:var(--green-500);font-weight:700;">15 min</td></tr>
+          <tr><td>5 audit reports (200+ KB)</td><td style="text-align:right;color:var(--green-500);font-weight:700;">auto</td></tr>
+          <tr><td>ClickHouse + Slack + LinkedIn research</td><td style="text-align:right;color:var(--green-500);font-weight:700;">5 min</td></tr>
+          <tr><td>30 issues with file:line numbers</td><td style="text-align:right;color:var(--green-500);font-weight:700;">auto</td></tr>
+          <tr><td>This 20-slide presentation</td><td style="text-align:right;color:var(--green-500);font-weight:700;">3 hours</td></tr>
+        </table>
+      </div>
+      <div class="card-dark">
+        <h3 style="color:#fff;">Proven: 403 Tasks in 48 Hours</h3>
+        <div style="display:flex;gap:12px;margin-top:12px;">
+          <div style="text-align:center;flex:1;"><div class="stat-number" style="color:var(--purple-400);font-size:32px;">403</div><p style="color:rgba(255,255,255,0.5);font-size:11px;">tasks run</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number" style="color:var(--purple-400);font-size:32px;">48h</div><p style="color:rgba(255,255,255,0.5);font-size:11px;">1 weekend</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number" style="color:var(--purple-400);font-size:32px;">30</div><p style="color:rgba(255,255,255,0.5);font-size:11px;">parallel</p></div>
+          <div style="text-align:center;flex:1;"><div class="stat-number" style="color:var(--purple-400);font-size:32px;">15</div><p style="color:rgba(255,255,255,0.5);font-size:11px;">repos</p></div>
+        </div>
+        <p style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:8px;">Found credential leaks, 265% search failure rate, driver race conditions &mdash; all in one weekend at NammaYatri.</p>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+      <div class="card-dark">
+        <h3 style="color:#fff;">Purple Rides Fix Plan — Running Now</h3>
+        <table style="font-size:12px;color:rgba(255,255,255,0.8);">
+          <thead><tr><th style="color:var(--purple-400);">Task</th><th style="text-align:right;color:var(--purple-400);">Time</th></tr></thead>
+          <tr><td>Fix consumer app a11y (6 fixes)</td><td style="text-align:right;">~15m</td></tr>
+          <tr><td>Fix driver app a11y popups</td><td style="text-align:right;">~15m</td></tr>
+          <tr><td>Backend disability tag integration tests</td><td style="text-align:right;">~20m</td></tr>
+          <tr><td>Mobile accessibility test suite</td><td style="text-align:right;">~15m</td></tr>
+          <tr><td>CI regression guards</td><td style="text-align:right;">~20m</td></tr>
+          <tr><td>Presentation updates</td><td style="text-align:right;">~10m</td></tr>
+          <tr style="border-top:1px solid rgba(255,255,255,0.2);"><td style="font-weight:700;color:#fff;">All 6 in parallel</td><td style="text-align:right;font-weight:700;color:var(--green-500);">~20m total</td></tr>
+        </table>
+      </div>
+      <div class="card-dark" style="background:rgba(116,53,252,0.15);border-color:rgba(116,53,252,0.3);">
+        <h3 style="color:var(--purple-400);">The Pattern</h3>
+        <div style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.8;">
+          <div><span style="color:var(--green-500);">$</span> fleet tasks-purple-rides-fixes.md</div>
+          <div style="color:rgba(255,255,255,0.3);"># 6 autonomous Claude sessions in parallel</div>
+          <div style="color:rgba(255,255,255,0.3);"># Each reads code, writes fixes, creates commits</div>
+          <div style="color:rgba(255,255,255,0.3);"># 20 minutes &rarr; all bugs fixed + tests added</div>
+        </div>
+        <div class="divider" style="background:rgba(255,255,255,0.1);"></div>
+        <p style="color:rgba(255,255,255,0.7);font-size:13px;">Claude Max + claude-fleet = <strong style="color:#fff;">30x throughput</strong>. What takes weeks of sprints, we prototype in an afternoon.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE: Open Discussion — Enable India's Asks -->
+<div class="slide bg-purple" id="slide-19">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" style="margin-bottom:24px;"><circle cx="40" cy="40" r="38" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M30 50c0-6 4-10 10-10s10 4 10 10" stroke="#fff" stroke-width="2.5"/><circle cx="40" cy="30" r="8" stroke="#fff" stroke-width="2.5"/><path d="M20 56h40" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/></svg>
+    <div class="slide-title" style="font-size:52px;max-width:800px;margin-bottom:16px;">
+      Over to You
+    </div>
+    <div class="slide-subtitle" style="font-size:24px;opacity:0.9;max-width:700px;">
+      Shanti &amp; Deepesh &mdash; what are your priorities?<br>What should we focus on first?
+    </div>
+    <div class="divider" style="width:80px;height:3px;background:rgba(255,255,255,0.4);margin:32px auto;"></div>
+    <div style="display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+      <div class="card-dark" style="min-width:180px;text-align:left;">
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:4px;">What are the</p>
+        <p style="font-size:20px;font-weight:700;color:#fff;">biggest pain points</p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);">you hear from PwD users?</p>
+      </div>
+      <div class="card-dark" style="min-width:180px;text-align:left;">
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Which cities</p>
+        <p style="font-size:20px;font-weight:700;color:#fff;">should we activate next</p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);">with full training?</p>
+      </div>
+      <div class="card-dark" style="min-width:180px;text-align:left;">
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:4px;">How can we</p>
+        <p style="font-size:20px;font-weight:700;color:#fff;">improve driver training</p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);">together?</p>
+      </div>
+      <div class="card-dark" style="min-width:180px;text-align:left;">
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:4px;">What role can</p>
+        <p style="font-size:20px;font-weight:700;color:#fff;">Enable India play</p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);">in the 2026 roadmap?</p>
+      </div>
+    </div>
+    <p style="margin-top:40px;font-size:18px;opacity:0.7;max-width:600px;">
+      We're here to listen. Mustaq will capture action items and follow up within the week.
+    </p>
+  </div>
+</div>
+
+<!-- SLIDE: Commitment -->
+<div class="slide bg-purple" id="slide-20">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+    <div class="slide-title" style="font-size:56px;max-width:900px;margin-bottom:32px;">
+      This is moving again.<br>Here's our commitment.
+    </div>
+    <div class="divider" style="width:80px;height:3px;background:rgba(255,255,255,0.5);margin:24px auto;"></div>
+    <div style="display:flex;gap:40px;margin-top:32px;">
+      <div class="card-dark" style="text-align:center;min-width:200px;">
+        <div class="stat-number" style="color:var(--green-500);font-size:48px;">2 weeks</div>
+        <p style="color:rgba(255,255,255,0.7);margin-top:8px;">All critical screen reader bugs fixed</p>
+      </div>
+      <div class="card-dark" style="text-align:center;min-width:200px;">
+        <div class="stat-number" style="color:var(--green-500);font-size:48px;">1 month</div>
+        <p style="color:rgba(255,255,255,0.7);margin-top:8px;">Purple Rides analytics dashboard live</p>
+      </div>
+      <div class="card-dark" style="text-align:center;min-width:200px;">
+        <div class="stat-number" style="color:var(--green-500);font-size:48px;">3 months</div>
+        <p style="color:rgba(255,255,255,0.7);margin-top:8px;">All 55+ bugs resolved. WCAG audit complete.</p>
+      </div>
+      <div class="card-dark" style="text-align:center;min-width:200px;">
+        <div class="stat-number" style="color:var(--green-500);font-size:48px;">9 months</div>
+        <p style="color:rgba(255,255,255,0.7);margin-top:8px;">10 cities activated. 1.5M rides. Chennai One accessible.</p>
+      </div>
+    </div>
+    <p style="margin-top:48px;font-size:22px;opacity:0.9;max-width:700px;">
+      Mustaq owns this. Shanti and Deepesh, we need your partnership more than ever. Let's build the most accessible ride-hailing platform in the world.
+    </p>
+  </div>
+</div>
+
+<!-- SLIDE 14: Appendix -->
+<div class="slide bg-white" id="slide-21">
+  <h2 style="color:var(--purple-700);">Appendix: Full Audit Reports</h2>
+  <p class="slide-subtitle" style="color:var(--gray-500);">Detailed reports available for deep-dive</p>
+  <div class="grid-2" style="flex:1;overflow-y:auto;">
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F4BE; ClickHouse Data Analysis</h3>
+      <p class="text-sm"><code>report-ckh-data-analysis.md</code> (20KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>disability_tag missing from all ClickHouse tables</li>
+        <li>No atlas_app database in ClickHouse</li>
+        <li>PostgreSQL queries ready for when data is synced</li>
+        <li>Architecture gap analysis with recommendations</li>
+      </ul>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F4F1; Mobile App Audit</h3>
+      <p class="text-sm"><code>report-mobile-app-issues.md</code> (33KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>38 files inventoried across consumer + provider apps</li>
+        <li>4 critical, 5 high, 6 medium accessibility issues</li>
+        <li>Full UX flow documented for both rider and driver</li>
+        <li>20 prioritized recommendations</li>
+      </ul>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F527; Backend Codebase Audit</h3>
+      <p class="text-sm"><code>report-codebase-issues.md</code> (34KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>35+ files with purple ride logic identified</li>
+        <li>1 critical, 4 high, 6 medium, 6 low bugs</li>
+        <li>5 architecture concerns documented</li>
+        <li>Full data flow diagram</li>
+      </ul>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F4CB; GitHub Issues Analysis</h3>
+      <p class="text-sm"><code>report-github-issues.md</code> (38KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>55 open + 25 closed issues catalogued</li>
+        <li>93 commits, 24 PRs analyzed</li>
+        <li>6 code hotspots identified</li>
+        <li>Full development timeline 2023-2026</li>
+      </ul>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F310; Social Media Sentiment</h3>
+      <p class="text-sm"><code>report-social-media-sentiment.md</code> (20KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>9 complaint categories ranked</li>
+        <li>Competitor comparison (Uber WAV, Ola, Rapido)</li>
+        <li>News coverage timeline</li>
+        <li>11 strategic recommendations</li>
+      </ul>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>&#x1F4D0; Consolidated Action Plan</h3>
+      <p class="text-sm"><code>plan-purple-rides-audit.md</code> (62KB)</p>
+      <ul style="font-size:14px;margin-top:8px;">
+        <li>6 stages: Issues, Impact, RCA, Fixes, Tests, Growth</li>
+        <li>Priority matrix with effort estimates</li>
+        <li>File paths and line numbers for every fix</li>
+        <li>Complete test plan</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prevSlide()" aria-label="Previous slide">&#8592;</button>
+  <button onclick="nextSlide()" aria-label="Next slide">&#8594;</button>
+</div>
+<div class="slide-counter"><span id="current">1</span> / <span id="total">21</span></div>
+
+<script>
+  let current = 1;
+  const total = 21;
+
+  function showSlide(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    document.getElementById('slide-' + n).classList.add('active');
+    document.getElementById('current').textContent = n;
+    current = n;
+  }
+
+  function nextSlide() { if (current < total) showSlide(current + 1); }
+  function prevSlide() { if (current > 1) showSlide(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); showSlide(1); }
+    if (e.key === 'End') { e.preventDefault(); showSlide(total); }
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+  });
+</script>
+</body>
+</html>

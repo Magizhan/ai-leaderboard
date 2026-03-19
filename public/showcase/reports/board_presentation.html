@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moving Tech — Pre-Board Briefing | March 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --text-dim: #8888a0;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { height: 100vh; width: 100vw; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    flex-direction: column;
+    padding: 48px 64px;
+    overflow-y: auto;
+  }
+  .slide.active { display: flex; }
+
+  .slide-number {
+    position: fixed;
+    bottom: 20px;
+    right: 32px;
+    font-size: 13px;
+    color: var(--text-dim);
+    z-index: 100;
+    font-weight: 500;
+  }
+
+  .nav-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 32px;
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 100;
+    opacity: 0.5;
+  }
+
+  /* Title slide */
+  .title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1040 50%, #0a0a1a 100%);
+  }
+  .title-slide h1 {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #e8e8f0, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .title-slide .subtitle {
+    font-size: 22px;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-bottom: 48px;
+  }
+  .title-slide .meta {
+    font-size: 14px;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .title-slide .logo-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent2);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* Section slide */
+  .section-slide {
+    justify-content: center;
+    align-items: flex-start;
+    padding-left: 80px;
+    background: linear-gradient(135deg, var(--bg), #0f0f2a);
+  }
+  .section-slide .section-num {
+    font-size: 80px;
+    font-weight: 900;
+    color: var(--accent);
+    opacity: 0.3;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .section-slide h2 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    max-width: 700px;
+  }
+  .section-slide .section-desc {
+    font-size: 18px;
+    color: var(--text-dim);
+    margin-top: 16px;
+    max-width: 600px;
+  }
+
+  /* Content slides */
+  h2 { font-size: 32px; font-weight: 700; margin-bottom: 32px; letter-spacing: -0.5px; }
+  h3 { font-size: 20px; font-weight: 600; margin-bottom: 16px; color: var(--accent2); }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+  }
+  .content-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .content-grid.single { grid-template-columns: 1fr; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card.highlight {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02));
+  }
+  .card.danger {
+    border-color: var(--red);
+    background: linear-gradient(135deg, rgba(248,113,113,0.08), rgba(248,113,113,0.02));
+  }
+  .card.success {
+    border-color: var(--green);
+    background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.02));
+  }
+  .card.warn {
+    border-color: var(--orange);
+    background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02));
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { font-size: 14px; color: var(--text-dim); }
+  .metric-value { font-size: 18px; font-weight: 700; }
+  .metric-value.green { color: var(--green); }
+  .metric-value.red { color: var(--red); }
+  .metric-value.orange { color: var(--orange); }
+  .metric-value.blue { color: var(--blue); }
+  .metric-value.purple { color: var(--purple); }
+
+  .big-number {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1.1;
+  }
+  .big-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag.green { background: rgba(52,211,153,0.15); color: var(--green); }
+  .tag.red { background: rgba(248,113,113,0.15); color: var(--red); }
+  .tag.orange { background: rgba(251,191,36,0.15); color: var(--orange); }
+  .tag.blue { background: rgba(96,165,250,0.15); color: var(--blue); }
+  .tag.purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+  .funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 16px 0;
+  }
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .funnel-bar {
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    min-width: 40px;
+  }
+  .funnel-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+  }
+  .bullet-list li {
+    padding: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .bullet-list li:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .bullet-list li.red:before { background: var(--red); }
+  .bullet-list li.green:before { background: var(--green); }
+  .bullet-list li.orange:before { background: var(--orange); }
+
+  .comparison-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+  }
+  .comparison-bar .bar {
+    height: 20px;
+    border-radius: 4px;
+    transition: width 0.5s;
+  }
+  .comparison-bar .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 80px;
+  }
+  .comparison-bar .value {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 60px;
+  }
+
+  .quote {
+    font-size: 24px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--text);
+    max-width: 700px;
+    padding: 24px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .flex-1 { flex: 1; }
+
+  .spacer { height: 16px; }
+  .spacer-sm { height: 8px; }
+
+  .small { font-size: 13px; }
+  .dim { color: var(--text-dim); }
+  .bold { font-weight: 700; }
+  .center { text-align: center; }
+
+  .progress-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s;
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide title-slide active" data-slide="1">
+  <div class="logo-text">Moving Tech</div>
+  <h1>Pre-Board Briefing</h1>
+  <div class="subtitle">AOP Reality Check, Competitive Landscape & Strategic Direction</div>
+  <div class="meta">March 17, 2026 &mdash; Confidential</div>
+</div>
+
+<!-- SLIDE 2: Where We Are — LIVE DATA (DEDUPLICATED, ANOMALIES EXCLUDED) -->
+<div class="slide" data-slide="2">
+  <h2>Where We Are Today <span style="font-size:14px; color:var(--accent2); font-weight:400">&#9679; ClickHouse FINAL &mdash; 7d avg excl. anomalies</span></h2>
+  <div class="content-grid three">
+    <div class="card highlight">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <div>
+          <div class="big-number" style="color:var(--accent2)">271K</div>
+          <div class="big-label">Daily Transactions (7-day avg)</div>
+        </div>
+      </div>
+      <div class="spacer-sm"></div>
+      <div class="metric-row"><span class="metric-label">RH Completed Rides</span><span class="metric-value">199K/day</span></div>
+      <div class="metric-row"><span class="metric-label" style="padding-left:12px">&#8627; Peak (Mar 9)</span><span class="metric-value" style="font-size:14px">276K</span></div>
+      <div class="metric-row"><span class="metric-label">FRFS Tickets Confirmed</span><span class="metric-value">71K/day</span></div>
+      <div class="metric-row"><span class="metric-label" style="padding-left:12px">&#8627; Peak (normal day)</span><span class="metric-value" style="font-size:14px">91K</span></div>
+      <div class="metric-row"><span class="metric-label">Pass Purchases</span><span class="metric-value">1.5K/day</span></div>
+      <div class="metric-row"><span class="metric-label" style="padding-left:12px">&#8627; Today (depot push!)</span><span class="metric-value" style="font-size:14px;color:var(--green)">23K &#9650;</span></div>
+      <div class="spacer-sm"></div>
+      <div style="font-size:11px; color:var(--text-dim)">Excludes Mar 13 (data bug), Mar 11-12 (FRFS pipeline issue). Using booking FINAL for RH, frfs_ticket_booking FINAL for PT.</div>
+    </div>
+    <div class="card">
+      <div class="big-number" style="color:var(--accent2)">693K</div>
+      <div class="big-label">Searches/Day (7-day avg)</div>
+      <div class="spacer-sm"></div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px">
+        Peak: <span style="color:var(--accent2); font-weight:700">779K</span> (Mar 9)
+      </div>
+      <div class="spacer-sm"></div>
+      <h3 style="font-size:14px">RH Searches by City (daily avg, 30d)</h3>
+      <div class="metric-row"><span class="metric-label">Bangalore</span><span class="metric-value">329K</span></div>
+      <div class="metric-row"><span class="metric-label">Kolkata</span><span class="metric-value">103K</span></div>
+      <div class="metric-row"><span class="metric-label">Delhi NCR</span><span class="metric-value">64K</span></div>
+      <div class="metric-row"><span class="metric-label">Chennai</span><span class="metric-value">33K</span></div>
+      <div class="metric-row"><span class="metric-label">Ahmedabad</span><span class="metric-value">24K</span></div>
+      <div class="metric-row"><span class="metric-label">Hyderabad</span><span class="metric-value">9K</span></div>
+      <div class="metric-row"><span class="metric-label">Bhubaneswar</span><span class="metric-value">8K</span></div>
+      <div class="metric-row"><span class="metric-label">Others (13 cities)</span><span class="metric-value">~42K</span></div>
+    </div>
+    <div class="card">
+      <div class="big-number" style="color:var(--green)">&#8377;19.8Cr</div>
+      <div class="big-label">FY25 Revenue</div>
+      <div class="spacer"></div>
+      <div class="metric-row"><span class="metric-label">Valuation</span><span class="metric-value blue">&#8377;500 Cr</span></div>
+      <div class="metric-row"><span class="metric-label">Total Raised</span><span class="metric-value">$15.4M</span></div>
+      <div class="metric-row"><span class="metric-label">Stage</span><span class="metric-value purple">Pre-Series A</span></div>
+      <div class="spacer"></div>
+      <h3 style="font-size:14px">Production Scale</h3>
+      <div class="metric-row"><span class="metric-label">ClickHouse Rows</span><span class="metric-value">50B+</span></div>
+      <div class="metric-row"><span class="metric-label">Apps Live</span><span class="metric-value">15</span></div>
+      <div class="metric-row"><span class="metric-label">Cities</span><span class="metric-value">20+</span></div>
+      <div class="metric-row"><span class="metric-label">Countries</span><span class="metric-value">5</span></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="cols-2">
+    <div class="card" style="padding:14px; text-align:center">
+      <span class="bold">March Projection (7d avg &times; 31 days):</span>
+      <span class="dim small"> RH: 6.2M &bull; FRFS: 2.2M &bull; Total: <strong>8.4M txns</strong></span>
+    </div>
+    <div class="card warn" style="padding:14px; text-align:center">
+      <span class="bold" style="color:var(--orange)">Key gaps:</span>
+      <span class="dim small"> 2.6% driver accept rate &bull; 48% driver fees unpaid &bull; FRFS 41% below AOP</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: AOP Targets -->
+<div class="slide" data-slide="3">
+  <h2>AOP CY2026: Targets vs Reality <span style="font-size:14px; color:var(--green); font-weight:400">&#9679; Live Data</span></h2>
+  <div class="cols-2">
+    <div>
+      <div class="card">
+        <h3>Financial Targets</h3>
+        <div class="metric-row"><span class="metric-label">Total Revenue</span><span class="metric-value green">&#8377;55.5 Cr</span></div>
+        <div class="metric-row"><span class="metric-label">Growth</span><span class="metric-value green">2.55x</span></div>
+        <div class="metric-row"><span class="metric-label">ARR (Dec exit)</span><span class="metric-value">&#8377;103 Cr</span></div>
+        <div class="metric-row"><span class="metric-label">Total Costs</span><span class="metric-value red">&#8377;88.3 Cr</span></div>
+        <div class="metric-row"><span class="metric-label">EBITDA</span><span class="metric-value red">-&#8377;32.8 Cr</span></div>
+        <div class="metric-row"><span class="metric-label">CM3 (Dec exit)</span><span class="metric-value green">28%</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card highlight">
+        <h3 style="color:var(--accent2)">Actual vs AOP (7d avg, FINAL, excl. anomalies)</h3>
+        <table style="font-size:13px">
+          <tr><th></th><th>AOP Mar Target</th><th>7d Avg (Projected)</th><th></th></tr>
+          <tr><td>RH Completed</td><td>211K/day</td><td style="font-weight:700">199K/day</td><td><span class="tag orange">-6%</span></td></tr>
+          <tr><td>Multimodal (FRFS+Pass)</td><td>123K/day</td><td style="font-weight:700">73K/day</td><td><span class="tag red">-41%</span></td></tr>
+          <tr style="font-weight:700; border-top:2px solid var(--border)"><td>Total</td><td>335K</td><td>271K</td><td><span class="tag red">-19%</span></td></tr>
+        </table>
+        <div class="spacer-sm"></div>
+        <div style="font-size:12px; color:var(--text-dim)">RH slightly behind (-6%). Multimodal significantly behind (-41%) — driven by FRFS pipeline issues + broken bus pass photo flow. Pass depot push today (23K) shows potential if tech issues are fixed.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card warn">
+        <h3 style="color:var(--orange)">Cash Requirement</h3>
+        <div class="big-number" style="color:var(--orange)">~&#8377;33Cr</div>
+        <div class="big-label">Cumulative burn through CY2026</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Volume Targets (Daily Avg by Dec '26)</h3>
+        <table>
+          <tr><th>Segment</th><th>Dec '25</th><th>Dec '26</th><th>Growth</th><th></th></tr>
+          <tr><td>Karnataka RH</td><td>145K</td><td>195K</td><td>1.3x</td><td><span class="tag green">Safe</span></td></tr>
+          <tr><td>West Bengal RH</td><td>25K</td><td>40K</td><td>1.6x</td><td><span class="tag green">Safe</span></td></tr>
+          <tr><td>Bharat Taxi</td><td>~0</td><td>67K</td><td>&infin;</td><td><span class="tag orange">High Risk</span></td></tr>
+          <tr><td>Rest of India</td><td>7K</td><td>36K</td><td>5x</td><td><span class="tag orange">Aggressive</span></td></tr>
+          <tr><td><strong>Chennai One</strong></td><td>32K</td><td><strong>400K</strong></td><td><strong>12.5x</strong></td><td><span class="tag red">Critical</span></td></tr>
+          <tr><td>MM Rest of India</td><td>1.9K</td><td>240K</td><td>126x</td><td><span class="tag red">Moonshot</span></td></tr>
+          <tr><td>Global</td><td>0</td><td>15K</td><td>New</td><td><span class="tag purple">Experiment</span></td></tr>
+          <tr style="font-weight:700; border-top:2px solid var(--border)"><td>TOTAL</td><td>212K</td><td>993K</td><td>4.7x</td><td></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Competitive Landscape -->
+<div class="slide" data-slide="4">
+  <h2>Competitive Landscape: We're Not in the Same Game</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card">
+        <h3>Ride-Hailing Scale (India)</h3>
+        <div class="spacer-sm"></div>
+        <div class="comparison-bar">
+          <span class="label">Rapido</span>
+          <div class="bar" style="width:100%; background:var(--red)"></div>
+          <span class="value red">2.6M/day</span>
+        </div>
+        <div class="comparison-bar">
+          <span class="label">Uber</span>
+          <div class="bar" style="width:32%; background:var(--blue)"></div>
+          <span class="value blue">840K/day</span>
+        </div>
+        <div class="comparison-bar">
+          <span class="label">Ola</span>
+          <div class="bar" style="width:18%; background:var(--orange)"></div>
+          <span class="value orange">460K/day</span>
+        </div>
+        <div class="comparison-bar">
+          <span class="label" style="font-weight:600;color:var(--text)">Moving Tech</span>
+          <div class="bar" style="width:11%; background:linear-gradient(90deg, var(--accent), var(--green))"></div>
+          <span class="value" style="color:var(--accent2)">271K/day <span style="font-size:10px;color:var(--text-dim)">(199K RH + 71K PT + 1.5K Pass)</span></span>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin:8px 0 0 92px">
+          RH peak: <strong>276K</strong> (Mar 9) &nbsp;|&nbsp; FRFS peak: <strong>91K</strong> (normal day) &nbsp;|&nbsp; But: multimodal gives us a different game
+        </div>
+        <div class="spacer"></div>
+        <table style="font-size:13px">
+          <tr><th></th><th>Revenue</th><th>Valuation</th><th>Funding</th></tr>
+          <tr><td>Rapido</td><td class="bold">&#8377;1,003 Cr</td><td>$2.3B</td><td>$400M+</td></tr>
+          <tr><td>Ola</td><td>Declining</td><td>$1.25B (&darr;83%)</td><td>$3.8B</td></tr>
+          <tr><td style="color:var(--accent2)">Moving Tech</td><td>&#8377;19.8 Cr</td><td>$55M</td><td>$15.4M</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card danger">
+        <h3 style="color:var(--red)">Rapido: 50x Our Revenue</h3>
+        <ul class="bullet-list">
+          <li class="red">&#8377;1,000 Cr revenue, 100% YoY growth for 2 years</li>
+          <li class="red">IPO prep starting late 2026</li>
+          <li class="red">Prosus (Naspers) increasing stake</li>
+          <li class="red">Now in food delivery too</li>
+        </ul>
+      </div>
+      <div class="spacer"></div>
+      <div class="card success">
+        <h3 style="color:var(--green)">But Rapido Can't Do What We Do</h3>
+        <ul class="bullet-list">
+          <li class="green">No public transport play whatsoever</li>
+          <li class="green">No government partnerships</li>
+          <li class="green">No open protocol (BECKN/ONDC)</li>
+          <li class="green">No bus/metro integration</li>
+          <li class="green">No multimodal journey planning</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Identity -->
+<div class="slide" data-slide="5">
+  <h2>The Identity Question</h2>
+  <div class="cols-3">
+    <div class="card" style="opacity:0.5">
+      <h3 style="color:var(--red)">&#10007; Ride-Hailing App</h3>
+      <p class="small dim" style="margin-bottom:12px">"Competing with Rapido & Uber"</p>
+      <ul class="bullet-list">
+        <li class="red" style="font-size:13px">We're 50x smaller than Rapido</li>
+        <li class="red" style="font-size:13px">Zero-commission no longer unique — Uber/Ola copying it</li>
+        <li class="red" style="font-size:13px">Can't win a capital war</li>
+      </ul>
+    </div>
+    <div class="card highlight">
+      <h3 style="color:var(--green)">&#10003; Mobility Infrastructure</h3>
+      <p class="small dim" style="margin-bottom:12px">"The UPI of Transport"</p>
+      <ul class="bullet-list">
+        <li class="green" style="font-size:13px">Open protocol (BECKN) like UPI</li>
+        <li class="green" style="font-size:13px">Connects ALL transport modes</li>
+        <li class="green" style="font-size:13px">Government partnerships = moat</li>
+        <li class="green" style="font-size:13px">Google Cloud partnership for global</li>
+        <li class="green" style="font-size:13px">Open-source = community effect</li>
+      </ul>
+    </div>
+    <div class="card" style="opacity:0.7">
+      <h3 style="color:var(--orange)">~ PT Digitization</h3>
+      <p class="small dim" style="margin-bottom:12px">"Chalo but better"</p>
+      <ul class="bullet-list">
+        <li class="orange" style="font-size:13px">Chennai One proving the model</li>
+        <li class="orange" style="font-size:13px">Chalo at $400-500M valuation</li>
+        <li class="orange" style="font-size:13px">But we also do ride-hailing</li>
+        <li class="orange" style="font-size:13px">Multimodal is the differentiator</li>
+      </ul>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="card highlight" style="text-align:center; padding:20px">
+    <div style="font-size:20px; font-weight:600;">We are not an app. We are a protocol.</div>
+    <div class="dim small" style="margin-top:8px">Rapido is a ride-hailing app. We are the infrastructure layer that connects ALL mobility — autos, cabs, bikes, buses, metros, trains — on an open, interoperable protocol.</div>
+  </div>
+</div>
+
+<!-- SLIDE 6: The Bus Opportunity -->
+<div class="slide" data-slide="6">
+  <h2>The Public Transport Opportunity is Bigger Than Ride-Hailing</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card">
+        <h3>India Daily Transactions</h3>
+        <div class="spacer-sm"></div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px">Public Transport (Buses)</div>
+          <div style="background:var(--green); height:32px; border-radius:4px; width:100%; display:flex; align-items:center; padding:0 12px; font-weight:700; font-size:14px">70 MILLION daily trips</div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px">Ride-Hailing (Total India)</div>
+          <div style="background:var(--accent); height:32px; border-radius:4px; width:7%; display:flex; align-items:center; padding:0 12px; font-weight:700; font-size:11px; min-width:100px">5M daily</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="metric-row"><span class="metric-label">Registered Buses</span><span class="metric-value">1.7 million</span></div>
+        <div class="metric-row"><span class="metric-label">Digital Penetration</span><span class="metric-value red">&lt;5%</span></div>
+        <div class="metric-row"><span class="metric-label">NCMC Rollout</span><span class="metric-value green">Accelerating</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>The Comp: Chalo</h3>
+        <div class="metric-row"><span class="metric-label">Total Raised</span><span class="metric-value">$119M</span></div>
+        <div class="metric-row"><span class="metric-label">Valuation</span><span class="metric-value blue">$400-500M</span></div>
+        <div class="metric-row"><span class="metric-label">Revenue (FY24)</span><span class="metric-value">&#8377;150 Cr</span></div>
+        <div class="metric-row"><span class="metric-label">Cities</span><span class="metric-value">65+</span></div>
+        <div class="metric-row"><span class="metric-label">Model</span><span class="metric-value dim">Hardware ETMs + Software</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card success">
+        <h3 style="color:var(--green)">Our Edge Over Chalo</h3>
+        <ul class="bullet-list">
+          <li class="green" style="font-size:13px"><strong>Software-only</strong> — lighter, faster to scale (no hardware)</li>
+          <li class="green" style="font-size:13px"><strong>Open protocol</strong> (BECKN) — government-backed interoperability</li>
+          <li class="green" style="font-size:13px"><strong>Ride-hailing + PT</strong> — multimodal journey (Chalo can't)</li>
+          <li class="green" style="font-size:13px"><strong>State-level partnerships</strong> — CUMTA, MTC, CMRL, Delhi Metro</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Chennai One -->
+<div class="slide" data-slide="7">
+  <h2>Chennai One: The Make-or-Break Bet</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card highlight">
+        <h3>Scale Target</h3>
+        <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:16px">
+          <div>
+            <div class="big-number" style="color:var(--text-dim); font-size:36px">32K</div>
+            <div class="big-label">Dec '25</div>
+          </div>
+          <div style="font-size:32px; color:var(--text-dim)">&rarr;</div>
+          <div>
+            <div class="big-number" style="color:var(--green)">400K</div>
+            <div class="big-label">Dec '26 Target</div>
+          </div>
+          <div style="font-size:18px; font-weight:700; color:var(--accent2)">12.5x</div>
+        </div>
+        <h3>Current Traction (FINAL, 7d avg excl. anomalies)</h3>
+        <div class="metric-row"><span class="metric-label">FRFS Tickets Confirmed/day</span><span class="metric-value">71K</span></div>
+        <div class="metric-row"><span class="metric-label">AOP March Target</span><span class="metric-value red">123K (-41%)</span></div>
+        <div class="metric-row"><span class="metric-label">Normal day peak</span><span class="metric-value">91K</span></div>
+        <div class="metric-row"><span class="metric-label">Passes/day (avg)</span><span class="metric-value">1.5K</span></div>
+        <div class="metric-row"><span class="metric-label">Passes Today (depot push!)</span><span class="metric-value green" style="font-size:20px">23,183 &#9650;</span></div>
+        <div class="metric-row"><span class="metric-label">Booking Confirm Rate</span><span class="metric-value">85%</span></div>
+        <div style="font-size:10px; color:var(--text-dim); margin-top:8px">Mar 11-12 had near-zero FRFS = pipeline issue. Mar 13 excluded (data bug). Depot push today shows 15x surge when activated.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card">
+        <h3>Transit Partners Live</h3>
+        <div class="metric-row"><span class="metric-label">Direct Multimodal Services</span><span class="metric-value">1.8M txns</span></div>
+        <div class="metric-row"><span class="metric-label">CRIS Subway</span><span class="metric-value">195K</span></div>
+        <div class="metric-row"><span class="metric-label">Chennai Metro (CMRL)</span><span class="metric-value">156K</span></div>
+        <div class="metric-row"><span class="metric-label">CHALO</span><span class="metric-value">34K</span></div>
+        <div class="metric-row"><span class="metric-label">Delhi Metro</span><span class="metric-value">20K</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card danger">
+        <h3 style="color:var(--red)">What's Broken Right Now</h3>
+        <ul class="bullet-list">
+          <li class="red" style="font-size:14px"><strong>Bus pass photo upload &rarr; payment flow broken.</strong> Backend exists, frontend NOT implemented. Users stuck in infinite loading during depot push.</li>
+          <li class="red" style="font-size:14px"><strong>iOS crash on iPhone 7</strong> — blocking older-device users from using bus passes</li>
+          <li class="red" style="font-size:14px"><strong>566K active tickets, only 18K used</strong> — utilization gap</li>
+          <li class="red" style="font-size:14px"><strong>All FRFS recon status = PENDING</strong> — settlement backlog</li>
+        </ul>
+      </div>
+      <div class="spacer"></div>
+      <div class="card warn">
+        <h3 style="color:var(--orange)">What Needs to Happen</h3>
+        <ul class="bullet-list">
+          <li class="orange" style="font-size:14px">Fix pass purchase flow <strong>this week</strong></li>
+          <li class="orange" style="font-size:14px">Complete MTC full route digitization</li>
+          <li class="orange" style="font-size:14px">200+ depot activations for ground push</li>
+          <li class="orange" style="font-size:14px">Suburban rail integration</li>
+          <li class="orange" style="font-size:14px">Payment success rate: 84% &rarr; 95%+</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Focus -->
+<div class="slide" data-slide="8">
+  <h2>The Focus Problem: 12 Bets on &#8377;19.8 Cr Revenue</h2>
+  <div class="content-grid single">
+    <div class="card">
+      <table>
+        <tr><th>Bet</th><th>Status</th><th>Resource Intensity</th><th>Revenue Impact CY26</th><th>Recommendation</th></tr>
+        <tr style="background:rgba(52,211,153,0.05)"><td><strong>Karnataka RH</strong></td><td><span class="tag green">Proven</span></td><td>Low</td><td>&#8377;28 Cr (51%)</td><td><span class="tag green">Core &mdash; Defend</span></td></tr>
+        <tr style="background:rgba(52,211,153,0.05)"><td><strong>West Bengal RH</strong></td><td><span class="tag green">Growing</span></td><td>Medium</td><td>&#8377;7 Cr (12%)</td><td><span class="tag green">Core &mdash; Grow</span></td></tr>
+        <tr style="background:rgba(99,102,241,0.05)"><td><strong>Chennai One PT</strong></td><td><span class="tag blue">Promising</span></td><td>Critical</td><td>&#8377;2.5 Cr (5%)</td><td><span class="tag blue">Star &mdash; ALL IN</span></td></tr>
+        <tr style="background:rgba(251,191,36,0.05)"><td><strong>Bharat Taxi NCR</strong></td><td><span class="tag orange">New</span></td><td>HIGH</td><td>&#8377;3.5 Cr (6%)</td><td><span class="tag orange">Bet &mdash; Prove by Q2</span></td></tr>
+        <tr><td>BT Gujarat</td><td><span class="tag orange">New</span></td><td>High</td><td>Small</td><td class="dim">Pause if NCR doesn't work</td></tr>
+        <tr><td>Rest of India RH</td><td><span class="tag orange">New</span></td><td>High</td><td>&#8377;4 Cr</td><td class="dim">Slow &mdash; 1 city at a time</td></tr>
+        <tr><td>Europe</td><td><span class="tag purple">Experiment</span></td><td>Low</td><td>&#8377;5.5 Cr</td><td class="dim">R&D only &mdash; &lt;2% resources</td></tr>
+        <tr><td>MM Rest of India</td><td><span class="tag red">Moonshot</span></td><td>High</td><td>&#8377;0.4 Cr</td><td class="dim">After Chennai proves it</td></tr>
+        <tr><td>ROW Global</td><td><span class="tag red">Pre-revenue</span></td><td>Low</td><td>&#8377;1.7 Cr</td><td class="dim">Pause</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="card highlight" style="text-align:center; padding:16px">
+    <span style="font-size:18px; font-weight:600">Recommended Focus: 3 bets, not 12</span><br>
+    <span class="dim">1. Karnataka/WB (defend) &nbsp;&bull;&nbsp; 2. Chennai One (breakthrough) &nbsp;&bull;&nbsp; 3. Bharat Taxi NCR (growth proof)</span>
+  </div>
+</div>
+
+<!-- SLIDE 9: Global -->
+<div class="slide" data-slide="9">
+  <h2>Global: Experiment, Not Strategy</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card">
+        <h3>Current Global Footprint</h3>
+        <div class="metric-row"><span class="metric-label">Helsinki (Finland)</span><span class="metric-value dim">Pilot</span></div>
+        <div class="metric-row"><span class="metric-label">Amsterdam (Netherlands)</span><span class="metric-value dim">BECKN OAN pilot</span></div>
+        <div class="metric-row"><span class="metric-label">Paris (France)</span><span class="metric-value dim">Pilot</span></div>
+        <div class="metric-row"><span class="metric-label">Minneapolis (USA)</span><span class="metric-value dim">Pilot</span></div>
+        <div class="spacer"></div>
+        <div class="metric-row"><span class="metric-label">AOP Revenue Contribution</span><span class="metric-value red">1.6%</span></div>
+        <div class="metric-row"><span class="metric-label">AOP Volume Contribution</span><span class="metric-value red">1.5%</span></div>
+        <div class="metric-row"><span class="metric-label">AOP Cost</span><span class="metric-value green">&#8377;0.25 Cr</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card danger">
+        <h3 style="color:var(--red)">Why It's a Distraction</h3>
+        <ul class="bullet-list">
+          <li class="red" style="font-size:13px">Indian startups have poor global track record (Ola exited UK, AU)</li>
+          <li class="red" style="font-size:13px">EU regulation complexity (GDPR, local licensing)</li>
+          <li class="red" style="font-size:13px">BECKN international adoption still pilot-only</li>
+          <li class="red" style="font-size:13px">Engineering overhead: multi-currency, multi-language</li>
+        </ul>
+      </div>
+      <div class="spacer"></div>
+      <div class="card success">
+        <h3 style="color:var(--green)">Why Keep It (at Low Cost)</h3>
+        <ul class="bullet-list">
+          <li class="green" style="font-size:13px">BECKN + Google Cloud (Beckn Onix) = DPI narrative</li>
+          <li class="green" style="font-size:13px">Cost is trivial (&#8377;0.25 Cr / year)</li>
+          <li class="green" style="font-size:13px">"Indian DPI going global, like UPI" = 100x narrative multiplier</li>
+          <li class="green" style="font-size:13px">Amsterdam OAN pilot could create organic pull</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="card" style="text-align:center; padding:14px">
+    <span class="bold">Verdict:</span> <span class="dim">Keep as &lt;2% resource R&D. Don't hire for it. Don't pitch it as a line item. If organic traction appears, accelerate in CY27.</span>
+  </div>
+</div>
+
+<!-- SLIDE 10: AI Strategy -->
+<div class="slide" data-slide="10">
+  <h2>AI Strategy: From Data-Rich to Intelligence-Driven</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card">
+        <h3>What We Have (Data Assets)</h3>
+        <div class="metric-row"><span class="metric-label">Total ClickHouse Rows</span><span class="metric-value blue">50 Billion+</span></div>
+        <div class="metric-row"><span class="metric-label">App Events/Day</span><span class="metric-value">156 Million</span></div>
+        <div class="metric-row"><span class="metric-label">API Latency Records/Day</span><span class="metric-value">82 Million</span></div>
+        <div class="metric-row"><span class="metric-label">Driver GPS Pings</span><span class="metric-value">40.7B (raw)</span></div>
+        <div class="metric-row"><span class="metric-label">Bus GPS Data</span><span class="metric-value">1.2B rows</span></div>
+        <div class="metric-row"><span class="metric-label">H3 Hex Supply-Demand</span><span class="metric-value">170M rows</span></div>
+        <div class="metric-row"><span class="metric-label">Langfuse LLM Traces</span><span class="metric-value">Available</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card highlight">
+        <h3>AI Roadmap (4 Phases)</h3>
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px; font-weight:600; color:var(--green)">Q2 2026 &mdash; Quick Wins</div>
+          <div style="font-size:13px; color:var(--text-dim); margin-top:4px">&bull; Bus ETA prediction (1.2B GPS rows) &mdash; makes Chennai One reliable<br>&bull; Supply-demand prediction (H3 hex data) &mdash; direct drivers to demand</div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px; font-weight:600; color:var(--blue)">Q3 2026 &mdash; Smart Allocation</div>
+          <div style="font-size:13px; color:var(--text-dim); margin-top:4px">&bull; ML driver matching (replace batch-based allocation) &mdash; improve 2.6% accept rate<br>&bull; Rider churn prediction (session + ride data)</div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:13px; font-weight:600; color:var(--purple)">Q4 2026 &mdash; Differentiator</div>
+          <div style="font-size:13px; color:var(--text-dim); margin-top:4px">&bull; Dynamic pricing that maximizes RIDES, not revenue<br>&bull; Multimodal journey optimization (taxi + bus + metro)</div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:var(--orange)">CY 2027 &mdash; Platform Intelligence</div>
+          <div style="font-size:13px; color:var(--text-dim); margin-top:4px">&bull; LLM-powered driver onboarding & support (Langfuse ready)<br>&bull; Route optimization for bus operators</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="card" style="text-align:center; padding:14px">
+    <span class="bold">Hiring need:</span> <span class="dim">2-3 ML engineers. We have more mobility data than any company in India. We just need people to use it.</span>
+  </div>
+</div>
+
+<!-- SLIDE 11: Fundraise Narrative -->
+<div class="slide" data-slide="11">
+  <h2>Series A Narrative: India's UPI of Transport</h2>
+  <div class="cols-2">
+    <div>
+      <div class="card highlight" style="padding:32px">
+        <div class="quote">
+          "India digitized payments with UPI. We're digitizing mobility with BECKN. One open protocol connecting every auto, cab, bus, metro, and train."
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card">
+        <h3>Three Proof Points</h3>
+        <div style="margin-bottom:16px">
+          <div style="font-size:14px; font-weight:600; color:var(--green)">1. Ride-hailing works</div>
+          <div style="font-size:13px; color:var(--text-dim)">200K+ daily, subscription model proven, Uber/Ola now copying us</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:14px; font-weight:600; color:var(--blue)">2. Public transport works</div>
+          <div style="font-size:13px; color:var(--text-dim)">Chennai One at scale, MTC/CMRL/Delhi Metro live, NCMC aligned</div>
+        </div>
+        <div>
+          <div style="font-size:14px; font-weight:600; color:var(--purple)">3. Multimodal works</div>
+          <div style="font-size:13px; color:var(--text-dim)">4.2M taxi + 1.4M bus + 1.3M metro journey legs/week already</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>The Ask</h3>
+        <div class="big-number" style="color:var(--accent2)">$25-40M</div>
+        <div class="big-label">Series A at $150-200M valuation</div>
+        <div class="spacer"></div>
+        <div class="metric-row"><span class="metric-label">Scale Chennai One</span><span class="metric-value">500K+ daily</span></div>
+        <div class="metric-row"><span class="metric-label">Launch PT in 5 more cities</span><span class="metric-value">BT, OD, WB, KL, NY</span></div>
+        <div class="metric-row"><span class="metric-label">Grow RH to</span><span class="metric-value">500K daily</span></div>
+        <div class="metric-row"><span class="metric-label">Build AI/ML capability</span><span class="metric-value">2-3 hires</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card">
+        <h3>Investor Pushback Prep</h3>
+        <table style="font-size:12px">
+          <tr><td class="dim">"Revenue is tiny"</td><td>2.55x growth, CM3 turning positive</td></tr>
+          <tr><td class="dim">"Rapido is 50x bigger"</td><td>Different game. Our comp is Chalo ($500M)</td></tr>
+          <tr><td class="dim">"Too many bets"</td><td>Committing to 3 priorities</td></tr>
+          <tr><td class="dim">"Global is distraction"</td><td>&lt;2% cost, R&D experiment only</td></tr>
+          <tr><td class="dim">"Flat valuation?"</td><td>Prioritized runway. Next round = step-up</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: 90-Day Plan -->
+<div class="slide" data-slide="12">
+  <h2>Next 90 Days: What Must Happen</h2>
+  <div class="cols-3">
+    <div class="card danger">
+      <h3 style="color:var(--red)">This Week</h3>
+      <ul class="bullet-list">
+        <li class="red" style="font-size:13px"><strong>Fix Chennai One bus pass flow</strong> &mdash; frontend missing, users stuck</li>
+        <li class="red" style="font-size:13px"><strong>Fix iOS crashes</strong> &mdash; blocking depot push users</li>
+        <li class="red" style="font-size:13px"><strong>Fix 48% driver fee collection</strong> &mdash; revenue leakage</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <h3 style="color:var(--orange)">Next 30 Days</h3>
+      <ul class="bullet-list">
+        <li class="orange" style="font-size:13px"><strong>Chennai One: 120K daily</strong> (March AOP target)</li>
+        <li class="orange" style="font-size:13px"><strong>BT NCR: 12.5K daily</strong> (driver onboarding blitz)</li>
+        <li class="orange" style="font-size:13px"><strong>App monitoring dashboards</strong> (5 MVs from data plan)</li>
+        <li class="orange" style="font-size:13px"><strong>Payment success rate</strong> to 95%+</li>
+      </ul>
+    </div>
+    <div class="card success">
+      <h3 style="color:var(--green)">Next 90 Days</h3>
+      <ul class="bullet-list">
+        <li class="green" style="font-size:13px"><strong>Chennai One: 200K daily</strong> (June target)</li>
+        <li class="green" style="font-size:13px"><strong>Close Series A</strong> with Chennai proof point</li>
+        <li class="green" style="font-size:13px"><strong>AI/ML team hire</strong> (2-3 people)</li>
+        <li class="green" style="font-size:13px"><strong>Total volume: 470K daily</strong></li>
+      </ul>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="card" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(52,211,153,0.05)); border-color: var(--accent); text-align: center; padding: 28px;">
+    <div style="font-size:28px; font-weight:700; letter-spacing:-1px; margin-bottom:8px">
+      Today: <span style="color:var(--accent2)">271K daily txns</span> &bull; RH: 199K &bull; PT: 71K &bull; March proj: <span style="color:var(--accent2)">8.4M txns</span>
+    </div>
+    <div style="font-size:16px; color:var(--text-dim); margin-bottom:12px">
+      India's buses carry 70M people daily. <strong style="color:var(--text)">&lt;5% digitized.</strong> Chennai One proves the model. Series A scales it to 50 cities.
+    </div>
+    <div style="font-size:13px; color:var(--text-dim)">
+      RH 6% below AOP (199K vs 211K) &bull; Multimodal 41% below (73K vs 123K) &mdash; fix bus pass flow + FRFS pipeline &bull; 693K searches/day &bull; Depot push: 23K passes today
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="slide-number" id="slideNum">1 / 12</div>
+<div class="nav-hint">&larr; &rarr; arrow keys to navigate</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('slideNum').textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+    if (e.key === 'Home') showSlide(0);
+    if (e.key === 'End') showSlide(slides.length - 1);
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) showSlide(current + 1);
+      else showSlide(current - 1);
+    }
+  });
+</script>
+</body>
+</html>

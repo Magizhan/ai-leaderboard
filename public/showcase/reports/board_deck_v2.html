@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moving Tech — Board Briefing | March 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--s:#12121a;--s2:#1a1a26;--b:#2a2a3a;--t:#e8e8f0;--td:#8888a0;--a:#6366f1;--a2:#818cf8;--g:#34d399;--r:#f87171;--o:#fbbf24;--bl:#60a5fa;--p:#a78bfa}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t);overflow:hidden;height:100vh}
+.deck{height:100vh;width:100vw;position:relative}
+.slide{position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:44px 60px;overflow-y:auto}
+.slide.active{display:flex}
+.sn{position:fixed;bottom:18px;right:28px;font-size:12px;color:var(--td);z-index:100;font-weight:500}
+.nh{position:fixed;bottom:18px;left:28px;font-size:11px;color:var(--td);z-index:100;opacity:.4}
+.ts{justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0a0a1a,#1a1040,#0a0a1a)}
+.ts h1{font-size:52px;font-weight:800;letter-spacing:-2px;background:linear-gradient(135deg,#e8e8f0,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.ts .sub{font-size:20px;color:var(--td);margin-bottom:40px}
+.ts .meta{font-size:13px;color:var(--td);opacity:.5}
+.ts .logo{font-size:15px;font-weight:600;color:var(--a2);letter-spacing:4px;text-transform:uppercase;margin-bottom:20px}
+h2{font-size:30px;font-weight:700;margin-bottom:28px;letter-spacing:-.5px}
+h3{font-size:17px;font-weight:600;margin-bottom:12px;color:var(--a2)}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.c3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.c4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+.card{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:20px}
+.card.hi{border-color:var(--a);background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(99,102,241,.02))}
+.card.dn{border-color:var(--r);background:linear-gradient(135deg,rgba(248,113,113,.08),rgba(248,113,113,.02))}
+.card.ok{border-color:var(--g);background:linear-gradient(135deg,rgba(52,211,153,.08),rgba(52,211,153,.02))}
+.card.wn{border-color:var(--o);background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(251,191,36,.02))}
+.mr{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--b)}.mr:last-child{border-bottom:none}
+.ml{font-size:13px;color:var(--td)}.mv{font-size:16px;font-weight:700}
+.bn{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1.1}
+.bl{font-size:12px;color:var(--td);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--b);color:var(--td);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:8px 10px;border-bottom:1px solid var(--b)}tr:last-child td{border-bottom:none}
+.tag{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tag.g{background:rgba(52,211,153,.15);color:var(--g)}.tag.r{background:rgba(248,113,113,.15);color:var(--r)}
+.tag.o{background:rgba(251,191,36,.15);color:var(--o)}.tag.bl{background:rgba(96,165,250,.15);color:var(--bl)}
+.tag.p{background:rgba(167,139,250,.15);color:var(--p)}
+ul.bl{list-style:none;padding:0}ul.bl li{padding:6px 0;padding-left:18px;position:relative;font-size:13px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.03)}
+ul.bl li:before{content:'';position:absolute;left:0;top:12px;width:7px;height:7px;border-radius:50%;background:var(--a)}
+ul.bl li.r:before{background:var(--r)}ul.bl li.g:before{background:var(--g)}ul.bl li.o:before{background:var(--o)}ul.bl li.bl:before{background:var(--bl)}
+.bar-row{display:flex;align-items:center;gap:10px;margin:5px 0}
+.bar-row .bar{height:18px;border-radius:3px}.bar-row .lb{font-size:11px;color:var(--td);min-width:70px}.bar-row .vl{font-size:12px;font-weight:600;min-width:55px}
+.sp{height:14px}.sp2{height:8px}
+.sm{font-size:12px}.dm{color:var(--td)}.bd{font-weight:700}.ct{text-align:center}
+.q{font-size:22px;font-weight:300;font-style:italic;line-height:1.5;padding:20px;border-left:3px solid var(--a);max-width:650px}
+.fl1{flex:1}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- 1: TITLE -->
+<div class="slide ts active" data-slide="1">
+  <div class="logo">Moving Tech</div>
+  <h1>India's Mobility Infrastructure Layer</h1>
+  <div class="sub">Board Briefing &mdash; AOP Execution Plan, Strategy & Fundraise Narrative</div>
+  <div class="meta">March 17, 2026 &mdash; Confidential</div>
+</div>
+
+<!-- 2: THREE MODES PLAYBOOK -->
+<div class="slide" data-slide="2">
+  <h2>The Playbook: Three Modes of Execution</h2>
+  <div class="c3">
+    <div class="card hi" style="border-top:3px solid var(--a)">
+      <div style="font-size:11px;font-weight:600;color:var(--a2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Mode 1 &mdash; Core Markets</div>
+      <h3 style="color:var(--t);font-size:20px">Ride-Hailing: KA + WB</h3>
+      <div class="sp2"></div>
+      <div class="bn" style="color:var(--a2)">183K<span style="font-size:16px;color:var(--td)">/day</span></div>
+      <div class="bl">Completed Rides (Mar 9-15 avg)</div>
+      <div class="sp"></div>
+      <div class="mr"><span class="ml">Karnataka</span><span class="mv">154K/day</span></div>
+      <div class="mr"><span class="ml">West Bengal</span><span class="mv">29K/day</span></div>
+      <div class="mr"><span class="ml">Weekly Revenue</span><span class="mv">&#8377;22 Cr</span></div>
+      <div class="sp"></div>
+      <div style="font-size:12px;color:var(--td)"><strong style="color:var(--g)">Strategy:</strong> High-touch, deep govt/driver relationships. Defend &amp; compound. This is the revenue engine — 90% of RH earnings.</div>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:8px;background:rgba(99,102,241,.1);border-radius:6px"><strong>Ops model:</strong> Engaged — city leads, driver unions, local ops teams</div>
+    </div>
+    <div class="card wn" style="border-top:3px solid var(--o)">
+      <div style="font-size:11px;font-weight:600;color:var(--o);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Mode 2 &mdash; Aggressive Expansion</div>
+      <h3 style="color:var(--t);font-size:20px">Ride-Hailing: BT + New Cities</h3>
+      <div class="sp2"></div>
+      <div class="bn" style="color:var(--o)">20K<span style="font-size:16px;color:var(--td)">/day</span></div>
+      <div class="bl">Completed Rides (Mar 9-15 avg)</div>
+      <div class="sp"></div>
+      <div class="mr"><span class="ml">Delhi NCR</span><span class="mv">8.8K/day</span></div>
+      <div class="mr"><span class="ml">Gujarat</span><span class="mv">4.7K/day</span></div>
+      <div class="mr"><span class="ml">Tamil Nadu</span><span class="mv">2.9K/day</span></div>
+      <div class="mr"><span class="ml">Odisha + Kerala</span><span class="mv">3.4K/day</span></div>
+      <div class="sp"></div>
+      <div style="font-size:12px;color:var(--td)"><strong style="color:var(--o)">Strategy:</strong> Medium-touch, enabler-led. Local govts/transport depts as force multipliers. Bharat Taxi brand in NCR+GJ.</div>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:8px;background:rgba(251,191,36,.1);border-radius:6px"><strong>Ops model:</strong> Light — driver self-onboard, no city ops overhead. Enabler partnerships.</div>
+    </div>
+    <div class="card ok" style="border-top:3px solid var(--g)">
+      <div style="font-size:11px;font-weight:600;color:var(--g);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Mode 3 &mdash; Public Transport</div>
+      <h3 style="color:var(--t);font-size:20px">PT: Tickets, Passes & Metro</h3>
+      <div class="sp2"></div>
+      <div class="bn" style="color:var(--g)">88K<span style="font-size:16px;color:var(--td)">/day</span></div>
+      <div class="bl">Tickets Booked (Weekday avg)</div>
+      <div class="sp"></div>
+      <div class="mr"><span class="ml">Chennai Bus</span><span class="mv">70K tickets</span></div>
+      <div class="mr"><span class="ml">Chennai Metro+Subway</span><span class="mv">12K</span></div>
+      <div class="mr"><span class="ml">Bangalore Metro</span><span class="mv">1.2K</span></div>
+      <div class="mr"><span class="ml">Delhi/Kochi/Others</span><span class="mv">1K</span></div>
+      <div class="mr"><span class="ml">Passes (high-value)</span><span class="mv" style="color:var(--g)">1.5K/day &bull; &#8377;1K avg</span></div>
+      <div class="sp"></div>
+      <div style="font-size:12px;color:var(--td)"><strong style="color:var(--g)">Strategy:</strong> Govt partnership-led. One state transport contract unlocks millions of daily txns. Scale via replication.</div>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:8px;background:rgba(52,211,153,.1);border-radius:6px"><strong>Ops model:</strong> B2G — one contract = entire city. No per-driver ops. Software-only.</div>
+    </div>
+  </div>
+  <div class="sp"></div>
+  <div class="card" style="text-align:center;padding:14px;background:linear-gradient(135deg,rgba(99,102,241,.06),rgba(52,211,153,.04))">
+    <strong>Total Platform: 292K daily txns (weekday)</strong> &mdash; 203K ride-hailing + 88K public transport + 1.5K passes
+    <div class="dm sm" style="margin-top:4px">Source: cosmos.ride_hailing_conversion_historic + cosmos.public_transport_top_metrics (Mar 9-15, 2026)</div>
+  </div>
+</div>
+
+<!-- 3: GROWTH TRAJECTORY -->
+<div class="slide" data-slide="3">
+  <h2>Growth Trajectory: 12-Week Trend</h2>
+  <div class="c2">
+    <div class="card">
+      <h3>Ride-Hailing: Weekly Completed Rides</h3>
+      <table>
+        <tr><th>Week</th><th>Daily Avg</th><th>&#916; WoW</th><th>Mode 1 (KA+WB)</th><th>Mode 2 (Expansion)</th></tr>
+        <tr><td>Dec 22</td><td>144K</td><td></td><td>137K</td><td>7K</td></tr>
+        <tr><td>Jan 5</td><td>180K</td><td style="color:var(--g)">+25%</td><td>171K</td><td>9K</td></tr>
+        <tr><td>Jan 19</td><td>193K</td><td style="color:var(--g)">+7%</td><td>184K</td><td>9K</td></tr>
+        <tr><td>Feb 2</td><td>195K</td><td>+1%</td><td>183K</td><td>12K</td></tr>
+        <tr><td>Feb 16</td><td>196K</td><td>flat</td><td>180K</td><td>16K</td></tr>
+        <tr><td>Mar 2</td><td>187K</td><td style="color:var(--r)">-4%</td><td>171K</td><td>16K</td></tr>
+        <tr style="font-weight:700;background:rgba(99,102,241,.05)"><td>Mar 9</td><td>203K</td><td style="color:var(--g)">+8%</td><td>183K</td><td><span style="color:var(--o)">20K</span></td></tr>
+      </table>
+      <div class="sp2"></div>
+      <div class="dm sm">Mode 1 (KA+WB) stable at 180-183K. All growth is from Mode 2 expansion: 7K&rarr;20K in 12 weeks.</div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Bharat Taxi: The Expansion Engine</h3>
+        <table>
+          <tr><th>Week</th><th>BT Daily (NCR+GJ)</th><th>&#916;</th></tr>
+          <tr><td>Dec 22</td><td>854</td><td></td></tr>
+          <tr><td>Jan 5</td><td>3,043</td><td style="color:var(--g)">+256%</td></tr>
+          <tr><td>Feb 2</td><td>6,204</td><td style="color:var(--g)">+104%</td></tr>
+          <tr><td>Feb 16</td><td>9,309</td><td style="color:var(--g)">+50%</td></tr>
+          <tr><td>Mar 2</td><td>10,099</td><td>+8%</td></tr>
+          <tr style="font-weight:700;background:rgba(251,191,36,.05)"><td>Mar 9</td><td style="color:var(--o)">13,555</td><td style="color:var(--g)">+34%</td></tr>
+        </table>
+        <div class="sp"></div>
+        <div style="font-size:12px;padding:10px;background:rgba(251,191,36,.08);border-radius:6px">
+          <strong style="color:var(--o)">854 &rarr; 13,555 in 12 weeks.</strong> NCR growing despite Uber/Rapido. Gujarat ramping. AOP target: 67K by Dec &mdash; requires sustaining ~15% MoM growth.
+        </div>
+      </div>
+      <div class="sp"></div>
+      <div class="card">
+        <h3>Public Transport: Chennai Dominance</h3>
+        <div class="mr"><span class="ml">Chennai Bus (weekday avg)</span><span class="mv" style="color:var(--g)">70K tickets/day</span></div>
+        <div class="mr"><span class="ml">Chennai Metro+Subway</span><span class="mv">12K/day</span></div>
+        <div class="mr"><span class="ml">Daily Revenue</span><span class="mv">&#8377;14.4L</span></div>
+        <div class="mr"><span class="ml">Passes (high-value, ₹1K avg)</span><span class="mv">1.5K/day</span></div>
+        <div class="mr"><span class="ml">Today's pass surge (depot push)</span><span class="mv" style="color:var(--g)">23K &#9650;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4: AOP EXECUTION PLAN -->
+<div class="slide" data-slide="4">
+  <h2>AOP CY2026: Execution Plan by Mode</h2>
+  <div class="c2">
+    <div>
+      <div class="card">
+        <h3>Financial Targets</h3>
+        <div class="mr"><span class="ml">Total Revenue</span><span class="mv" style="color:var(--g)">&#8377;55.5 Cr</span></div>
+        <div class="mr"><span class="ml">Growth</span><span class="mv" style="color:var(--g)">2.55x</span></div>
+        <div class="mr"><span class="ml">CM3 (Dec exit)</span><span class="mv" style="color:var(--g)">28%</span></div>
+        <div class="mr"><span class="ml">Total Costs</span><span class="mv">&#8377;88.3 Cr</span></div>
+        <div class="mr"><span class="ml">EBITDA</span><span class="mv" style="color:var(--r)">-&#8377;32.8 Cr</span></div>
+        <div class="mr"><span class="ml">Cash Need</span><span class="mv" style="color:var(--o)">~&#8377;33 Cr</span></div>
+      </div>
+      <div class="sp"></div>
+      <div class="card hi">
+        <h3>Current vs AOP (Mar projection from 7d avg)</h3>
+        <table>
+          <tr><th></th><th>AOP Mar</th><th>Projected</th><th></th></tr>
+          <tr><td>Mode 1 (KA+WB)</td><td>190K/day</td><td style="font-weight:700">183K</td><td><span class="tag o">-4%</span></td></tr>
+          <tr><td>Mode 2 (BT+Rest)</td><td>22K/day</td><td style="font-weight:700">20K</td><td><span class="tag o">-9%</span></td></tr>
+          <tr><td>Mode 3 (PT)</td><td>123K/day</td><td style="font-weight:700">90K</td><td><span class="tag r">-27%</span></td></tr>
+          <tr style="font-weight:700;border-top:2px solid var(--b)"><td>Total</td><td>335K</td><td>292K</td><td><span class="tag o">-13%</span></td></tr>
+        </table>
+        <div class="sp2"></div>
+        <div class="dm sm">RH near plan. PT gap driven by FRFS pipeline issues + broken bus pass flow. Fix = immediate unlock.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Volume Ramp: AOP Exit Targets (Dec '26)</h3>
+      <table>
+        <tr><th>Segment</th><th>Now</th><th>Dec Target</th><th>Growth</th><th>Risk</th></tr>
+        <tr style="background:rgba(99,102,241,.04)"><td colspan="5" style="font-weight:600;color:var(--a2)">MODE 1: Core Markets</td></tr>
+        <tr><td>&nbsp;&nbsp;Karnataka</td><td>154K</td><td>195K</td><td>1.27x</td><td><span class="tag g">Low</span></td></tr>
+        <tr><td>&nbsp;&nbsp;West Bengal</td><td>29K</td><td>40K</td><td>1.38x</td><td><span class="tag g">Low</span></td></tr>
+        <tr style="background:rgba(251,191,36,.04)"><td colspan="5" style="font-weight:600;color:var(--o)">MODE 2: Expansion</td></tr>
+        <tr><td>&nbsp;&nbsp;BT NCR</td><td>8.8K</td><td>45K</td><td>5.1x</td><td><span class="tag o">Medium</span></td></tr>
+        <tr><td>&nbsp;&nbsp;BT Gujarat</td><td>4.7K</td><td>11.3K</td><td>2.4x</td><td><span class="tag o">Medium</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Rest of India</td><td>6.3K</td><td>26K</td><td>4.1x</td><td><span class="tag r">High</span></td></tr>
+        <tr style="background:rgba(52,211,153,.04)"><td colspan="5" style="font-weight:600;color:var(--g)">MODE 3: Public Transport</td></tr>
+        <tr><td>&nbsp;&nbsp;Chennai One</td><td>85K</td><td>400K</td><td>4.7x</td><td><span class="tag o">Medium-High</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Other Cities PT</td><td>3K</td><td>240K</td><td>80x</td><td><span class="tag r">Moonshot</span></td></tr>
+        <tr style="background:rgba(167,139,250,.04)"><td colspan="5" style="font-weight:600;color:var(--p)">GLOBAL (R&D experiment)</td></tr>
+        <tr><td>&nbsp;&nbsp;Europe + ROW</td><td>0</td><td>15K</td><td>New</td><td><span class="tag p">&lt;2% cost</span></td></tr>
+        <tr style="font-weight:700;border-top:2px solid var(--b)"><td>TOTAL</td><td>292K</td><td>993K</td><td>3.4x</td><td></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 5: EXECUTION METHODOLOGY -->
+<div class="slide" data-slide="5">
+  <h2>Execution Methodology: How We Get to 993K/day</h2>
+  <div class="c3">
+    <div class="card" style="border-left:3px solid var(--a)">
+      <h3 style="color:var(--a2)">Mode 1: Defend & Compound</h3>
+      <div style="font-size:13px;color:var(--td);margin-bottom:12px">KA 154K&rarr;195K (+27%) &bull; WB 29K&rarr;40K (+38%)</div>
+      <ul class="bl">
+        <li class="g"><strong>Driver retention:</strong> Fix 48% fee collection (₹2.7Cr leakage). Coin redemption at 26% — increase to 60%</li>
+        <li class="g"><strong>Conversion:</strong> 2.6% accept rate &rarr; 4% via ML allocation (H3 hex data ready, 170M rows)</li>
+        <li class="g"><strong>Expansion within KA:</strong> Mangalore, Hubli, Mysore growth — already at 12 cities</li>
+        <li class="bl"><strong>WB deepening:</strong> Siliguri, Asansol, Durgapur active. Add tier-2 coverage</li>
+      </ul>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:6px 8px;background:rgba(52,211,153,.1);border-radius:4px"><strong>Risk:</strong> Low. Organic growth in proven markets. Revenue: &#8377;33 Cr (60% of total)</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--o)">
+      <h3 style="color:var(--o)">Mode 2: Land & Expand</h3>
+      <div style="font-size:13px;color:var(--td);margin-bottom:12px">BT 13.5K&rarr;67K (+5x) &bull; ROI 6K&rarr;26K (+4x)</div>
+      <ul class="bl">
+        <li class="o"><strong>BT NCR playbook:</strong> 854&rarr;13,555 in 12 wks validated. Driver self-onboard via zero-commission. Sustain 15% MoM</li>
+        <li class="o"><strong>BT Gujarat:</strong> Ahmedabad 4.7K, expanding Surat/Rajkot. Same playbook as NCR</li>
+        <li class="o"><strong>ROI (TN/KL/OD/TG):</strong> Start with enabler partnerships. Govt transport dept tie-ups before ops</li>
+        <li class="bl"><strong>No city ops overhead:</strong> Subscription model = drivers pay ₹25/day. No per-ride margin pressure</li>
+      </ul>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:6px 8px;background:rgba(251,191,36,.1);border-radius:4px"><strong>Risk:</strong> Medium. NCR proven, GJ ramping. ROI unproven. Revenue: &#8377;8 Cr (14%)</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--g)">
+      <h3 style="color:var(--g)">Mode 3: Govt-Led Scale</h3>
+      <div style="font-size:13px;color:var(--td);margin-bottom:12px">Chennai 85K&rarr;400K &bull; Others 3K&rarr;240K</div>
+      <ul class="bl">
+        <li class="g"><strong>Chennai One:</strong> MTC full route digitization + CMRL + Suburban rail. Depot push already shows 23K passes/day when activated</li>
+        <li class="g"><strong>Replication model:</strong> One state transport contract = entire city. Software-only (no Chalo-style hardware)</li>
+        <li class="o"><strong>Pipeline:</strong> Odisha (OY), Bharat Taxi (BT PT), Kerala (KS), Bangalore (NY). Each contract ~3-6 month ramp</li>
+        <li class="bl"><strong>NCMC alignment:</strong> Delhi Saheli card, MSRTC mandate — national tailwind for digital PT</li>
+      </ul>
+      <div class="sp2"></div>
+      <div style="font-size:11px;padding:6px 8px;background:rgba(52,211,153,.1);border-radius:4px"><strong>Risk:</strong> Medium-High. Chennai proven, others depend on govt timelines. Revenue: &#8377;3.5 Cr (6%) but highest growth</div>
+    </div>
+  </div>
+  <div class="sp"></div>
+  <div class="card" style="padding:14px;text-align:center">
+    <strong>Revenue split by mode:</strong> Mode 1 (60%) funds operations &bull; Mode 2 (14%) proves national scale &bull; Mode 3 (6% now, but largest TAM) proves infra narrative
+    <div class="dm sm" style="margin-top:4px">Global R&amp;D (&lt;2% cost) kept as BECKN protocol experiment — not in critical path</div>
+  </div>
+</div>
+
+<!-- 6: RISKS & MITIGATIONS -->
+<div class="slide" data-slide="6">
+  <h2>Key Risks & Mitigations</h2>
+  <div class="c2">
+    <div>
+      <div class="card dn">
+        <h3 style="color:var(--r)">Critical Risks (Fix This Week)</h3>
+        <table>
+          <tr><td style="width:50%"><strong>Bus pass photo upload broken</strong><br><span class="dm sm">Backend exists, frontend NOT implemented. Users stuck during depot push.</span></td><td><span class="tag r">P0</span><br><span class="dm sm">Ship frontend or webview workaround within 3 days</span></td></tr>
+          <tr><td><strong>48% driver fees PENDING/OVERDUE</strong><br><span class="dm sm">₹2.7Cr+ leakage. Autopay at 64% but 71K execution failures/week.</span></td><td><span class="tag r">P0</span><br><span class="dm sm">Fix autopay flow, nudge manual payers, improve collection</span></td></tr>
+          <tr><td><strong>FRFS pipeline issues (Mar 11-12)</strong><br><span class="dm sm">Near-zero ticket bookings for 2 days. Data pipeline fragility.</span></td><td><span class="tag o">P1</span><br><span class="dm sm">Pipeline monitoring + alerting. Redundancy.</span></td></tr>
+        </table>
+      </div>
+      <div class="sp"></div>
+      <div class="card wn">
+        <h3 style="color:var(--o)">Strategic Risks</h3>
+        <table>
+          <tr><td style="width:55%"><strong>Chennai One 85K&rarr;400K requires 4.7x</strong></td><td><span class="dm sm">Mitigate: MTC full routes + suburban rail + pass adoption</span></td></tr>
+          <tr><td><strong>BT NCR vs Rapido (2.6M/day)</strong></td><td><span class="dm sm">Mitigate: Zero-commission = driver preference. Don't compete on CAC, compete on model</span></td></tr>
+          <tr><td><strong>PT Other Cities (3K&rarr;240K = 80x)</strong></td><td><span class="dm sm">Mitigate: Conservative AOP. 1 city success = reset target. Govt timeline risk is real.</span></td></tr>
+          <tr><td><strong>Cash runway: ₹33Cr needed</strong></td><td><span class="dm sm">Mitigate: Series A by Q2-Q3. Current runway + Juspay bridge if needed.</span></td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card ok">
+        <h3 style="color:var(--g)">Structural Advantages (Moats)</h3>
+        <ul class="bl">
+          <li class="g"><strong>Open protocol (BECKN):</strong> Government-backed interoperability. ONDC alignment. Not possible to replicate without protocol buy-in.</li>
+          <li class="g"><strong>Zero-commission model:</strong> Uber/Ola now copying us (Rest of World, 2025). First-mover in subscription model. Rapido validated at scale.</li>
+          <li class="g"><strong>Govt partnerships:</strong> CUMTA, MTC, CMRL, Delhi Metro, Kochi Metro, BMRCL. Rapido/Uber have zero govt contracts.</li>
+          <li class="g"><strong>Open-source:</strong> Community contributions, faster city adoption, transparency = trust.</li>
+          <li class="g"><strong>Data moat:</strong> 50B+ rows, 156M events/day, richest mobility dataset in India. Ready for AI/ML.</li>
+          <li class="g"><strong>Capital efficiency:</strong> ₹19.8 Cr revenue on ₹15M raised. $1.3 revenue per $1 raised — best in class.</li>
+        </ul>
+      </div>
+      <div class="sp"></div>
+      <div class="card">
+        <h3>Competitive Positioning</h3>
+        <div class="bar-row"><span class="lb">Rapido</span><div class="bar" style="width:100%;background:var(--r)"></div><span class="vl" style="color:var(--r)">2.6M/day</span></div>
+        <div class="bar-row"><span class="lb">Uber</span><div class="bar" style="width:32%;background:var(--bl)"></div><span class="vl" style="color:var(--bl)">840K</span></div>
+        <div class="bar-row"><span class="lb">Ola</span><div class="bar" style="width:18%;background:var(--o)"></div><span class="vl" style="color:var(--o)">460K</span></div>
+        <div class="bar-row"><span class="lb bd" style="color:var(--t)">Moving Tech</span><div class="bar" style="width:11%;background:linear-gradient(90deg,var(--a),var(--g))"></div><span class="vl" style="color:var(--a2)">292K</span></div>
+        <div class="sp2"></div>
+        <div class="dm sm">We're smaller on RH — but we're the <strong>only platform</strong> doing RH + PT + multimodal on open protocol. Different game.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7: PUBLIC TRANSPORT — WHY IT'S BIGGER -->
+<div class="slide" data-slide="7">
+  <h2>Public Transport: The Bigger Opportunity</h2>
+  <div class="c2">
+    <div>
+      <div class="card">
+        <h3>India Daily Transactions</h3>
+        <div style="margin:12px 0">
+          <div class="dm sm" style="margin-bottom:4px">Public Transport (Buses + Metro)</div>
+          <div style="background:var(--g);height:32px;border-radius:4px;width:100%;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:14px;color:#0a0a0f">70 MILLION daily trips</div>
+        </div>
+        <div style="margin:12px 0">
+          <div class="dm sm" style="margin-bottom:4px">Ride-Hailing (All India, all players)</div>
+          <div style="background:var(--a);height:32px;border-radius:4px;width:7%;min-width:100px;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:12px">~5M</div>
+        </div>
+        <div class="sp"></div>
+        <div class="mr"><span class="ml">Registered Buses</span><span class="mv">1.7 million</span></div>
+        <div class="mr"><span class="ml">Digital Penetration</span><span class="mv" style="color:var(--r)">&lt;5%</span></div>
+        <div class="mr"><span class="ml">NCMC Rollout</span><span class="mv" style="color:var(--g)">Accelerating</span></div>
+        <div class="mr"><span class="ml">Govt Push</span><span class="mv" style="color:var(--g)">Delhi, MH, TN mandating digital</span></div>
+      </div>
+      <div class="sp"></div>
+      <div class="card hi">
+        <h3>Why One Govt Contract = 100K+ Daily Txns</h3>
+        <div class="dm sm" style="margin-bottom:8px">Chennai example: One MTC partnership → 70K tickets/day</div>
+        <div class="mr"><span class="ml">MTC buses</span><span class="mv">~3,500</span></div>
+        <div class="mr"><span class="ml">MTC daily passengers</span><span class="mv">~4 million</span></div>
+        <div class="mr"><span class="ml">Our current digitization</span><span class="mv" style="color:var(--o)">~2%</span></div>
+        <div class="mr"><span class="ml">Potential at 25%</span><span class="mv" style="color:var(--g)">1M txns/day</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>How We're Different from Other PT Players</h3>
+        <table>
+          <tr><th></th><th>Chalo</th><th>RedBus</th><th>Tummoc</th><th style="color:var(--a2)">Moving Tech</th></tr>
+          <tr><td class="dm">Model</td><td>Hardware ETMs + SW</td><td>Intercity only</td><td>Info only</td><td style="color:var(--g)"><strong>Software-only</strong></td></tr>
+          <tr><td class="dm">Protocol</td><td>Proprietary</td><td>Proprietary</td><td>Proprietary</td><td style="color:var(--g)"><strong>BECKN (open)</strong></td></tr>
+          <tr><td class="dm">RH Integration</td><td>None</td><td>None</td><td>None</td><td style="color:var(--g)"><strong>Yes (multimodal)</strong></td></tr>
+          <tr><td class="dm">Govt Level</td><td>Operator</td><td>N/A</td><td>N/A</td><td style="color:var(--g)"><strong>State govt</strong></td></tr>
+          <tr><td class="dm">Scaling Cost</td><td>High (hardware)</td><td>N/A</td><td>Low</td><td style="color:var(--g)"><strong>Near-zero</strong></td></tr>
+          <tr><td class="dm">Revenue</td><td>₹150 Cr</td><td>₹1,200 Cr</td><td>Minimal</td><td>₹3.5 Cr (early)</td></tr>
+          <tr><td class="dm">Valuation</td><td>$400-500M</td><td>~$1B (MakeMyTrip)</td><td>Small</td><td>$55M</td></tr>
+        </table>
+        <div class="sp"></div>
+        <div style="font-size:12px;padding:10px;background:rgba(99,102,241,.08);border-radius:6px">
+          <strong>Key differentiator:</strong> We're not a ticketing app. We're the <strong>protocol layer</strong> that connects any transport mode — bus, metro, auto, cab — into one interoperable journey. Chalo digitizes buses. We digitize <strong>mobility</strong>.
+        </div>
+      </div>
+      <div class="sp"></div>
+      <div class="card">
+        <h3>Multimodal Already Working</h3>
+        <div class="dm sm">Weekly journey legs (cosmos data):</div>
+        <div class="mr"><span class="ml">Taxi legs</span><span class="mv">4.2M</span></div>
+        <div class="mr"><span class="ml">Bus legs</span><span class="mv">1.4M</span></div>
+        <div class="mr"><span class="ml">Metro legs</span><span class="mv">1.3M</span></div>
+        <div class="mr"><span class="ml">Walk legs</span><span class="mv">1.8M</span></div>
+        <div class="sp2"></div>
+        <div class="dm sm">Users already combining modes — this is the future of urban transport.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8: FUNDRAISE NARRATIVE -->
+<div class="slide" data-slide="8">
+  <h2>Fundraise: India's UPI of Transport</h2>
+  <div class="c2">
+    <div>
+      <div class="card hi" style="padding:28px">
+        <div class="q">"India digitized payments with UPI — open, interoperable, government-backed. We're digitizing mobility the same way."</div>
+      </div>
+      <div class="sp"></div>
+      <div class="card">
+        <h3>Three Proof Points</h3>
+        <div style="margin-bottom:14px">
+          <div style="font-size:14px;font-weight:600;color:var(--a2)">1. Ride-hailing works &mdash; 203K/day, subscription model proven</div>
+          <div class="dm sm" style="margin-top:4px">KA+WB stable at 183K. BT growing 854→13.5K in 12 weeks. Uber/Ola now copying our zero-commission model.</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:14px;font-weight:600;color:var(--g)">2. Public transport works &mdash; 88K tickets/day, govt contracts live</div>
+          <div class="dm sm" style="margin-top:4px">Chennai One: MTC + CMRL + Subway. 23K passes in one day from depot push. NCMC-aligned. Replicable to 50+ cities.</div>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--p)">3. Multimodal works &mdash; 8.7M journey legs/week already</div>
+          <div class="dm sm" style="margin-top:4px">Users combining taxi + bus + metro in single journeys. No other platform in India does this.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>The Ask</h3>
+        <div class="bn" style="color:var(--a2)">$25-40M</div>
+        <div class="bl">Series A at $150-200M valuation</div>
+        <div class="sp"></div>
+        <div class="mr"><span class="ml">Scale Chennai One</span><span class="mv">500K+ daily</span></div>
+        <div class="mr"><span class="ml">Launch PT in 5+ cities</span><span class="mv">OD, BT, KL, NY, WB</span></div>
+        <div class="mr"><span class="ml">Grow RH to</span><span class="mv">500K daily</span></div>
+        <div class="mr"><span class="ml">Build AI/ML team</span><span class="mv">2-3 hires</span></div>
+      </div>
+      <div class="sp"></div>
+      <div class="card">
+        <h3>Investor Pushback Prep</h3>
+        <table style="font-size:12px">
+          <tr><td class="dm" style="width:40%">"Revenue is tiny"</td><td>2.55x growth, CM3 turning positive. Capital efficient: $1.3 rev per $1 raised</td></tr>
+          <tr><td class="dm">"Rapido is 50x bigger"</td><td>Different game. We do RH + PT + multimodal. They're a ride-hailing app. Our PT comp is $400-500M valued.</td></tr>
+          <tr><td class="dm">"Too many bets"</td><td>3 modes, not 12 bets. Each mode has clear methodology. Mode 1 funds the others.</td></tr>
+          <tr><td class="dm">"Global?"</td><td>&lt;2% cost R&D. BECKN+Google Cloud (Beckn Onix). Not in critical path.</td></tr>
+          <tr><td class="dm">"PT revenue is small"</td><td>Revenue per txn is low, but TAM is 14x ride-hailing. One govt contract = 100K+/day. Unit economics improve with scale.</td></tr>
+          <tr><td class="dm">"Path to profitability?"</td><td>CM3: 1%→28% by Dec. Mode 1 already contribution positive. PT economics improve as volume scales.</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9: AI STRATEGY -->
+<div class="slide" data-slide="9">
+  <h2>AI Strategy: From Data-Rich to Intelligence-Driven</h2>
+  <div class="c2">
+    <div class="card">
+      <h3>Data Assets (Unmatched in Indian Mobility)</h3>
+      <div class="mr"><span class="ml">Total ClickHouse Rows</span><span class="mv" style="color:var(--bl)">50 Billion+</span></div>
+      <div class="mr"><span class="ml">App Events/Day</span><span class="mv">156 Million</span></div>
+      <div class="mr"><span class="ml">Driver GPS (raw)</span><span class="mv">40.7B rows</span></div>
+      <div class="mr"><span class="ml">Bus GPS (Chalo/Amnex)</span><span class="mv">1.2B rows</span></div>
+      <div class="mr"><span class="ml">H3 Hex Supply-Demand</span><span class="mv">170M rows</span></div>
+      <div class="mr"><span class="ml">API Latency Records/Day</span><span class="mv">82M</span></div>
+      <div class="sp"></div>
+      <h3>AI Roadmap</h3>
+      <div style="margin-bottom:10px;padding:10px;background:rgba(52,211,153,.06);border-radius:6px;border-left:3px solid var(--g)">
+        <div style="font-size:12px;font-weight:600;color:var(--g)">Q2 2026 &mdash; Quick Wins</div>
+        <div class="dm sm" style="margin-top:3px">Bus ETA prediction (1.2B GPS rows) &bull; Supply-demand geo prediction (H3 hex data)</div>
+      </div>
+      <div style="margin-bottom:10px;padding:10px;background:rgba(96,165,250,.06);border-radius:6px;border-left:3px solid var(--bl)">
+        <div style="font-size:12px;font-weight:600;color:var(--bl)">Q3 2026 &mdash; Smart Allocation</div>
+        <div class="dm sm" style="margin-top:3px">ML driver matching (improve 2.6% accept rate) &bull; Rider churn prediction</div>
+      </div>
+      <div style="padding:10px;background:rgba(167,139,250,.06);border-radius:6px;border-left:3px solid var(--p)">
+        <div style="font-size:12px;font-weight:600;color:var(--p)">Q4 2026 &mdash; Differentiator</div>
+        <div class="dm sm" style="margin-top:3px">Dynamic pricing (maximize rides, not revenue) &bull; Multimodal journey optimization</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>90-Day Execution Plan</h3>
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--r)">THIS WEEK</div>
+          <ul class="bl">
+            <li class="r">Fix Chennai bus pass photo upload flow</li>
+            <li class="r">Fix driver fee collection (48% unpaid)</li>
+            <li class="r">FRFS pipeline monitoring + alerting</li>
+          </ul>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--o)">NEXT 30 DAYS</div>
+          <ul class="bl">
+            <li class="o">Chennai One: Push toward 120K/day target</li>
+            <li class="o">BT NCR: Sustain 15% MoM (target 15K+/day)</li>
+            <li class="o">Deploy 5 app_monitor materialized views</li>
+            <li class="o">Payment success rate: 85% → 95%</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--g)">NEXT 90 DAYS</div>
+          <ul class="bl">
+            <li class="g">Chennai One: 200K/day (Jun AOP target)</li>
+            <li class="g">Initiate Series A conversations</li>
+            <li class="g">AI/ML team: 2-3 hires</li>
+            <li class="g">Total platform: 400K+ daily</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 10: CLOSING -->
+<div class="slide" data-slide="10" style="justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0a0a1a,#1a1040,#0a0a1a)">
+  <div style="max-width:800px">
+    <div style="font-size:60px;font-weight:800;letter-spacing:-3px;line-height:1.1;margin-bottom:24px;background:linear-gradient(135deg,#e8e8f0,#818cf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+      292K today.<br>993K by December.
+    </div>
+    <div style="font-size:20px;color:var(--td);margin-bottom:32px;line-height:1.6">
+      Three modes. One protocol. The UPI of Transport.<br>
+      <span style="color:var(--t)">India's 70M daily bus passengers are waiting to be digitized.</span>
+    </div>
+    <div style="display:inline-flex;gap:32px;margin-bottom:40px">
+      <div><div style="font-size:28px;font-weight:700;color:var(--a2)">203K</div><div class="dm sm">RH Rides/day</div></div>
+      <div style="font-size:28px;color:var(--b)">+</div>
+      <div><div style="font-size:28px;font-weight:700;color:var(--g)">88K</div><div class="dm sm">PT Tickets/day</div></div>
+      <div style="font-size:28px;color:var(--b)">+</div>
+      <div><div style="font-size:28px;font-weight:700;color:var(--p)">1.5K</div><div class="dm sm">Passes/day</div></div>
+    </div>
+    <div class="dm" style="font-size:13px">
+      Source: cosmos.ride_hailing_conversion_historic + cosmos.public_transport_top_metrics &mdash; Week of Mar 9-15, 2026
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="sn" id="sn">1 / 10</div>
+<div class="nh">&larr; &rarr; to navigate</div>
+<script>
+const ss=document.querySelectorAll('.slide');let c=0;
+function go(n){ss[c].classList.remove('active');c=Math.max(0,Math.min(n,ss.length-1));ss[c].classList.add('active');document.getElementById('sn').textContent=`${c+1} / ${ss.length}`}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(c+1)}if(e.key==='ArrowLeft'){e.preventDefault();go(c-1)}if(e.key==='Home')go(0);if(e.key==='End')go(ss.length-1)});
+let tx=0;document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50){d>0?go(c+1):go(c-1)}});
+</script>
+</body>
+</html>

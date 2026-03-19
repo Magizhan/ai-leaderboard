@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Chennai One — Communication Strategy</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/white.css">
+<style>
+  .reveal { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .reveal h1 { font-size: 2.2em; color: #1a1a2e; }
+  .reveal h2 { font-size: 1.6em; color: #16213e; }
+  .reveal h3 { font-size: 1.2em; color: #0f3460; }
+  .reveal table { font-size: 0.55em; margin: 0 auto; border-collapse: collapse; }
+  .reveal table th { background: #1a1a2e; color: white; padding: 8px 12px; }
+  .reveal table td { padding: 6px 12px; border-bottom: 1px solid #eee; }
+  .reveal table tr:nth-child(even) { background: #f8f9fa; }
+  .reveal .small { font-size: 0.6em; }
+  .reveal .medium { font-size: 0.7em; }
+  .reveal p { font-size: 0.75em; }
+  .reveal li { font-size: 0.7em; margin-bottom: 8px; }
+  .reveal .highlight { background: #fff3cd; padding: 2px 8px; border-radius: 4px; }
+  .reveal .critical { background: #f8d7da; padding: 2px 8px; border-radius: 4px; color: #721c24; }
+  .reveal .success { background: #d4edda; padding: 2px 8px; border-radius: 4px; color: #155724; }
+  .reveal .metric-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .reveal .metric-card { background: #f8f9fa; border-radius: 12px; padding: 20px; text-align: center; }
+  .reveal .metric-card .number { font-size: 2em; font-weight: 700; color: #1a1a2e; }
+  .reveal .metric-card .label { font-size: 0.5em; color: #666; margin-top: 4px; }
+  .reveal .cohort-bar { display: flex; height: 40px; border-radius: 8px; overflow: hidden; margin: 10px 0; }
+  .reveal .cohort-bar div { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.45em; font-weight: 600; }
+  .reveal .timeline { position: relative; padding-left: 30px; }
+  .reveal .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 3px; background: #1a1a2e; }
+  .reveal .timeline-item { position: relative; margin-bottom: 15px; }
+  .reveal .timeline-item::before { content: ''; position: absolute; left: -24px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: #0f3460; }
+  .reveal .channel-icon { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.5em; font-weight: 600; margin: 2px; }
+  .reveal .ch-push { background: #e3f2fd; color: #1565c0; }
+  .reveal .ch-whatsapp { background: #e8f5e9; color: #2e7d32; }
+  .reveal .ch-sms { background: #fff3e0; color: #e65100; }
+  .reveal .ch-inapp { background: #f3e5f5; color: #7b1fa2; }
+  .slide-number { display: none !important; }
+  .reveal .progress { height: 4px; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- TITLE -->
+<section>
+  <h1 style="font-size:2.5em;">Chennai One</h1>
+  <h2 style="color:#0f3460; font-weight:400;">Issue-Aware Communication Strategy</h2>
+  <p style="color:#666; font-size:0.6em;">March 2026 | Data-backed plan from ClickHouse production data</p>
+  <div style="margin-top:40px;">
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="number">1.04M</div>
+        <div class="label">Users Mapped</div>
+      </div>
+      <div class="metric-card">
+        <div class="number">10</div>
+        <div class="label">Cohort CSVs Ready</div>
+      </div>
+      <div class="metric-card">
+        <div class="number">~₹80K</div>
+        <div class="label">Total Budget</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE PROBLEM -->
+<section>
+  <h2>The Problem: Rating Collapse</h2>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="number" style="color:#dc3545;">3.96</div>
+      <div class="label">Current Rating (was 4.72)</div>
+    </div>
+    <div class="metric-card">
+      <div class="number" style="color:#dc3545;">19.1%</div>
+      <div class="label">Complaint Rate (was 3.1%)</div>
+    </div>
+    <div class="metric-card">
+      <div class="number" style="color:#dc3545;">4%</div>
+      <div class="label">Conversion Rate (was 9%)</div>
+    </div>
+  </div>
+  <p style="text-align:center; margin-top:30px;">Rating dropped <strong>0.76 points in 3 months</strong>. Below 3.5 = app store suppression.</p>
+  <table>
+    <tr><th>Month</th><th>Rating</th><th>1-Star %</th><th>Complaint Rate</th></tr>
+    <tr><td>Dec 2025</td><td><strong>4.72</strong></td><td>2.2%</td><td>3.1%</td></tr>
+    <tr><td>Jan 2026</td><td>4.60</td><td>4.3%</td><td>5.1%</td></tr>
+    <tr><td>Feb 2026</td><td>4.22</td><td>9.5%</td><td>15.2%</td></tr>
+    <tr><td>Mar 2026</td><td style="color:#dc3545;"><strong>3.96</strong></td><td style="color:#dc3545;">13.2%</td><td style="color:#dc3545;">19.1%</td></tr>
+  </table>
+</section>
+
+<!-- THE APPROACH -->
+<section>
+  <h2>Our Approach: Issue-Specific, Not Generic</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:20px;">
+    <div style="background:#f8d7da; border-radius:12px; padding:20px;">
+      <h3 style="color:#721c24; font-size:0.9em;">Generic (Don't Do This)</h3>
+      <p style="font-size:0.6em; color:#721c24;">"We've improved the app! Update now for a better experience."</p>
+      <p style="font-size:0.5em; color:#999;">Same message to everyone. Low engagement. Users feel unheard.</p>
+    </div>
+    <div style="background:#d4edda; border-radius:12px; padding:20px;">
+      <h3 style="color:#155724; font-size:0.9em;">Contextual (Our Approach)</h3>
+      <p style="font-size:0.6em; color:#155724;">"Your refund of ₹24 for the metro booking on Mar 5 has been processed. We've fixed the payment system."</p>
+      <p style="font-size:0.5em; color:#999;">References THEIR issue. Shows we know and care. Builds trust.</p>
+    </div>
+  </div>
+  <p style="text-align:center; margin-top:20px; font-size:0.65em;">Every user gets communication about the <strong>specific problem THEY experienced</strong></p>
+</section>
+
+<!-- REFUND VERIFICATION -->
+<section>
+  <h2>Refund Status — Verified from ClickHouse</h2>
+  <p style="text-align:center; font-size:0.7em;">21,057 users had payments charged but no ticket. Here's where their refunds stand:</p>
+  <div class="cohort-bar" style="height:50px;">
+    <div style="width:67%; background:#28a745;">REFUNDED 67%</div>
+    <div style="width:11%; background:#17a2b8;">INITIATED 11%</div>
+    <div style="width:10%; background:#6c757d;">SUCCESS 10%</div>
+    <div style="width:6%; background:#dc3545;">FAILED 6%</div>
+    <div style="width:6%; background:#ffc107; color:#333;">PENDING 6%</div>
+  </div>
+  <table>
+    <tr><th>Status</th><th>Users</th><th>Action</th></tr>
+    <tr><td><span class="success">REFUNDED</span></td><td><strong>14,112</strong></td><td>Send confirmation: "your refund was processed + root cause fixed"</td></tr>
+    <tr><td>REFUND_INITIATED</td><td>2,244</td><td>Will complete automatically. Notify when done</td></tr>
+    <tr><td>SUCCESS (got ticket)</td><td>2,204</td><td>No refund needed — ticket delivered via retry</td></tr>
+    <tr><td><span class="critical">REFUND_FAILED</span></td><td><strong>1,319</strong></td><td><strong>CRITICAL: Manual intervention + personal outreach</strong></td></tr>
+    <tr><td><span class="highlight">PENDING</span></td><td>1,345</td><td>Investigate and resolve</td></tr>
+  </table>
+  <p style="text-align:center; font-size:0.55em; color:#28a745; margin-top:10px;">Refund system is working. Only 320 users globally stuck (₹19,923).</p>
+</section>
+
+<!-- USER COHORTS -->
+<section>
+  <h2>User Cohorts — Real Numbers from ClickHouse</h2>
+  <table>
+    <tr><th>Cohort</th><th>Users</th><th>Evidence</th><th>Priority</th></tr>
+    <tr><td>Payment Failure (charged, no ticket)</td><td><strong>21,057</strong></td><td>booking_id, amount, refund status</td><td><span class="critical">P0</span></td></tr>
+    <tr><td>QR Scan Failure (expired unused)</td><td><strong>12,076</strong></td><td>ticket_id, vehicle_type, valid_till</td><td><span class="critical">P0</span></td></tr>
+    <tr><td>Booking Failure (FAILED status)</td><td><strong>25,615</strong></td><td>failure_reason, vehicle_type</td><td><span class="highlight">P1</span></td></tr>
+    <tr><td>Issue Reports (filed complaints)</td><td><strong>157,015</strong></td><td>category, description, status</td><td><span class="highlight">P1</span></td></tr>
+    <tr><td>Double Charge (same route &lt;60s)</td><td><strong>87,237</strong></td><td>duplicate booking_ids</td><td><span class="highlight">Needs filtering</span></td></tr>
+    <tr><td>Happy Users (zero issues)</td><td><strong>298,726</strong></td><td>booking count, vehicle_type</td><td><span class="success">Rating drive</span></td></tr>
+    <tr><td>Dormant (30-90 days)</td><td><strong>206,648</strong></td><td>last booking date</td><td>Re-engage</td></tr>
+    <tr><td>Churned (90+ days)</td><td><strong>129,459</strong></td><td>last booking date</td><td>Win-back</td></tr>
+    <tr><td>Never Transacted</td><td><strong>3,450,236</strong></td><td>registration date</td><td>Activate</td></tr>
+  </table>
+  <p style="text-align:center; font-size:0.55em; margin-top:10px;">All cohorts exported as CSVs with user IDs and evidence columns</p>
+</section>
+
+<!-- CHANNEL STRATEGY -->
+<section>
+  <h2>Channel Selection — Based on User Activity</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:10px;">
+    <div style="background:#e3f2fd; border-radius:12px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#1565c0;">Push Notification</h3>
+      <div style="font-size:2em; font-weight:700; color:#1565c0;">~410K</div>
+      <p style="font-size:0.5em;">Active users (last booking &lt;30 days)<br>Cost: Free (FCM)</p>
+    </div>
+    <div style="background:#e8f5e9; border-radius:12px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#2e7d32;">WhatsApp</h3>
+      <div style="font-size:2em; font-weight:700; color:#2e7d32;">~276K</div>
+      <p style="font-size:0.5em;">Dormant users (30-90 days)<br>Cost: ₹25-75K</p>
+    </div>
+    <div style="background:#fff3e0; border-radius:12px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#e65100;">SMS</h3>
+      <div style="font-size:2em; font-weight:700; color:#e65100;">~332K</div>
+      <p style="font-size:0.5em;">Churned users (90+ days)<br>Cost: ₹3-5K</p>
+    </div>
+    <div style="background:#f3e5f5; border-radius:12px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#7b1fa2;">In-App</h3>
+      <div style="font-size:2em; font-weight:700; color:#7b1fa2;">~410K</div>
+      <p style="font-size:0.5em;">All active users on app open<br>Cost: Free</p>
+    </div>
+  </div>
+  <p style="text-align:center; font-size:0.6em; margin-top:15px;"><strong>Total budget: ₹28,000 — 80,000</strong></p>
+</section>
+
+<!-- PAYMENT FAILURE COMMS -->
+<section>
+  <h2>Cohort 1: Payment Failure (21,057 users)</h2>
+  <p style="font-size:0.65em;"><strong>What happened:</strong> User paid but didn't get a ticket. Most auto-refunded.</p>
+  <table>
+    <tr><th>Sub-segment</th><th>Users</th><th>Channel</th><th>Message</th></tr>
+    <tr>
+      <td><span class="success">REFUNDED</span></td>
+      <td>14,112</td>
+      <td><span class="channel-icon ch-push">Push</span></td>
+      <td>"Your refund of ₹X for your booking on [date] has been processed. We've fixed the payment system — your next booking will be seamless."</td>
+    </tr>
+    <tr>
+      <td>INITIATED</td>
+      <td>2,244</td>
+      <td><span class="channel-icon ch-push">Push</span></td>
+      <td>"Your refund of ₹X is being processed and will reflect in 3-5 business days."</td>
+    </tr>
+    <tr>
+      <td><span class="critical">FAILED</span></td>
+      <td>1,319</td>
+      <td><span class="channel-icon ch-push">Push</span><span class="channel-icon ch-sms">SMS</span><span class="channel-icon ch-whatsapp">WA</span></td>
+      <td>"We're sorry — your refund didn't process correctly. We're resolving this manually. You'll receive ₹X within 48 hours."</td>
+    </tr>
+  </table>
+  <p style="font-size:0.55em; margin-top:15px;"><strong>Evidence:</strong> Booking ID with CHARGED payment transaction but non-CONFIRMED booking status</p>
+</section>
+
+<!-- QR + BOOKING COMMS -->
+<section>
+  <h2>Cohort 2 & 3: QR Failure + Booking Failure</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div style="background:#f8f9fa; border-radius:12px; padding:20px;">
+      <h3 style="font-size:0.85em;">QR Scan Failure (12,076)</h3>
+      <p style="font-size:0.55em;"><strong>What happened:</strong> Ticket generated but expired without being scanned. User stood at gate, QR didn't work.</p>
+      <p style="font-size:0.55em;"><strong>Fix:</strong> QR compression 315→60 chars (server-side, Sprint 1)</p>
+      <p style="font-size:0.55em;"><span class="channel-icon ch-push">Push</span> before next commute</p>
+      <p style="font-size:0.55em; background:#e8f5e9; padding:8px; border-radius:6px;">"QR scanning at metro gates is now faster and more reliable. Your next metro ride will be smoother."</p>
+    </div>
+    <div style="background:#f8f9fa; border-radius:12px; padding:20px;">
+      <h3 style="font-size:0.85em;">Booking Failure (25,615)</h3>
+      <p style="font-size:0.55em;"><strong>What happened:</strong> Booking returned FAILED status.</p>
+      <p style="font-size:0.55em;"><strong>Fix:</strong> Circuit breaker + retry API (Sprint 2)</p>
+      <p style="font-size:0.55em;"><span class="channel-icon ch-push">Push</span> <span class="channel-icon ch-inapp">In-App</span></p>
+      <p style="font-size:0.55em; background:#e8f5e9; padding:8px; border-radius:6px;">"Booking reliability is now significantly improved. Failed bookings now automatically retry."</p>
+    </div>
+  </div>
+</section>
+
+<!-- HAPPY USERS + RATING -->
+<section>
+  <h2>Rating Recovery: 298K Happy Users</h2>
+  <p style="font-size:0.65em;">298,726 users have had <strong>100% success rate</strong> with zero complaints. They're our rating army.</p>
+  <table>
+    <tr><th>Tier</th><th>Users</th><th>Channel</th><th>Message</th></tr>
+    <tr>
+      <td><strong>Power</strong> (15+ bookings)</td>
+      <td>~8,000</td>
+      <td><span class="channel-icon ch-inapp">In-App</span> post-trip</td>
+      <td>"You've completed [N] trips with Chennai One! Mind sharing your experience on the Play Store?"</td>
+    </tr>
+    <tr>
+      <td><strong>Regular</strong> (5-14)</td>
+      <td>~30,000</td>
+      <td><span class="channel-icon ch-inapp">In-App</span></td>
+      <td>"Enjoying Chennai One? Rate us and help other commuters discover the app."</td>
+    </tr>
+    <tr>
+      <td><strong>Casual</strong> (1-4)</td>
+      <td>~60,000</td>
+      <td><span class="channel-icon ch-push">Push</span></td>
+      <td>"Book your next trip — now with faster payments and better QR scanning."</td>
+    </tr>
+  </table>
+  <div style="background:#fff3cd; border-radius:8px; padding:12px; margin-top:15px;">
+    <p style="font-size:0.6em; margin:0;"><strong>Timing:</strong> AFTER Sprint 1 stability confirmed. If 10% of power users rate 5 stars = 800 new positive reviews = rating 3.96 → 4.2+</p>
+  </div>
+</section>
+
+<!-- DORMANT RE-ENGAGEMENT -->
+<section>
+  <h2>Re-engagement: 336K Dormant + Churned</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div>
+      <h3 style="font-size:0.85em;">Dormant (206K, 30-90 days)</h3>
+      <p style="font-size:0.55em;"><span class="channel-icon ch-whatsapp">WhatsApp</span> sequence:</p>
+      <div class="timeline" style="font-size:0.55em;">
+        <div class="timeline-item"><strong>Day 1:</strong> "Chennai One has gotten a lot better since your last trip. 4x faster payments, reliable QR. Try it again?"</div>
+        <div class="timeline-item"><strong>Day 7:</strong> "150K+ commuters use Chennai One daily. Your next ticket is just a tap away."</div>
+        <div class="timeline-item"><strong>Day 14:</strong> "We miss you! Book your next trip and experience the improvements."</div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:0.85em;">Churned (129K, 90+ days)</h3>
+      <p style="font-size:0.55em;"><span class="channel-icon ch-whatsapp">WhatsApp</span> then <span class="channel-icon ch-sms">SMS</span>:</p>
+      <div class="timeline" style="font-size:0.55em;">
+        <div class="timeline-item"><strong>Day 1:</strong> "Chennai One has been completely upgraded. Give it another try?"</div>
+        <div class="timeline-item"><strong>Day 7:</strong> SMS fallback if no WhatsApp response</div>
+      </div>
+      <div style="background:#f8f9fa; border-radius:8px; padding:10px; margin-top:10px;">
+        <p style="font-size:0.5em; margin:0;"><strong>3.45M Never Transacted:</strong> Separate activation campaign via Push + onboarding flow (Week 6)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6-WEEK TIMELINE -->
+<section>
+  <h2>6-Week Execution Timeline</h2>
+  <table>
+    <tr><th>Week</th><th>Sprint</th><th>Actions</th><th>Cohorts</th><th>Volume</th></tr>
+    <tr>
+      <td><strong>Week 0</strong></td>
+      <td>Pre-sprint</td>
+      <td>Resolve REFUND_FAILED; send refund confirmations</td>
+      <td>Payment failure</td>
+      <td>~16K</td>
+    </tr>
+    <tr>
+      <td><strong>Week 1-2</strong></td>
+      <td>Sprint 1</td>
+      <td>QR fix PN; payment speed in-app; GPS fix note; dormant WA</td>
+      <td>QR, Payment, GPS</td>
+      <td>~100K</td>
+    </tr>
+    <tr>
+      <td><strong>Week 2-3</strong></td>
+      <td>Sprint 2</td>
+      <td>"No more lost payments" PN; booking retry PN; double charge refunds</td>
+      <td>Payment, Booking, Double charge</td>
+      <td>~50K</td>
+    </tr>
+    <tr>
+      <td><strong>Week 3-4</strong></td>
+      <td>Post-Sprint 2</td>
+      <td>WhatsApp re-engagement sequence starts</td>
+      <td>Dormant</td>
+      <td>~206K</td>
+    </tr>
+    <tr>
+      <td><strong>Week 4-5</strong></td>
+      <td>Sprint 3</td>
+      <td>Pass backup PN; refund automation; rating drive</td>
+      <td>Pass holders, Happy users</td>
+      <td>~40K</td>
+    </tr>
+    <tr>
+      <td><strong>Week 6</strong></td>
+      <td>Post-Sprint 3</td>
+      <td>Churned win-back; never-transacted activation</td>
+      <td>Churned, Never transacted</td>
+      <td>~630K</td>
+    </tr>
+  </table>
+</section>
+
+<!-- MEASUREMENT -->
+<section>
+  <h2>Measurement Framework</h2>
+  <table>
+    <tr><th>Metric</th><th>Target</th><th>How</th></tr>
+    <tr><td>Push delivery rate</td><td>&gt;95%</td><td>FCM delivery receipts</td></tr>
+    <tr><td>WhatsApp open rate</td><td>&gt;80%</td><td>WhatsApp read receipts</td></tr>
+    <tr><td>Push click-through</td><td>&gt;5%</td><td>Firebase deep link events</td></tr>
+    <tr><td>WhatsApp click-through</td><td>&gt;20%</td><td>Deep link tracking</td></tr>
+    <tr><td>Dormant re-transaction (7d)</td><td>&gt;10%</td><td>ClickHouse post-comm query</td></tr>
+    <tr><td>Active re-transaction (7d)</td><td>&gt;30%</td><td>ClickHouse post-comm query</td></tr>
+    <tr><td>Issue recurrence post-fix</td><td>&lt;2%</td><td>Same issue after fix deploy</td></tr>
+    <tr><td>Version adoption (14d)</td><td>&gt;90%</td><td>Firebase app version</td></tr>
+    <tr><td>Rating recovery (30d)</td><td>3.96 → 4.2+</td><td>Play Store</td></tr>
+  </table>
+  <div style="background:#e3f2fd; border-radius:8px; padding:10px; margin-top:10px;">
+    <p style="font-size:0.55em; margin:0;"><strong>A/B Tests:</strong> Issue-specific vs generic PN | WhatsApp 8am vs 6pm | Refund with amount vs without | Tanglish vs English</p>
+  </div>
+</section>
+
+<!-- DO NOT COMMUNICATE -->
+<section>
+  <h2>Communication Guidelines</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div style="background:#f8d7da; border-radius:12px; padding:20px;">
+      <h3 style="font-size:0.85em; color:#721c24;">Do NOT Say</h3>
+      <ul style="font-size:0.55em; color:#721c24;">
+        <li>Technical terms (SDK, API, atomicity)</li>
+        <li>Partner blame (CMRL, CRIS, Juspay)</li>
+        <li>Version numbers ("Update to v3.3.30")</li>
+        <li>Over-apologizing</li>
+      </ul>
+    </div>
+    <div style="background:#d4edda; border-radius:12px; padding:20px;">
+      <h3 style="font-size:0.85em; color:#155724;">DO Say</h3>
+      <ul style="font-size:0.55em; color:#155724;">
+        <li>Value-first ("Payments are 4x faster")</li>
+        <li>Reference THEIR issue ("Your refund of ₹24...")</li>
+        <li>Clear CTA ("Book Now", "View Refund")</li>
+        <li>Social proof ("150K+ commuters")</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:15px;">
+    <h3 style="font-size:0.85em;">Exclusion Rules</h3>
+    <table>
+      <tr><th>Message</th><th>Exclude</th></tr>
+      <tr><td>"Payment is now fixed"</td><td>Users who never attempted payment</td></tr>
+      <tr><td>"QR scanning improved"</td><td>Users who only use bus passes</td></tr>
+      <tr><td>Rating request</td><td>Anyone with unresolved issue in last 30 days</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- COMPLIANCE -->
+<section>
+  <h2>Compliance & Budget</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div>
+      <h3 style="font-size:0.85em;">Budget</h3>
+      <table>
+        <tr><th>Channel</th><th>Volume</th><th>Cost</th></tr>
+        <tr><td>Push (FCM)</td><td>~410K</td><td>₹0</td></tr>
+        <tr><td>In-App</td><td>~410K</td><td>₹0</td></tr>
+        <tr><td>WhatsApp</td><td>~50K</td><td>₹25-75K</td></tr>
+        <tr><td>SMS</td><td>~20K</td><td>₹3-5K</td></tr>
+        <tr style="font-weight:700;"><td>Total</td><td></td><td>₹28-80K</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="font-size:0.85em;">Compliance</h3>
+      <ul style="font-size:0.55em;">
+        <li><strong>TRAI:</strong> No messages before 9am or after 9pm IST</li>
+        <li><strong>WhatsApp:</strong> Opt-in required for marketing; refund updates exempt</li>
+        <li><strong>SMS DND:</strong> Check NCPR registry; transactional exempt</li>
+        <li><strong>iOS:</strong> FCM broken until Sprint 3 — use SMS fallback</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- THIS WEEK -->
+<section>
+  <h2>What to Do This Week</h2>
+  <div style="text-align:left; max-width:800px; margin:0 auto;">
+    <div class="timeline" style="font-size:0.65em;">
+      <div class="timeline-item"><strong>Today:</strong> Resolve <span class="critical">1,319 REFUND_FAILED</span> users manually — they lost money</div>
+      <div class="timeline-item"><strong>Today:</strong> Send <span class="success">"refund processed"</span> push to 14,112 REFUNDED users</div>
+      <div class="timeline-item"><strong>Day 2:</strong> Filter 87K double charge cohort → identify true duplicates</div>
+      <div class="timeline-item"><strong>Day 2-3:</strong> Sprint 1 deploys → QR fix notification to 12K users</div>
+      <div class="timeline-item"><strong>Day 3-5:</strong> App update → in-app "What's Fixed" for payment/GPS</div>
+      <div class="timeline-item"><strong>Day 7:</strong> WhatsApp to dormant payment failure users</div>
+    </div>
+  </div>
+  <div style="background:#1a1a2e; color:white; border-radius:12px; padding:20px; margin-top:20px;">
+    <p style="font-size:0.7em; margin:0; text-align:center;"><strong>Expected outcome:</strong> Rating 3.96 → 4.2+ in 30 days | 20-30K dormant users re-engaged | All payment failures resolved</p>
+  </div>
+</section>
+
+<!-- BUS PASS -->
+<section>
+  <h2>Bus Pass Holders — Highest Revenue at Risk</h2>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="number" style="color:#e65100;">72+</div>
+      <div class="label">Pass-Related Complaints</div>
+    </div>
+    <div class="metric-card">
+      <div class="number" style="color:#e65100;">~30%</div>
+      <div class="label">Pass Purchase Success Rate</div>
+    </div>
+    <div class="metric-card">
+      <div class="number" style="color:#dc3545;">0%</div>
+      <div class="label">Device Recovery Rate</div>
+    </div>
+  </div>
+  <table>
+    <tr><th>Issue</th><th>Complaints</th><th>Severity</th><th>Communication</th></tr>
+    <tr>
+      <td>Pass purchase payment failure</td><td>12</td><td><span class="critical">P0</span></td>
+      <td>"Your ₹1,000 pass refund has been processed. Payment flow is now fixed — try again."</td>
+    </tr>
+    <tr>
+      <td>Per-ride OTP activation friction</td><td>15</td><td><span class="critical">P0</span></td>
+      <td>"Pass activation is now simpler — just one tap. No more typing OTPs every ride."</td>
+    </tr>
+    <tr>
+      <td>Pass lost on factory reset (0% recovery)</td><td>8</td><td><span class="critical">P0</span></td>
+      <td>"Your bus pass is now backed up to the cloud. Switch phones worry-free."</td>
+    </tr>
+    <tr>
+      <td>Pass renewal confusion (30d vs calendar month)</td><td>6</td><td>P1</td>
+      <td>"Your pass expires on [date]. Renew now for uninterrupted rides."</td>
+    </tr>
+    <tr>
+      <td>Conductor rejection of digital pass</td><td>5</td><td>P1</td>
+      <td>"MTC conductors are now trained to accept digital passes."</td>
+    </tr>
+    <tr>
+      <td>GPS popup blocks pass display</td><td>11</td><td>P2</td>
+      <td>"Your pass now loads instantly — no more GPS popup."</td>
+    </tr>
+  </table>
+  <div style="background:#fff3cd; border-radius:8px; padding:10px; margin-top:8px;">
+    <p style="font-size:0.55em; margin:0;">Each pass holder = <strong>10-40x revenue</strong> of a single-ticket user. Pass revenue at risk: <strong>₹16-33 lakh/month</strong>. Activation UX redesign has <strong>NO fix planned</strong> — needs prioritization.</p>
+  </div>
+</section>
+
+<!-- PREMIUM BUS -->
+<section>
+  <h2>Premium Bus — 80 Complaints in 6 Days</h2>
+  <p style="font-size:0.6em;">Launched March 11, 2026 (P570S Koyambedu–Siruseri, P91 IT Park–Kilambakkam). <strong>Highest complaint density of any feature launch.</strong></p>
+  <div class="cohort-bar" style="height:45px; margin:10px 0;">
+    <div style="width:55%; background:#dc3545;">Bus No-Shows 55%</div>
+    <div style="width:15%; background:#e65100;">Tracking 15%</div>
+    <div style="width:15%; background:#ffc107; color:#333;">UI Hidden 15%</div>
+    <div style="width:10%; background:#6c757d;">Refund 10%</div>
+    <div style="width:5%; background:#333;">Other 5%</div>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+    <div style="background:#f8d7da; border-radius:10px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#721c24;">The Core Problem</h3>
+      <p style="font-size:0.5em; color:#721c24;">Users book a seat (₹50-150), arrive at stop, and bus never comes. <strong>44 no-show complaints in 6 days.</strong></p>
+      <p style="font-size:0.45em; color:#721c24; font-style:italic;">"I booked a premium bus today from Kasi theatre bus stop to Siruseri. It is suppose to come by 5:37 pm and now the time is 6:26. Still now the bus didn't come."</p>
+      <p style="font-size:0.45em; color:#721c24; font-style:italic;">"Premium bus never arrived despite confirmed booking... money extortion" — iOS review</p>
+    </div>
+    <div style="background:#d4edda; border-radius:10px; padding:15px;">
+      <h3 style="font-size:0.8em; color:#155724;">Communication Plan</h3>
+      <table style="font-size:0.85em;">
+        <tr><th>Segment</th><th>Message</th></tr>
+        <tr><td>No-show (refunded)</td><td>"Your ₹X for the premium bus on [date] has been refunded. We're working with MTC to improve reliability."</td></tr>
+        <tr><td>No-show (pending)</td><td>"We've initiated a refund of ₹X for your premium bus that didn't arrive."</td></tr>
+        <tr><td>When auto-refund ships</td><td>"Premium bus now auto-refunds if your bus doesn't arrive within 15 minutes."</td></tr>
+      </table>
+    </div>
+  </div>
+  <div style="background:#1a1a2e; color:white; border-radius:8px; padding:10px; margin-top:10px;">
+    <p style="font-size:0.55em; margin:0; text-align:center;"><strong>Immediate:</strong> Auto-refund 44 no-show users | Close expired booking slots | Audit actual fleet operations | Connect GPS tracking</p>
+  </div>
+</section>
+
+<!-- QR CORRECTION -->
+<section>
+  <h2>QR Correction: Metro Only, Not Buses</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-top:20px;">
+    <div style="background:#e3f2fd; border-radius:12px; padding:20px; text-align:center;">
+      <h3 style="font-size:0.85em; color:#1565c0;">Metro Tickets</h3>
+      <div style="font-size:2.5em;">🚇</div>
+      <p style="font-size:0.55em;"><strong>QR-based</strong><br>Scanned at AFC gates<br>12,076 scan failure users<br>QR compression fix applies</p>
+    </div>
+    <div style="background:#e8f5e9; border-radius:12px; padding:20px; text-align:center;">
+      <h3 style="font-size:0.85em; color:#2e7d32;">Bus Tickets & Passes</h3>
+      <div style="font-size:2.5em;">🚌</div>
+      <p style="font-size:0.55em;"><strong>OTP/Conductor verification</strong><br>Not QR-dependent<br>Key issue: OTP activation friction<br>Conductor awareness gap</p>
+    </div>
+    <div style="background:#fff3e0; border-radius:12px; padding:20px; text-align:center;">
+      <h3 style="font-size:0.85em; color:#e65100;">Premium Bus</h3>
+      <div style="font-size:2.5em;">🚍</div>
+      <p style="font-size:0.55em;"><strong>Seat reservation model</strong><br>No QR scanning<br>Key issue: Bus no-shows<br>Schedule drift</p>
+    </div>
+  </div>
+  <div style="background:#fff3cd; border-radius:8px; padding:12px; margin-top:15px;">
+    <p style="font-size:0.6em; margin:0; text-align:center;">All QR scan failure communications target <strong>metro users only</strong>. Bus pass communications focus on <strong>OTP activation friction</strong>. Premium bus communications focus on <strong>operational reliability</strong>.</p>
+  </div>
+</section>
+
+<!-- DATA FILES -->
+<section>
+  <h2>Data Files — Ready to Execute</h2>
+  <table>
+    <tr><th>File</th><th>Size</th><th>Records</th></tr>
+    <tr><td><code>cohorts/master-user-cohorts.csv</code></td><td>129 MB</td><td>1,042,222 users</td></tr>
+    <tr><td><code>cohorts/payment-failure-cohort.csv</code></td><td>3.9 MB</td><td>21,057 users</td></tr>
+    <tr><td><code>cohorts/qr-scan-failure-cohort.csv</code></td><td>1.6 MB</td><td>12,076 users</td></tr>
+    <tr><td><code>cohorts/booking-failure-cohort.csv</code></td><td>4.7 MB</td><td>25,615 users</td></tr>
+    <tr><td><code>cohorts/issue-report-cohort.csv</code></td><td>21 MB</td><td>157,015 users</td></tr>
+    <tr><td><code>cohorts/double-charge-cohort.csv</code></td><td>13 MB</td><td>87,237 users</td></tr>
+    <tr><td><code>cohorts/happy-users-cohort.csv</code></td><td>27 MB</td><td>298,726 users</td></tr>
+    <tr><td><code>cohorts/dormant-churned-cohort.csv</code></td><td>31 MB</td><td>336,107 users</td></tr>
+    <tr><td><code>cohorts/never-transacted-cohort.csv</code></td><td>283 MB</td><td>3,450,236 users</td></tr>
+  </table>
+  <p style="font-size:0.55em; text-align:center; margin-top:10px;">Each CSV has: <code>user_id</code>, <code>cohort</code>, <code>evidence_summary</code>, <code>suggested_channel</code>, <code>channel_reason</code></p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  width: 1100,
+  height: 700,
+  margin: 0.06,
+  transition: 'slide',
+  backgroundTransition: 'fade'
+});
+</script>
+</body>
+</html>

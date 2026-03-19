@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yatri Sathi Driver App — Stage 1 Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --yellow: #F5C518;
+    --yellow-dark: #D4A800;
+    --dark: #0A0A0A;
+    --dark2: #141414;
+    --dark3: #1E1E1E;
+    --gray: #888;
+    --light: #E8E8E8;
+    --green: #22C55E;
+    --red: #EF4444;
+    --orange: #F97316;
+    --blue: #3B82F6;
+    --purple: #A855F7;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--light);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { height: 100vh; width: 100vw; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    flex-direction: column;
+    padding: 48px 64px;
+    overflow-y: auto;
+  }
+  .slide.active { display: flex; }
+
+  /* Title Slide */
+  .slide-title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, var(--dark) 0%, #1a1200 100%);
+  }
+  .slide-title h1 {
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--yellow);
+    letter-spacing: -2px;
+    line-height: 1.1;
+  }
+  .slide-title .subtitle {
+    font-size: 22px;
+    color: var(--gray);
+    margin-top: 16px;
+    font-weight: 400;
+  }
+  .slide-title .meta {
+    font-size: 14px;
+    color: #555;
+    margin-top: 32px;
+  }
+  .badge-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .badge-yellow { background: rgba(245,197,24,0.15); color: var(--yellow); border: 1px solid rgba(245,197,24,0.3); }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); border: 1px solid rgba(249,115,22,0.3); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); border: 1px solid rgba(168,85,247,0.3); }
+
+  /* Section headers */
+  h2 {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--yellow);
+    margin-bottom: 32px;
+    letter-spacing: -1px;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--light);
+    margin-bottom: 12px;
+  }
+
+  /* Stat cards */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--dark2);
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .stat .number {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--yellow);
+    line-height: 1;
+  }
+  .stat .label {
+    font-size: 13px;
+    color: var(--gray);
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .stat.green .number { color: var(--green); }
+  .stat.red .number { color: var(--red); }
+  .stat.blue .number { color: var(--blue); }
+  .stat.orange .number { color: var(--orange); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--dark3);
+    color: var(--yellow);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #333;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #222;
+    color: var(--light);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(245,197,24,0.03); }
+
+  .severity-critical { color: var(--red); font-weight: 700; }
+  .severity-high { color: var(--orange); font-weight: 600; }
+  .severity-medium { color: var(--yellow); font-weight: 500; }
+  .severity-low { color: var(--gray); }
+
+  /* Cards grid */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--dark2);
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--light);
+  }
+  .card p, .card li {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.6;
+  }
+  .card ul { padding-left: 16px; }
+  .card.highlight { border-color: var(--yellow); border-width: 2px; }
+  .card.red-border { border-color: var(--red); }
+  .card.green-border { border-color: var(--green); }
+
+  /* Quotes */
+  .quote {
+    background: var(--dark2);
+    border-left: 3px solid var(--yellow);
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-style: italic;
+    font-size: 13px;
+    color: #aaa;
+    border-radius: 0 8px 8px 0;
+  }
+  .quote .attr {
+    font-style: normal;
+    color: #666;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  /* Progress bars */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+    font-size: 13px;
+  }
+  .bar-label { width: 120px; color: var(--gray); font-weight: 500; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .bar-value { width: 50px; text-align: right; font-weight: 600; font-size: 12px; }
+
+  /* Two column layout */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+  /* Comparison */
+  .vs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #222;
+    font-size: 14px;
+  }
+  .vs-label { color: var(--gray); width: 160px; }
+  .vs-left, .vs-right { width: 140px; text-align: center; font-weight: 600; }
+  .vs-left { color: var(--yellow); }
+  .vs-right { color: var(--gray); }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .nav button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    background: var(--dark2);
+    color: var(--light);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .nav button:hover { border-color: var(--yellow); color: var(--yellow); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 32px;
+    left: 32px;
+    font-size: 13px;
+    color: #444;
+    font-weight: 600;
+    z-index: 100;
+  }
+
+  /* Lists */
+  .check-list { list-style: none; padding: 0; }
+  .check-list li {
+    padding: 6px 0;
+    font-size: 14px;
+    color: var(--light);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .check-list li::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--yellow);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+
+  /* Scrollbar */
+  .slide::-webkit-scrollbar { width: 4px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  /* Animate */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .slide.active > * { animation: fadeIn 0.3s ease forwards; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px; }
+  .tag-tech { background: rgba(59,130,246,0.2); color: var(--blue); }
+  .tag-policy { background: rgba(168,85,247,0.2); color: var(--purple); }
+  .tag-market { background: rgba(249,115,22,0.2); color: var(--orange); }
+
+  .divider { height: 1px; background: #222; margin: 24px 0; }
+
+  .small { font-size: 12px; color: #555; }
+  .accent { color: var(--yellow); }
+  .green-text { color: var(--green); }
+  .red-text { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title active" data-slide="0">
+  <h1>Yatri Sathi Driver App</h1>
+  <div class="subtitle">Stage 1 Audit: Pain Points, Sentiment & Competitive Analysis</div>
+  <div class="badge-row">
+    <span class="badge badge-yellow">West Bengal Government</span>
+    <span class="badge badge-green">Zero Commission</span>
+    <span class="badge badge-blue">ONDC / Beckn Protocol</span>
+    <span class="badge badge-purple">Juspay / MovingTech</span>
+  </div>
+  <div class="meta">March 2026 &middot; Data from Play Store reviews, Reddit, news, backend + frontend code analysis</div>
+</div>
+
+<!-- SLIDE 2: Platform at a Glance -->
+<div class="slide" data-slide="1">
+  <h2>Platform at a Glance</h2>
+  <div class="stats">
+    <div class="stat"><div class="number">1.15L</div><div class="label">Active Drivers</div></div>
+    <div class="stat green"><div class="number">Rs 305 Cr</div><div class="label">Cumulative Driver Earnings</div></div>
+    <div class="stat blue"><div class="number">1.11 Cr</div><div class="label">Completed Trips</div></div>
+    <div class="stat"><div class="number">38.77L</div><div class="label">Registered Users</div></div>
+    <div class="stat green"><div class="number">4.6 / 5</div><div class="label">Play Store Rating (12K reviews)</div></div>
+    <div class="stat orange"><div class="number">19.5%</div><div class="label">Search-to-Trip Conversion</div></div>
+  </div>
+
+  <h3>Earnings Growth Acceleration</h3>
+  <div class="cards">
+    <div class="card">
+      <h4>First Rs 100 Cr</h4>
+      <p>398 days (Jul 2023 &ndash; Jul 2024)</p>
+    </div>
+    <div class="card">
+      <h4>Second Rs 100 Cr</h4>
+      <p>176 days (Jul 2024 &ndash; Jan 2025) &mdash; <span class="green-text">2.3x faster</span></p>
+    </div>
+    <div class="card">
+      <h4>Third Rs 100 Cr</h4>
+      <p>148 days (Jan &ndash; Jun 2025) &mdash; <span class="green-text">2.7x faster</span></p>
+    </div>
+  </div>
+
+  <h3>City Breakdown</h3>
+  <table>
+    <tr><th>City</th><th>Active Drivers</th><th>Trips</th><th>Earnings</th></tr>
+    <tr><td>Kolkata</td><td>~79,000+</td><td>~78 lakh+</td><td>~Rs 205 Cr+</td></tr>
+    <tr><td>Siliguri</td><td>7,530</td><td>84,000</td><td>Rs 10.06 Cr</td></tr>
+    <tr><td>Durgapur</td><td>1,676</td><td>56,383</td><td>Rs 92.28 L</td></tr>
+    <tr><td>Asansol</td><td>835</td><td>14,735</td><td>Rs 28.41 L</td></tr>
+  </table>
+</div>
+
+<!-- SLIDE 3: Zero Commission Model -->
+<div class="slide" data-slide="2">
+  <h2>The Zero Commission Advantage</h2>
+
+  <div class="cols">
+    <div>
+      <h3>Driver Keeps Per Ride</h3>
+      <div class="bar-row">
+        <span class="bar-label">Yatri Sathi</span>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--green)"></div></div>
+        <span class="bar-value green-text">~100%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">InDrive</span>
+        <div class="bar-track"><div class="bar-fill" style="width:87%;background:var(--blue)"></div></div>
+        <span class="bar-value">85-90%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Rapido</span>
+        <div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--blue)"></div></div>
+        <span class="bar-value">80-85%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Uber</span>
+        <div class="bar-track"><div class="bar-fill" style="width:77%;background:var(--orange)"></div></div>
+        <span class="bar-value">75-80%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Ola</span>
+        <div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--red)"></div></div>
+        <span class="bar-value">70-75%</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Monthly Earnings Example</h3>
+      <p class="small" style="margin-bottom:12px">10 rides/day, avg fare Rs 150, 25 working days</p>
+      <table>
+        <tr><th>Platform</th><th>Monthly Net</th><th>vs YS</th></tr>
+        <tr><td>Yatri Sathi</td><td class="green-text" style="font-weight:700">Rs 34,550</td><td>&mdash;</td></tr>
+        <tr><td>Uber (25%)</td><td>Rs 28,125</td><td class="red-text">-Rs 6,425</td></tr>
+        <tr><td>Ola (30%)</td><td>Rs 26,250</td><td class="red-text">-Rs 8,300</td></tr>
+      </table>
+    </div>
+
+    <div>
+      <h3>Subscription Plans</h3>
+      <div class="card highlight" style="margin-bottom:12px">
+        <h4>Default Plan: Rs 10/ride (max Rs 100/day)</h4>
+        <p>+ 18% GST &middot; 7-day free trial &middot; 21 free rides for new drivers</p>
+      </div>
+
+      <table>
+        <tr><th>Vehicle</th><th>Per Ride</th><th>Max Credit</th></tr>
+        <tr><td>Car (all types)</td><td>Rs 15</td><td>Rs 675 (Rs 450 Kolkata)</td></tr>
+        <tr><td>Bike</td><td>Rs 3</td><td>Rs 250</td></tr>
+        <tr><td>Auto</td><td>Rs 4</td><td>Rs 250</td></tr>
+      </table>
+
+      <div class="divider"></div>
+
+      <h3>Industry Impact</h3>
+      <p style="font-size:14px;color:var(--gray);line-height:1.7">
+        YS (with Namma Yatri) forced industry-wide change:<br>
+        <span class="accent">Rapido</span> &rarr; zero commission (Feb 2024)<br>
+        <span class="accent">Uber</span> &rarr; SaaS model for autos (Feb 2025)<br>
+        <span class="accent">Ola</span> &rarr; zero commission pan-India (Jun 2025)
+      </p>
+      <div class="stat green" style="margin-top:16px">
+        <div class="number">Rs 7.37 Cr</div>
+        <div class="label">Saved for drivers in 6 months vs traditional commission</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Sentiment Overview -->
+<div class="slide" data-slide="3">
+  <h2>Driver & Rider Sentiment</h2>
+
+  <div class="cols">
+    <div>
+      <h3>What Drivers Love</h3>
+      <div class="quote">"With Yatri Sathi, we do not lose a big chunk of our earnings to commissions"<div class="attr">&mdash; Driver Review</div></div>
+      <div class="quote">"Yatri Sathi has to be the BEST thing that has happened to the city... cabs arriving in minutes"<div class="attr">&mdash; u/Raja-Gareebchandra, r/kolkata (23 upvotes)</div></div>
+      <div class="quote">"Kolkata airport cab experience has drastically improved"<div class="attr">&mdash; r/kolkata (221 upvotes)</div></div>
+      <div class="quote">"They provide good service... lower fares, and the drivers are happy about low commission fees"<div class="attr">&mdash; u/brutus093-15, Reddit</div></div>
+
+      <div class="divider"></div>
+      <h3>Sentiment Distribution</h3>
+      <div class="bar-row"><span class="bar-label">Zero commission</span><div class="bar-track"><div class="bar-fill" style="width:95%;background:var(--green)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">Govt backing</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:var(--green)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">Earnings growth</span><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--green)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">App UX</span><div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--red)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">Demand volume</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--red)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">Support</span><div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--red)"></div></div></div>
+      <div class="bar-row"><span class="bar-label">Accountability</span><div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--red)"></div></div></div>
+    </div>
+
+    <div>
+      <h3>What's Broken</h3>
+      <div class="quote" style="border-color:var(--red)">"The taxi driver refused to use it... they know how much you will pay and where you will go, they just want extra"<div class="attr">&mdash; u/bored_builder, r/kolkata (Howrah Station)</div></div>
+      <div class="quote" style="border-color:var(--red)">"Driver asked for Rs 70 extra for 'parking'. After paying I realised the app says 'Parking charges of 70/- included'"<div class="attr">&mdash; u/TheCaptainRudy, r/kolkata</div></div>
+      <div class="quote" style="border-color:var(--red)">"In place of customer support, you have just one phone number which refuses to connect"<div class="attr">&mdash; u/raijin2222, r/kolkata</div></div>
+      <div class="quote" style="border-color:var(--red)">"Not a single driver would accept for 10 min... he asked double the price"<div class="attr">&mdash; u/oar_of_boat, r/kolkata (2025)</div></div>
+      <div class="quote" style="border-color:var(--red)">"Lost my luggage... customer care said they don't take any responsibility and provided wrong driver's number"<div class="attr">&mdash; u/seaweedbrain8564, r/kolkata</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Top Pain Points -->
+<div class="slide" data-slide="4">
+  <h2>Top Pain Points &mdash; Ranked</h2>
+
+  <table>
+    <tr><th>#</th><th>Issue</th><th>Severity</th><th>Type</th><th>Evidence</th></tr>
+    <tr>
+      <td>1</td>
+      <td><strong>Drivers subvert app fares</strong> &mdash; see destination via OTP, refuse rides or demand 2x price. Rampant at Howrah, Sealdah, Airport</td>
+      <td><span class="severity-critical">CRITICAL</span></td>
+      <td><span class="tag tag-policy">Policy</span><span class="tag tag-tech">Tech</span></td>
+      <td>Reddit (multiple users, 2023-2025)</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Low customer demand</strong> &mdash; outside stations/airports, drivers struggle to find passengers. Only 19.5% search-to-trip conversion</td>
+      <td><span class="severity-critical">CRITICAL</span></td>
+      <td><span class="tag tag-market">Market</span></td>
+      <td>Union leaders, driver reviews, metrics</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>No cancellation protection</strong> &mdash; riders cancel after driver arrives, driver gets nothing</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-policy">Policy</span><span class="tag tag-tech">Tech</span></td>
+      <td>Play Store reviews, <code>cancellationChargesEnabled</code> absent</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Customer support non-functional</strong> &mdash; phone won't connect, no physical office, complaints ignored</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-policy">Policy</span></td>
+      <td>Reddit, driver/rider reviews</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Parking fee scam</strong> &mdash; drivers demand charges already included in fare</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-policy">Policy</span></td>
+      <td>Reddit (systematic at airports)</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>Fare calculation discrepancy</strong> &mdash; fare changes between booking and completion</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-tech">Tech</span></td>
+      <td>Reddit (Rs 395&rarr;491 mid-ride)</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>GPS inaccuracy</strong> &mdash; 30-100m errors in North Kolkata, signal loss on bridges</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-tech">Tech</span></td>
+      <td>Kolkata geography analysis</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>No AC/non-AC distinction</strong> &mdash; leads to fare disputes between driver and rider</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-tech">Tech</span></td>
+      <td>Play Store reviews</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>Driver tech incompetence</strong> &mdash; ex-yellow taxi drivers can't use app, insist on cash</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-policy">Policy</span></td>
+      <td>Reddit (multiple reports)</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><strong>Insurance claims non-functional</strong> &mdash; no callback on accident complaints</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td><span class="tag tag-policy">Policy</span></td>
+      <td>Passenger reviews</td>
+    </tr>
+  </table>
+</div>
+
+<!-- SLIDE 6: Technical Architecture -->
+<div class="slide" data-slide="5">
+  <h2>Technical Deep Dive</h2>
+
+  <div class="cols">
+    <div>
+      <h3>Architecture</h3>
+      <table>
+        <tr><th>Layer</th><th>Stack</th></tr>
+        <tr><td>Backend</td><td>Haskell (Servant + Beam ORM + PostgreSQL)</td></tr>
+        <tr><td>Driver App</td><td>React Native + Hermes + Juspay Godel SDK</td></tr>
+        <tr><td>Package</td><td><code>in.juspay.jatrisaathidriver</code></td></tr>
+        <tr><td>Min Android</td><td>7.0 (SDK 24) &middot; Target: Android 15</td></tr>
+        <tr><td>Fare Model</td><td><strong>SLAB</strong> (vs NammaYatri NORMAL/Progressive)</td></tr>
+        <tr><td>Protocol</td><td>Beckn / ONDC</td></tr>
+      </table>
+
+      <h3>Kolkata-Unique Vehicle Types</h3>
+      <div class="cards" style="grid-template-columns: 1fr 1fr;">
+        <div class="card highlight">
+          <h4>Heritage Cab</h4>
+          <p>"Signature Cabs" &mdash; AC hatchbacks with Kolkata heritage images. Up to 3,000 planned.</p>
+        </div>
+        <div class="card highlight">
+          <h4>TOTO / E-Rickshaw</h4>
+          <p>Battery-operated three-wheelers. Verified via WB govt TTEN API.</p>
+        </div>
+      </div>
+
+      <h3>Kolkata-Specific Services</h3>
+      <ul class="check-list">
+        <li>Bus tickets (12 WBTC routes via EBIX)</li>
+        <li>Ambulance booking (5 tiers)</li>
+        <li>Ferry ticketing (Millennium Park Jetty)</li>
+        <li>Tourism (Zoo, Eco Park, Nicco Park)</li>
+        <li>Parcel delivery</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>Feature Flags: YS vs NammaYatri</h3>
+      <table>
+        <tr><th>Feature</th><th>YS</th><th>NY</th></tr>
+        <tr><td>Forward Dispatch</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>YatriCoins / Gullak</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>Trip Polling</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>Scheduled Rides</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>CleverTap Analytics</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>Bonus System</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>Gender Filter</td><td class="red-text">OFF</td><td class="green-text">ON</td></tr>
+        <tr><td>Cancellation Charges</td><td class="red-text">ABSENT</td><td class="green-text">ON</td></tr>
+        <tr><td>AutoPay</td><td class="red-text">ABSENT</td><td class="green-text">ON</td></tr>
+        <tr><td>Subscriptions</td><td class="green-text">ON</td><td class="green-text">ON</td></tr>
+        <tr><td>OTP Ride</td><td class="green-text">ON</td><td class="green-text">ON</td></tr>
+        <tr><td>Referral</td><td class="green-text">ON</td><td class="green-text">ON</td></tr>
+      </table>
+
+      <div class="card red-border" style="margin-top:16px">
+        <h4 class="red-text">Critical: CleverTap Disabled</h4>
+        <p>No crash or engagement analytics for Yatri Sathi variant. Flying blind on driver app health.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Stability Risks -->
+<div class="slide" data-slide="6">
+  <h2>Stability Risks & Technical Debt</h2>
+
+  <table>
+    <tr><th>#</th><th>Risk</th><th>Severity</th><th>Component</th></tr>
+    <tr>
+      <td>1</td>
+      <td><strong>EBIX Payment hard crash</strong> &mdash; <code>error "To be implemented"</code> in production code. If triggered, entire backend process crashes.</td>
+      <td><span class="severity-critical">CRITICAL</span></td>
+      <td>Backend</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>GPS accuracy in North Kolkata / bridges</strong> &mdash; 30-100m errors, no advanced correction (map-snapping, cell-tower triangulation)</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td>Platform</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Network latency in congested areas</strong> &mdash; 500ms-2s spikes at Sealdah, Howrah, markets causing delayed ride matching</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td>Infra</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>CleverTap disabled</strong> &mdash; zero crash/engagement analytics for YS variant</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td>Observability</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>OOM on low-end devices</strong> &mdash; React Native + Hermes + Juspay WebView layers. Budget 2-3GB RAM phones common among Kolkata drivers</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td>Frontend</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>Missing Juspay config.json</strong> &mdash; only <code>boot_loader.js</code> exists; potential silent SDK init failures</td>
+      <td><span class="severity-medium">MEDIUM</span></td>
+      <td>Frontend</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>Commented-out common asset URL</strong> &mdash; assets may load from wrong merchant path</td>
+      <td><span class="severity-medium">MEDIUM</span></td>
+      <td>Frontend</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>TTEN API dependency</strong> &mdash; TOTO verification depends on WB govt API uptime, no failover</td>
+      <td><span class="severity-medium">MEDIUM</span></td>
+      <td>Backend</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>Higher subscription dues (Rs 450 vs Rs 150)</strong> &mdash; 3x NammaYatri limit, more payment friction</td>
+      <td><span class="severity-medium">MEDIUM</span></td>
+      <td>Business Logic</td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <h3>GPS Problem Zones in Kolkata</h3>
+  <div class="stats">
+    <div class="stat red"><div class="number">30-100m</div><div class="label">North Kolkata (Sovabazar, Burrabazar) &mdash; ultra-narrow lanes</div></div>
+    <div class="stat red"><div class="number">Signal Loss</div><div class="label">Howrah Bridge &mdash; steel superstructure</div></div>
+    <div class="stat orange"><div class="number">20-50m</div><div class="label">Howrah Station &mdash; roof + dense markets</div></div>
+    <div class="stat"><div class="number">10-30m</div><div class="label">Park St / CBD &mdash; commercial buildings</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Competitive Landscape -->
+<div class="slide" data-slide="7">
+  <h2>Competitive Landscape &mdash; Kolkata</h2>
+
+  <table>
+    <tr><th>Platform</th><th>Market Share (app rides)</th><th>Driver App Rating</th><th>Commission</th><th>Kolkata Strength</th></tr>
+    <tr><td><strong>Ola</strong></td><td>~40-45%</td><td>~3.9</td><td>25-30%</td><td>Largest demand base</td></tr>
+    <tr><td><strong>Uber</strong></td><td>~35-40%</td><td>~4.0</td><td>20-25%</td><td>Best tech platform</td></tr>
+    <tr><td><strong>Rapido</strong></td><td>~10-12%</td><td>~4.1</td><td>15-20%</td><td>Bike taxi + auto leader</td></tr>
+    <tr><td><strong>InDrive</strong></td><td>~3-5%</td><td>~4.3</td><td>10-15%</td><td>Fare negotiation</td></tr>
+    <tr><td><strong style="color:var(--yellow)">Yatri Sathi</strong></td><td>~2-5% (growing)</td><td><strong>4.6</strong></td><td><strong>0%</strong></td><td>Govt trust, zero commission, yellow taxis</td></tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <div class="cols">
+    <div>
+      <h3>YS Strengths to Leverage</h3>
+      <ul class="check-list">
+        <li><strong>Zero commission</strong> &mdash; most powerful message in a commission-fatigued market</li>
+        <li><strong>Government trust</strong> &mdash; effective for onboarding traditional taxi/auto drivers</li>
+        <li><strong>ONDC network effects</strong> &mdash; demand grows as open network expands</li>
+        <li><strong>Yellow taxi opportunity</strong> &mdash; no competitor has cracked this segment</li>
+        <li><strong>Heritage Cab / TOTO</strong> &mdash; unique vehicle types nobody else offers</li>
+        <li><strong>MoHUA Best Urban Transport award</strong></li>
+      </ul>
+    </div>
+    <div>
+      <h3>YS Weaknesses to Fix</h3>
+      <ul class="check-list">
+        <li><strong>Demand gap</strong> &mdash; 0% commission on 5 rides loses to 75% of 15 rides</li>
+        <li><strong>App stability & UX</strong> &mdash; must reach Ola/Uber parity</li>
+        <li><strong>Rider awareness</strong> &mdash; many still default to Ola/Uber</li>
+        <li><strong>Payment reliability</strong> &mdash; settlement delays erode trust</li>
+        <li><strong>Driver accountability</strong> &mdash; fare subversion damages brand</li>
+        <li><strong>Support infrastructure</strong> &mdash; no physical offices</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card highlight" style="margin-top:16px">
+    <h4>Key Strategic Insight</h4>
+    <p><strong>Solve demand, not supply.</strong> The driver value proposition (zero commission) is already strong. The bottleneck is ride volume. Win the <strong>auto-rickshaw segment first</strong> &mdash; they're the most commission-sensitive, and Rapido (current leader) still charges 15-20%.</p>
+  </div>
+</div>
+
+<!-- SLIDE 9: Ride Allocation -->
+<div class="slide" data-slide="8">
+  <h2>Ride Allocation &mdash; How It Works</h2>
+
+  <div class="cols">
+    <div>
+      <h3>Allocation Flow</h3>
+      <div class="card" style="margin-bottom:12px">
+        <p style="font-size:13px;line-height:2;color:var(--light)">
+          1. Customer requests ride<br>
+          2. SearchTry created &rarr; driver pool calculated<br>
+          3. Nearby drivers queried within <code>minRadius</code> to <code>maxRadius</code><br>
+          4. Pool priority: <span class="accent">SpecialDrivers</span> &rarr; <span class="accent">GoHome</span> &rarr; <span class="accent">Normal</span><br>
+          5. FCM push to <code>driverBatchSize</code> drivers<br>
+          6. Driver accepts/declines (or bids fare adjustment)<br>
+          7. If insufficient, next batch after <code>singleBatchProcessTime</code><br>
+          8. Sorting: <span class="accent">Intelligent</span> (scored) / Random / Tagged
+        </p>
+      </div>
+
+      <h3>SLAB Fare Policy (Dev/Test)</h3>
+      <table>
+        <tr><th>Distance</th><th>Fare</th></tr>
+        <tr><td>0-2 km</td><td>Rs 30</td></tr>
+        <tr><td>2-4 km</td><td>Rs 60</td></tr>
+        <tr><td>4-6 km</td><td>Rs 90</td></tr>
+        <tr><td>6-8 km</td><td>Rs 120</td></tr>
+        <tr><td>8-10 km</td><td>Rs 150</td></tr>
+        <tr><td>10-12 km</td><td>Rs 180</td></tr>
+      </table>
+      <p class="small">Production fares aligned with WB govt pre-paid taxi rates. Night shift: 1.15x surcharge (10pm-5am)</p>
+    </div>
+
+    <div>
+      <h3>Key Issues Found</h3>
+
+      <div class="card red-border" style="margin-bottom:12px">
+        <h4 class="red-text">Forward Dispatch DISABLED</h4>
+        <p>Drivers finishing a ride don't get pre-matched with next passenger. Major missed opportunity given 19.5% conversion rate.</p>
+      </div>
+
+      <div class="card red-border" style="margin-bottom:12px">
+        <h4 class="red-text">Demand Concentrated at Hubs</h4>
+        <p>Stations/airports use SpecialZoneQueuePool for orderly allocation. Open market areas rely on radius search &mdash; not reaching enough drivers.</p>
+      </div>
+
+      <div class="card red-border" style="margin-bottom:12px">
+        <h4 class="red-text">OTP Enables Cherry-Picking</h4>
+        <p>Drivers see destination and fare via OTP system, then refuse undesirable rides or demand extra. System gives too much info without enforcement.</p>
+      </div>
+
+      <h3>Waiting Charges (Kolkata)</h3>
+      <table>
+        <tr><th>Vehicle</th><th>Free</th><th>Per Min</th></tr>
+        <tr><td>Cab</td><td>3 min</td><td>Rs 2.00</td></tr>
+        <tr><td>Auto</td><td>3 min</td><td>Rs 1.50</td></tr>
+        <tr><td>Bike</td><td>3 min</td><td>Rs 1.00</td></tr>
+        <tr><td>Ambulance</td><td>8 min</td><td>Rs 2.00</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: Recommendations -->
+<div class="slide" data-slide="9">
+  <h2>Recommendations &mdash; Priority Actions</h2>
+
+  <div class="cols-3">
+    <div>
+      <h3 style="color:var(--red)">P0 &mdash; This Week</h3>
+      <div class="card red-border" style="margin-bottom:8px">
+        <h4>Fix EBIX Payment crash</h4>
+        <p>Replace <code>error "To be implemented"</code> with proper error response. Backend crash risk.</p>
+      </div>
+      <div class="card red-border" style="margin-bottom:8px">
+        <h4>Enable CleverTap</h4>
+        <p>Restore crash analytics for YS variant. Currently flying blind.</p>
+      </div>
+      <div class="card red-border" style="margin-bottom:8px">
+        <h4>Audit Juspay config.json</h4>
+        <p>Missing config may cause silent SDK failures.</p>
+      </div>
+      <div class="card red-border" style="margin-bottom:8px">
+        <h4>Uncomment common asset URL</h4>
+        <p>Assets loading from wrong merchant path.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:var(--orange)">P1 &mdash; 2 Weeks</h3>
+      <div class="card" style="border-color:var(--orange);margin-bottom:8px">
+        <h4>Enable Forward Dispatch</h4>
+        <p>Pre-match finishing drivers with next ride. Biggest utilization win.</p>
+      </div>
+      <div class="card" style="border-color:var(--orange);margin-bottom:8px">
+        <h4>Add cancellation charges</h4>
+        <p>Top driver complaint. <code>cancellationChargesEnabled</code> currently absent.</p>
+      </div>
+      <div class="card" style="border-color:var(--orange);margin-bottom:8px">
+        <h4>Driver accountability system</h4>
+        <p>Fare subversion at stations is #1 brand risk.</p>
+      </div>
+      <div class="card" style="border-color:var(--orange);margin-bottom:8px">
+        <h4>AC/non-AC ride distinction</h4>
+        <p>Currently hidden for Kolkata. Causes fare disputes.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:var(--yellow)">P2 &mdash; 1 Month</h3>
+      <div class="card" style="margin-bottom:8px">
+        <h4>GPS correction for Kolkata</h4>
+        <p>Map-snapping, cell-tower triangulation for North Kolkata + bridges.</p>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <h4>Enable Scheduled Rides</h4>
+        <p>Improve non-hub demand predictability.</p>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <h4>Enable YatriCoins / Gullak</h4>
+        <p>Driver engagement and retention tools currently disabled.</p>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <h4>Low-memory optimization</h4>
+        <p>Profile and reduce footprint for 2-3GB RAM devices.</p>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <h4>Network resilience</h4>
+        <p>Offline queuing for ride updates during connectivity drops.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: Key Takeaways -->
+<div class="slide slide-title" data-slide="10" style="background: linear-gradient(135deg, var(--dark) 0%, #0a1a00 100%);">
+  <h1 style="font-size:42px;">Key Takeaways</h1>
+  <div style="max-width:800px;text-align:left;margin-top:32px;">
+    <div style="font-size:18px;line-height:2;color:var(--light);">
+      <p><span class="accent" style="font-weight:800">1.</span> &nbsp; Zero commission model is <strong>working</strong> &mdash; Rs 305 Cr earnings, 1.15L drivers, accelerating growth</p>
+      <p><span class="accent" style="font-weight:800">2.</span> &nbsp; <strong>Demand, not supply</strong> is the bottleneck &mdash; 19.5% conversion rate, drivers outside hubs struggle</p>
+      <p><span class="accent" style="font-weight:800">3.</span> &nbsp; <strong>Driver fare subversion</strong> at stations is the #1 brand risk &mdash; needs enforcement, not just tech</p>
+      <p><span class="accent" style="font-weight:800">4.</span> &nbsp; <strong>9+ key features disabled</strong> vs NammaYatri &mdash; Forward Dispatch alone could significantly boost utilization</p>
+      <p><span class="accent" style="font-weight:800">5.</span> &nbsp; <strong>Critical bugs exist</strong> in production &mdash; EBIX crash, missing configs, no analytics</p>
+      <p><span class="accent" style="font-weight:800">6.</span> &nbsp; <strong>Kolkata GPS is uniquely challenging</strong> &mdash; needs investment beyond what NammaYatri required</p>
+      <p><span class="accent" style="font-weight:800">7.</span> &nbsp; <strong>Win autos first</strong> &mdash; most commission-sensitive segment, large in Kolkata, Rapido's weakness</p>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:48px;">Stage 2: RCA Deep Dive + Fix Implementation &rarr; Stage 3: Testing + Go-Live</div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="slide-counter"><span id="current">1</span> / <span id="total">11</span></div>
+<div class="nav">
+  <button onclick="prev()" title="Previous">&larr;</button>
+  <button onclick="next()" title="Next">&rarr;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('current').textContent = current + 1;
+    document.getElementById('total').textContent = slides.length;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  });
+</script>
+
+</body>
+</html>

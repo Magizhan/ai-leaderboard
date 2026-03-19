@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bharat Taxi Driver App — Health Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --yellow: #eab308;
+    --text: #f1f5f9;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { height: 100vh; width: 100vw; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .slide.active { display: flex; opacity: 1; }
+
+  .slide-number {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+    z-index: 100;
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+  }
+
+  h2 {
+    font-size: 40px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+  }
+
+  h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 22px;
+    color: var(--text-dim);
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 800px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  .tag-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .tag-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .tag-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .stat-card .value {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-card .label {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 16px;
+  }
+
+  th {
+    text-align: left;
+    padding: 14px 18px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--surface2);
+  }
+
+  td {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: top;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+  .card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .card.critical { border-left: 4px solid var(--red); }
+  .card.warning { border-left: 4px solid var(--orange); }
+  .card.success { border-left: 4px solid var(--green); }
+  .card.info { border-left: 4px solid var(--accent); }
+
+  .quote {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 20px 24px;
+    border-radius: 0 12px 12px 0;
+    margin: 12px 0;
+    font-size: 17px;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  .quote .attr {
+    font-style: normal;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    display: block;
+  }
+
+  .quote.negative { border-left-color: var(--red); }
+  .quote.positive { border-left-color: var(--green); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .badge-critical { background: rgba(239,68,68,0.2); color: var(--red); }
+  .badge-high { background: rgba(249,115,22,0.2); color: var(--orange); }
+  .badge-medium { background: rgba(234,179,8,0.2); color: var(--yellow); }
+  .badge-low { background: rgba(34,197,94,0.2); color: var(--green); }
+
+  .bar-chart {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    height: 200px;
+    margin-top: 20px;
+  }
+
+  .bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    transition: height 0.6s ease;
+    min-height: 4px;
+  }
+
+  .bar-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .bar-value {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  ul { list-style: none; padding: 0; }
+  ul li {
+    padding: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+  ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .emoji-bullet li::before { content: none; }
+  .emoji-bullet li { padding-left: 0; }
+
+  .title-slide {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  }
+
+  .title-slide h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .title-meta {
+    margin-top: 40px;
+    display: flex;
+    gap: 32px;
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  .title-meta span { display: flex; align-items: center; gap: 8px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .two-col-wide { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: start; }
+
+  .highlight { color: var(--accent); font-weight: 700; }
+  .highlight-red { color: var(--red); font-weight: 700; }
+  .highlight-green { color: var(--green); font-weight: 700; }
+
+  .nav-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 30px;
+    font-size: 13px;
+    color: var(--text-muted);
+    z-index: 100;
+  }
+
+  .waterfall { display: flex; flex-direction: column; gap: 12px; }
+
+  .waterfall-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .waterfall-bar {
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    white-space: nowrap;
+  }
+
+  .waterfall-label {
+    font-size: 14px;
+    color: var(--text-dim);
+    min-width: 180px;
+    text-align: right;
+    font-weight: 500;
+  }
+
+  .icon-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .small { font-size: 14px; color: var(--text-muted); }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mt-32 { margin-top: 32px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide.active > * {
+    animation: fadeInUp 0.5s ease forwards;
+  }
+
+  .slide.active > *:nth-child(2) { animation-delay: 0.1s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.2s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="slide-number" id="slideNum"></div>
+<div class="nav-hint">← → or click to navigate</div>
+
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide title-slide active">
+  <span class="tag tag-blue">App Health Report</span>
+  <h1>Bharat Taxi<br>Driver App Audit</h1>
+  <p class="subtitle">Comprehensive analysis of 22,750 Play Store reviews, codebase deep-dive, and production infrastructure review — December 2025 to March 2026</p>
+  <div class="title-meta">
+    <span>📊 22,750 reviews analyzed</span>
+    <span>📱 10 detailed reports</span>
+    <span>🔍 4 months of data</span>
+    <span>📅 March 2026</span>
+  </div>
+</div>
+
+<!-- SLIDE 2: Headline Numbers -->
+<div class="slide">
+  <span class="tag tag-blue">Overview</span>
+  <h2>Headline Numbers</h2>
+  <div class="hero-stats">
+    <div class="stat-card">
+      <div class="value">4.74</div>
+      <div class="label">Average Rating (out of 5)</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">+83.5</div>
+      <div class="label">Estimated NPS</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">87.9%</div>
+      <div class="label">5-Star Reviews</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">400K</div>
+      <div class="label">Registered Drivers</div>
+    </div>
+  </div>
+  <div class="hero-stats mt-24">
+    <div class="stat-card">
+      <div class="value">0%</div>
+      <div class="label">Commission (₹30/day flat fee)</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">51K+</div>
+      <div class="label">Cooperative Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">6</div>
+      <div class="label">Operational Cities</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">321%</div>
+      <div class="label">Review Volume Growth (Dec→Feb)</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Growth Trajectory -->
+<div class="slide">
+  <span class="tag tag-green">Trending Positive</span>
+  <h2>Growth & Rating Trajectory</h2>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Month</th><th>Reviews</th><th>Avg Rating</th><th>1-Star %</th><th>Complaint Rate</th></tr>
+        <tr><td>Dec 2025</td><td>2,736</td><td>4.76</td><td>4.2%</td><td>5.7%</td></tr>
+        <tr><td>Jan 2026</td><td>5,292</td><td>4.71</td><td>4.5%</td><td>6.5%</td></tr>
+        <tr><td>Feb 2026</td><td>11,535</td><td>4.73</td><td>3.8%</td><td>5.7%</td></tr>
+        <tr><td>Mar 2026</td><td>3,187</td><td>4.75</td><td class="highlight-green">3.1%</td><td class="highlight-green">4.5%</td></tr>
+      </table>
+      <p class="small mt-16">* March is partial (first 11 days)</p>
+    </div>
+    <div>
+      <h3>Key Takeaways</h3>
+      <ul>
+        <li>Review volume up <span class="highlight">321%</span> from Dec to Feb — rapid adoption</li>
+        <li>1-star rate <span class="highlight-green">trending down</span>: 4.2% → 3.1%</li>
+        <li>Complaint rate improving: 6.5% → 4.5%</li>
+        <li>Feb spike from marketing push — many churned after price comparison</li>
+        <li>Version adoption healthy: v0.0.20 at 93.8%</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Review Volume Chart -->
+<div class="slide">
+  <span class="tag tag-blue">Growth</span>
+  <h2>Review Volume Explosion</h2>
+  <div class="bar-chart" style="height: 300px;">
+    <div class="bar-col">
+      <div class="bar-value">2,736</div>
+      <div class="bar" style="height: 24%; background: linear-gradient(180deg, var(--accent), #1d4ed8);"></div>
+      <div class="bar-label">Dec '25</div>
+    </div>
+    <div class="bar-col">
+      <div class="bar-value">5,292</div>
+      <div class="bar" style="height: 46%; background: linear-gradient(180deg, var(--accent), #1d4ed8);"></div>
+      <div class="bar-label">Jan '26</div>
+    </div>
+    <div class="bar-col">
+      <div class="bar-value">11,535</div>
+      <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent2), #6d28d9);"></div>
+      <div class="bar-label">Feb '26</div>
+    </div>
+    <div class="bar-col">
+      <div class="bar-value" style="color: var(--text-muted);">3,187*</div>
+      <div class="bar" style="height: 28%; background: linear-gradient(180deg, var(--accent), #1d4ed8); opacity: 0.6;"></div>
+      <div class="bar-label">Mar '26*</div>
+    </div>
+  </div>
+  <p class="small mt-16" style="text-align: center;">* March partial (11 days) — projecting ~8,700 for full month</p>
+</div>
+
+<!-- SLIDE 5: Top Issues Overview -->
+<div class="slide">
+  <span class="tag tag-red">Critical Issues</span>
+  <h2>Top 8 Pain Points</h2>
+  <div class="waterfall">
+    <div class="waterfall-item">
+      <span class="waterfall-label">Pricing Paradox</span>
+      <div class="waterfall-bar" style="width: 85%; background: linear-gradient(90deg, #dc2626, #ef4444);">182 complaints/mo · EXISTENTIAL</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">GPS / Location</span>
+      <div class="waterfall-bar" style="width: 72%; background: linear-gradient(90deg, #dc2626, #ef4444);">108 complaints/mo · Score: 261.5</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">Service Availability</span>
+      <div class="waterfall-bar" style="width: 60%; background: linear-gradient(90deg, #ea580c, #f97316);">99 complaints/mo · 517% increase</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">Driver Cancellations</span>
+      <div class="waterfall-bar" style="width: 52%; background: linear-gradient(90deg, #ea580c, #f97316);">60 complaints/mo · Avg 1.65★</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">Customer Support</span>
+      <div class="waterfall-bar" style="width: 48%; background: linear-gradient(90deg, #ea580c, #f97316);">Score: 151.5 · 20-day resolution</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">App Bugs / Crashes</span>
+      <div class="waterfall-bar" style="width: 45%; background: linear-gradient(90deg, #d97706, #eab308);">87 complaints/mo · "Loading" hang</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">OTP / Registration</span>
+      <div class="waterfall-bar" style="width: 30%; background: linear-gradient(90deg, #d97706, #eab308);">12 complaints/mo · DND blocking</div>
+    </div>
+    <div class="waterfall-item">
+      <span class="waterfall-label">Fake Review Perception</span>
+      <div class="waterfall-bar" style="width: 22%; background: linear-gradient(90deg, #65a30d, #22c55e);">11 complaints/mo · Trust erosion</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Issue #1 — Pricing -->
+<div class="slide">
+  <span class="tag tag-red">Issue #1 · Existential Threat</span>
+  <h2>The Pricing Paradox</h2>
+  <div class="two-col">
+    <div>
+      <h3>The Problem</h3>
+      <ul>
+        <li>Zero commission, yet fares are <span class="highlight-red">25-50% higher</span> than Uber/Ola/Rapido</li>
+        <li><span class="highlight">182 complaints</span> in February alone</li>
+        <li>Competitor mentions: Uber (247x), Ola (170x), Rapido (119x)</li>
+        <li>Directly contradicts the cooperative brand promise</li>
+        <li>Users default to "scam" and "looting" language</li>
+      </ul>
+      <div class="card critical mt-24">
+        <h3 style="color: var(--red);">Why This Is Existential</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">The entire brand promise is "no middleman, lower fares." When users discover fares are <em>higher</em>, it destroys trust permanently. This is the #1 reason for 1-star reviews.</p>
+      </div>
+    </div>
+    <div>
+      <div class="quote negative">
+        "For a ride that cost 400 in Bharat Taxi, it cost 270 for the same ride in Uber"
+        <span class="attr">— 1-star review</span>
+      </div>
+      <div class="quote negative">
+        "This is not a SAHKARI model at all, but it's a Looting Model in the name of the SAHKARI model... Go and learn from AMUL"
+        <span class="attr">— 1-star review</span>
+      </div>
+      <div class="quote negative">
+        "Being government supported app, fares are 30-40% higher than Uber. If drivers get 80% of fare, why should the fare be so high?"
+        <span class="attr">— 3-star review</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Issue #2 — GPS -->
+<div class="slide">
+  <span class="tag tag-red">Issue #2 · Critical</span>
+  <h2>GPS & Location Failures</h2>
+  <div class="two-col">
+    <div>
+      <h3>108 complaints in February</h3>
+      <ul>
+        <li>Delhi-Gurgaon cross-boundary bug — <span class="highlight-red">specific, reproducible</span></li>
+        <li>No GPS accuracy filtering — accepts readings >100m off</li>
+        <li>No battery optimization guidance for Xiaomi/Oppo/Vivo</li>
+        <li>Location service killed by Android battery saver</li>
+        <li>Only detects stale location on app resume (60s threshold)</li>
+      </ul>
+      <div class="card critical mt-16">
+        <h3 style="color: var(--red);">Zero Monitoring</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">Only 4 Prometheus metrics exist on the driver side. No GPS accuracy metrics. No merchant-level labels — Bharat Taxi is <strong>invisible</strong> in production monitoring.</p>
+      </div>
+    </div>
+    <div>
+      <div class="quote negative">
+        "The map is so stupid, it's constantly showing the wrong block despite placing the exact location pin"
+        <span class="attr">— 1-star review</span>
+      </div>
+      <div class="card warning mt-16">
+        <h3 style="color: var(--orange);">Config Bug Found</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">Bharat Taxi cities <strong>Somnath, Rajkot, Dwarka</strong> have <strong>Delhi coordinates hardcoded</strong> in v1Config.json — maps center on the wrong city entirely.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Issue #3 — Availability + Cancellations -->
+<div class="slide">
+  <span class="tag tag-orange">Issues #3 & #4</span>
+  <h2>Availability Gaps & Driver Behaviour</h2>
+  <div class="grid-2">
+    <div class="card warning">
+      <h3 style="color: var(--orange);">Service Availability — 99 complaints</h3>
+      <ul>
+        <li>Users in Mumbai, Kolkata, Bangalore, Pune can't find rides</li>
+        <li>App collects registration details <em>before</em> revealing no coverage</li>
+        <li>Creates permanent churn — users never return</li>
+        <li>517% complaint increase from Dec to Jan</li>
+      </ul>
+      <div class="quote negative mt-16">
+        "What's the point in having the app if any prime area in Pune is not serviceable?"
+        <span class="attr">— 1-star review</span>
+      </div>
+    </div>
+    <div class="card critical">
+      <h3 style="color: var(--red);">Driver Cancellations — Avg 1.65★</h3>
+      <ul>
+        <li>Drivers accept then drive in opposite direction</li>
+        <li>Demand extra cash outside the app</li>
+        <li>Cancel for better offers on Uber/Ola (dual-apping)</li>
+        <li>Lowest-rated category across all months</li>
+      </ul>
+      <div class="quote negative mt-16">
+        "Both drivers confirmed via call and app but then drove in the opposite direction while forcing me to wait. Had I trusted them, I would've missed my train"
+        <span class="attr">— 1-star review</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: Critical Code Bugs -->
+<div class="slide">
+  <span class="tag tag-red">Code Findings</span>
+  <h2>Critical Bugs Found in Code</h2>
+  <div class="grid-2">
+    <div class="card critical">
+      <h3 style="color: var(--red);">🔇 Android Notifications Silently Dropped</h3>
+      <p style="color: var(--text-dim); font-size: 15px; margin-bottom: 12px;">In <code>ListenerComponent.tsx:83-90</code>:</p>
+      <div style="background: #0f172a; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 14px; color: var(--red);">
+        if (Platform.OS === 'android') return;
+      </div>
+      <p style="color: var(--text-dim); font-size: 15px; margin-top: 12px;">3 ride notification types (<code>NEW_RIDE_AVAILABLE</code>, <code>CLEARED_FARE</code>, <code>CANCELLED_SEARCH_REQUEST</code>) are <strong>silently ignored on Android</strong>. Drivers are missing rides.</p>
+    </div>
+    <div class="card critical">
+      <h3 style="color: var(--red);">📍 Wrong City Coordinates</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">In <code>v1Config.json</code>, Bharat Taxi cities Somnath, Rajkot, and Dwarka all have <strong>Delhi coordinates</strong> hardcoded. Maps center on Delhi instead of the actual city.</p>
+      <div class="mt-16"></div>
+      <h3 style="color: var(--orange);">🔢 Driver Stats Zeroed Out</h3>
+      <p style="color: var(--text-dim); font-size: 15px;"><code>ridesInProgress</code>, <code>ridesCompleted</code>, <code>ridesConfirmed</code> all <strong>hardcoded to 0</strong> — rider app never sees accurate driver stats.</p>
+    </div>
+  </div>
+  <div class="grid-3 mt-24">
+    <div class="card warning">
+      <div style="font-size: 36px; font-weight: 800; color: var(--orange);">205+</div>
+      <div class="small">async functions without try-catch</div>
+    </div>
+    <div class="card warning">
+      <div style="font-size: 36px; font-weight: 800; color: var(--orange);">353+</div>
+      <div class="small">.getState() calls without null checks</div>
+    </div>
+    <div class="card warning">
+      <div style="font-size: 36px; font-weight: 800; color: var(--orange);">188</div>
+      <div class="small">TODO/FIXME/HACK in backend</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: Infrastructure Gaps -->
+<div class="slide">
+  <span class="tag tag-orange">Infrastructure</span>
+  <h2>Monitoring & Infrastructure Gaps</h2>
+  <div class="two-col">
+    <div>
+      <h3>What Exists</h3>
+      <div class="grid-2" style="gap: 12px;">
+        <div class="card" style="padding: 16px;">
+          <div style="font-size: 28px; font-weight: 800; color: var(--accent);">4</div>
+          <div class="small">Custom Prometheus metrics (driver side)</div>
+        </div>
+        <div class="card" style="padding: 16px;">
+          <div style="font-size: 28px; font-weight: 800; color: var(--red);">0</div>
+          <div class="small">Alerting rules for operations</div>
+        </div>
+        <div class="card" style="padding: 16px;">
+          <div style="font-size: 28px; font-weight: 800; color: var(--red);">0</div>
+          <div class="small">Bharat Taxi-specific monitoring</div>
+        </div>
+        <div class="card" style="padding: 16px;">
+          <div style="font-size: 28px; font-weight: 800; color: var(--red);">0</div>
+          <div class="small">SLO/SLA definitions</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>What's Missing</h3>
+      <ul>
+        <li>No merchant-level labels — BT traffic is <span class="highlight-red">indistinguishable</span> from NammaYatri</li>
+        <li>No GPS accuracy metrics exist at all</li>
+        <li>External BT service proxy has <span class="highlight-red">no health checks</span></li>
+        <li>Health check endpoints exist but return: <code>"Logic yet to be decided"</code></li>
+        <li>RC fitness expiry <span class="highlight-red">hardcoded to 50 years</span> when upstream returns null</li>
+        <li>Verification provider failover <span class="highlight-red">not implemented</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: What's Working -->
+<div class="slide">
+  <span class="tag tag-green">Wins</span>
+  <h2>What Improved</h2>
+  <div class="grid-3">
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">42×</div>
+      <h3 style="color: var(--text);">Faster Replies</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">Developer reply speed improved from <span class="highlight-red">24-day average</span> to <span class="highlight-green">10.8-hour median</span></p>
+    </div>
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">99.4%</div>
+      <h3 style="color: var(--text);">Reply Coverage</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">Nearly every text review gets a developer response (up from 77.7%)</p>
+    </div>
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">-75%</div>
+      <h3 style="color: var(--text);">Allocation Failures</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">Ride allocation complaints dropped from 28 to 7 per month</p>
+    </div>
+  </div>
+  <div class="grid-3 mt-24">
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">↓ 3.1%</div>
+      <h3 style="color: var(--text);">1-Star Rate</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">Down from 4.2% in Dec — steady improvement</p>
+    </div>
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">93.8%</div>
+      <h3 style="color: var(--text);">Version Adoption</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">v0.0.20 adoption — healthy update cadence</p>
+    </div>
+    <div class="card success">
+      <div style="font-size: 42px; font-weight: 800; color: var(--green);">↓ 2.1%</div>
+      <h3 style="color: var(--text);">OTP Issues</h3>
+      <p style="color: var(--text-dim); font-size: 15px;">Login/OTP complaints dropped from 7.7% — largely resolved</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: Competitive Position -->
+<div class="slide">
+  <span class="tag tag-blue">Competitive Landscape</span>
+  <h2>Where Bharat Taxi Stands</h2>
+  <table>
+    <tr><th>App</th><th>Rating</th><th>Commission</th><th>Key Weakness</th></tr>
+    <tr><td><strong>InDrive</strong></td><td>⭐ 4.8</td><td>Variable</td><td>No driver verification</td></tr>
+    <tr><td><strong style="color: var(--accent);">Bharat Taxi</strong></td><td>⭐ 4.73</td><td style="color: var(--green); font-weight: 700;">0%</td><td>Pricing paradox, 6 cities only</td></tr>
+    <tr><td><strong>Namma Yatri</strong></td><td>⭐ 4.7</td><td>0%</td><td>50% cancellation rate, Bangalore only</td></tr>
+    <tr><td><strong>Uber Driver</strong></td><td>⭐ 4.4</td><td style="color: var(--red);">20-25%</td><td>82% cancellation rate</td></tr>
+    <tr><td><strong>Ola Driver</strong></td><td>⭐ 4.4</td><td style="color: var(--red);">15-25%</td><td>Uncredited earnings</td></tr>
+    <tr><td><strong>Rapido Captain</strong></td><td>⭐ 4.3</td><td style="color: var(--orange);">10-15%</td><td>Drivers demanding extra money</td></tr>
+  </table>
+  <div class="card info mt-24">
+    <h3>Feature Parity vs Uber: ~40%</h3>
+    <p style="color: var(--text-dim); font-size: 15px;"><strong>Missing:</strong> Heat maps, incentive tracking, add-stop, scheduled rides, card payments, earnings dashboard, destination mode, in-app navigation, trip planner, instant cashout</p>
+  </div>
+</div>
+
+<!-- SLIDE 13: User Voices -->
+<div class="slide">
+  <span class="tag tag-blue">Driver & Rider Voices</span>
+  <h2>What Users Are Saying</h2>
+  <div class="grid-2">
+    <div>
+      <h3 style="color: var(--red);">The Pain</h3>
+      <div class="quote negative">
+        "Worst Experience — Auto showing 135 INR, same search in Uber was only 68 INR. Too much difference."
+        <span class="attr">— 1-star</span>
+      </div>
+      <div class="quote negative">
+        "Drivers consider themselves as sarkaari daamad. They cancel rides left right and centre. Taxis are dirty."
+        <span class="attr">— 1-star</span>
+      </div>
+      <div class="quote negative">
+        "It has been 20 days, no one from their team has contacted me to resolve the toll issue."
+        <span class="attr">— 1-star</span>
+      </div>
+    </div>
+    <div>
+      <h3 style="color: var(--green);">The Promise</h3>
+      <div class="quote positive">
+        "After BluSmart shut down, Bharat Taxi has been a pleasant surprise. Cabs are clean, drivers polite."
+        <span class="attr">— 5-star</span>
+      </div>
+      <div class="quote positive">
+        "Big Leg kick to OLA and Uber. Finally drivers earn more and get dividends. Totally win-win project."
+        <span class="attr">— 5-star</span>
+      </div>
+      <div class="quote positive">
+        "Good Service Government app"
+        <span class="attr">— 5-star</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 14: Regional Sentiment -->
+<div class="slide">
+  <span class="tag tag-blue">Regional View</span>
+  <h2>City-Level Sentiment</h2>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>City</th><th>Mentions</th><th>Avg Rating</th><th>Primary Issue</th></tr>
+        <tr><td>Mumbai</td><td>32</td><td style="color: var(--red); font-weight: 700;">2.22</td><td>Not available</td></tr>
+        <tr><td>Delhi</td><td>26</td><td style="color: var(--red); font-weight: 700;">2.69</td><td>High pricing</td></tr>
+        <tr><td>Pune</td><td>17</td><td style="color: var(--red); font-weight: 700;">2.12</td><td>Patchy coverage</td></tr>
+        <tr><td>Bangalore</td><td>17</td><td style="color: var(--red); font-weight: 700;">2.24</td><td>NY comparison</td></tr>
+        <tr><td>Hyderabad</td><td>15</td><td style="color: var(--orange); font-weight: 700;">2.67</td><td>Availability</td></tr>
+        <tr><td>Gurgaon</td><td>4</td><td style="color: var(--red); font-weight: 700;">1.50</td><td>Cross-boundary bug</td></tr>
+        <tr><td>Surat</td><td>5</td><td style="color: var(--green); font-weight: 700;">4.20</td><td>Satisfied ✓</td></tr>
+        <tr><td>Rajkot</td><td>3</td><td style="color: var(--green); font-weight: 700;">5.00</td><td>Satisfied ✓</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="card critical">
+        <h3 style="color: var(--red);">Non-Served City Reviews Are Toxic</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">Users in Mumbai, Pune, Bangalore download the app, discover it doesn't work in their city, and leave permanent 1-star reviews. Average rating from non-served cities: <strong>2.2★</strong></p>
+      </div>
+      <div class="card success mt-16">
+        <h3 style="color: var(--green);">Gujarat Cities Are Happy</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">Surat (4.2★) and Rajkot (5.0★) are strong. The cooperative model resonates in Gujarat where AMUL has built trust.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 15: Temporal Patterns -->
+<div class="slide">
+  <span class="tag tag-blue">Patterns</span>
+  <h2>When Problems Peak</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Day of Week</h3>
+      <div class="bar-chart" style="height: 180px;">
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px;">4.7%</div>
+          <div class="bar" style="height: 67%; background: var(--accent);"></div>
+          <div class="bar-label">Mon</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px;">4.5%</div>
+          <div class="bar" style="height: 64%; background: var(--accent);"></div>
+          <div class="bar-label">Tue</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px;">4.4%</div>
+          <div class="bar" style="height: 63%; background: var(--accent);"></div>
+          <div class="bar-label">Wed</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px;">4.6%</div>
+          <div class="bar" style="height: 66%; background: var(--accent);"></div>
+          <div class="bar-label">Thu</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px; color: var(--red);">5.2%</div>
+          <div class="bar" style="height: 74%; background: var(--red);"></div>
+          <div class="bar-label">Fri</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px; color: var(--green);">3.8%</div>
+          <div class="bar" style="height: 54%; background: var(--green);"></div>
+          <div class="bar-label">Sat</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-value" style="font-size: 12px;">4.3%</div>
+          <div class="bar" style="height: 61%; background: var(--accent);"></div>
+          <div class="bar-label">Sun</div>
+        </div>
+      </div>
+      <p class="small mt-8" style="text-align: center;">Complaint rate by day</p>
+    </div>
+    <div>
+      <h3>Time of Day</h3>
+      <div class="card critical">
+        <div style="font-size: 32px; font-weight: 800; color: var(--red);">5.8%</div>
+        <p style="color: var(--text-dim); font-size: 15px;"><strong>Morning Rush (8:30–10:30 IST)</strong> — highest complaint volume. Commuters are least tolerant of delays and pricing.</p>
+      </div>
+      <div class="card warning mt-12">
+        <div style="font-size: 32px; font-weight: 800; color: var(--orange);">7.0%</div>
+        <p style="color: var(--text-dim); font-size: 15px;"><strong>Late Night (0:30–1:30 IST)</strong> — highest negative rate. Availability and safety concerns dominate.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 16: Quick Wins -->
+<div class="slide">
+  <span class="tag tag-green">Action Plan</span>
+  <h2>Top 10 Quick Wins</h2>
+  <table style="font-size: 15px;">
+    <tr><th>#</th><th>Fix</th><th>Impact</th><th>Effort</th></tr>
+    <tr>
+      <td>1</td>
+      <td>Fix Android notification early-return bug <span class="badge badge-critical">CRITICAL</span></td>
+      <td>Drivers missing rides entirely</td>
+      <td><span class="badge badge-low">1 line</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Fix city coordinates for Somnath/Rajkot/Dwarka</td>
+      <td>Maps center on wrong city</td>
+      <td><span class="badge badge-low">Config</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Show coverage map before registration</td>
+      <td>Prevent 1★ from unserved cities</td>
+      <td><span class="badge badge-medium">Small</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Publish transparent fare breakdown</td>
+      <td>Defuse "looting" narrative</td>
+      <td><span class="badge badge-medium">Medium</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Add merchant labels to Prometheus metrics</td>
+      <td>Make BT visible in monitoring</td>
+      <td><span class="badge badge-low">Small</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>Add pull-to-refresh on earnings screens</td>
+      <td>Drivers can verify earnings</td>
+      <td><span class="badge badge-low">Small</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>Fix OTP sender category (promotional → transactional)</td>
+      <td>Unblock DND registrations</td>
+      <td><span class="badge badge-low">Config</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Add .catch() to 50+ unhandled promises</td>
+      <td>Prevent silent crashes</td>
+      <td><span class="badge badge-medium">Medium</span></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>Fix Delhi-Gurgaon cross-boundary location bug</td>
+      <td>Reproducible GPS issue</td>
+      <td><span class="badge badge-medium">Medium</span></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>Fix toll inclusion communication</td>
+      <td>Stop driver-rider conflicts</td>
+      <td><span class="badge badge-low">Copy</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- SLIDE 17: Trust Problem -->
+<div class="slide">
+  <span class="tag tag-orange">Emerging Risk</span>
+  <h2>The Trust Problem</h2>
+  <div class="two-col">
+    <div>
+      <h3>91% of 5-star reviews have no text</h3>
+      <ul>
+        <li>Users are noticing — <span class="highlight-red">11 reviews</span> in Jan alone called out "fake reviews"</li>
+        <li>High rating (4.74★) without visible user stories looks suspicious</li>
+        <li>Government association amplifies scrutiny</li>
+        <li>Media has covered fare transparency concerns</li>
+      </ul>
+      <div class="quote negative mt-24">
+        "fake rating and fake reviews given by the government"
+        <span class="attr">— 1-star review, Jan 2026</span>
+      </div>
+    </div>
+    <div>
+      <div class="card warning">
+        <h3 style="color: var(--orange);">Recommendation</h3>
+        <ul class="emoji-bullet">
+          <li>✅ Encourage text reviews from satisfied users via in-app prompts</li>
+          <li>✅ Publish a transparency report with real metrics</li>
+          <li>✅ Respond to fake-review accusations publicly with data</li>
+          <li>✅ Share driver earnings stories on social media</li>
+          <li>✅ Feature "Driver of the Week" in-app</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 18: Next Steps -->
+<div class="slide">
+  <span class="tag tag-blue">Next Steps</span>
+  <h2>Roadmap</h2>
+  <div class="grid-2">
+    <div>
+      <div class="card info mb-16">
+        <h3>✅ Stage 0 — Complete</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">10 reports, 232KB of analysis across reviews, codebase, and infrastructure</p>
+      </div>
+      <div class="card warning mb-16">
+        <h3 style="color: var(--orange);">🔄 Stage 1 — RCA Deep Dive</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">7 parallel code-level root cause analyses: earnings, allocation, GPS, onboarding, stability, rating, internal issues</p>
+      </div>
+      <div class="card mb-16">
+        <h3>⏳ Stage 2 — Fix Plans</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">8 concrete fix plans with effort estimates, risk assessment, and master priority matrix</p>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-16">
+        <h3>⏳ Stage 2.5 — Implement Fixes</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">8 parallel sessions implementing P0/P1 fixes across backend and frontend with git branches and commits</p>
+      </div>
+      <div class="card mb-16">
+        <h3>⏳ Stage 3 — Go-Live</h3>
+        <p style="color: var(--text-dim); font-size: 15px;">Executive summary, testing/rollout strategy, driver communication plan</p>
+      </div>
+      <div class="card success">
+        <h3 style="color: var(--green);">Target Outcomes</h3>
+        <ul class="emoji-bullet" style="font-size: 15px;">
+          <li>📈 Rating: maintain 4.7+ while growing</li>
+          <li>📉 Complaint rate: &lt;3%</li>
+          <li>🔧 Crash rate: &lt;1%</li>
+          <li>📍 GPS accuracy: &lt;50m drift</li>
+          <li>💬 Support response: &lt;24h</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 19: Thank You -->
+<div class="slide title-slide">
+  <span class="tag tag-blue">Bharat Taxi Driver App</span>
+  <h1>Thank You</h1>
+  <p class="subtitle">22,750 reviews analyzed · 10 reports generated · Critical bugs identified · Quick wins ready to ship</p>
+  <div class="title-meta mt-32">
+    <span>📊 Full reports in <code style="color: var(--accent);">btDriver/reports/</code></span>
+    <span>📋 Plan in <code style="color: var(--accent);">btDriver/PLAN.md</code></span>
+  </div>
+</div>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const slideNum = document.getElementById('slideNum');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    progress.style.width = ((current + 1) / slides.length * 100) + '%';
+    slideNum.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+    if (e.key === 'Home') showSlide(0);
+    if (e.key === 'End') showSlide(slides.length - 1);
+  });
+
+  document.addEventListener('click', e => {
+    if (e.clientX > window.innerWidth / 2) showSlide(current + 1);
+    else showSlide(current - 1);
+  });
+
+  showSlide(0);
+</script>
+</body>
+</html>

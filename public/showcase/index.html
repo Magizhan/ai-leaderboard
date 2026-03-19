@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Showcase — Claude Usage Leaderboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-card-hover: #22223a;
+    --accent-orange: #f97316;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+    --border-subtle: #161625;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-secondary); text-decoration: none; font-size: 0.8rem;
+    font-weight: 500; margin-bottom: 16px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent-purple); }
+
+  .header { text-align: center; padding: 40px 0 16px; }
+  .header h1 {
+    font-size: 2.2rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header .subtitle { color: var(--text-secondary); font-size: 0.95rem; }
+
+  /* People Grid */
+  .people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 32px 0; }
+
+  .person-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; transition: all 0.3s; text-decoration: none; color: inherit; display: block;
+  }
+  .person-card:hover { border-color: rgba(168, 85, 247, 0.4); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(168, 85, 247, 0.1); }
+  .person-card .name { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+  .person-card .role { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px; }
+  .person-card .stats { display: flex; gap: 16px; flex-wrap: wrap; }
+  .person-card .stat { text-align: center; }
+  .person-card .stat-value { font-size: 1.3rem; font-weight: 800; color: var(--accent-purple); font-family: 'JetBrains Mono', monospace; }
+  .person-card .stat-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .badge-live {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    background: rgba(34, 197, 94, 0.15); color: var(--accent-green); margin-left: 8px;
+  }
+
+  /* Create Your Own Section */
+  .cta-section {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px; margin: 40px 0; text-align: center;
+  }
+  .cta-section h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+  .cta-section p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; margin-bottom: 20px; }
+
+  .steps { text-align: left; max-width: 600px; margin: 0 auto 24px; }
+  .step { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 800;
+  }
+  .step-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+  .step-text strong { color: var(--text-primary); }
+
+  /* Prompt Block */
+  .prompt-block {
+    background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 12px;
+    padding: 20px; text-align: left; margin: 20px 0; position: relative;
+  }
+  .prompt-block pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--accent-cyan);
+    line-height: 1.8; white-space: pre-wrap; word-break: break-word;
+  }
+  .copy-btn {
+    position: absolute; top: 12px; right: 12px; padding: 5px 12px; border-radius: 6px;
+    background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3);
+    color: var(--accent-purple); font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(168, 85, 247, 0.25); }
+
+  .quote-block {
+    background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent-purple);
+    border-radius: 12px; padding: 20px 24px; margin: 32px 0;
+    font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary); font-style: italic;
+  }
+  .quote-block .author { color: var(--accent-purple); font-style: normal; font-weight: 600; margin-top: 10px; display: block; font-size: 0.8rem; }
+
+  .footer { text-align: center; padding: 40px 0 24px; color: var(--text-dim); font-size: 0.75rem; }
+  .footer a { color: var(--accent-purple); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.6rem; }
+    .people-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/" class="back-link">&larr; Back to Leaderboard</a>
+
+  <div class="header">
+    <h1>Showcase</h1>
+    <p class="subtitle">What people are building with Claude Max</p>
+  </div>
+
+  <div class="quote-block">
+    "In evolution, there were animals which were way more efficient without utilizing a big brain.. but mammals, humans even being clumsy in many ways, were able to surpass because of brain and ability to handle complexity. We have new big digital brains now. Whoever utilizes the exponential compute is going to be the winner."
+    <span class="author">— Vimal</span>
+  </div>
+
+  <!-- People -->
+  <div class="people-grid" id="people-grid">
+
+    <a href="/showcase/mags.html" class="person-card">
+      <div class="name">Mags <span class="badge-live">Live</span></div>
+      <div class="role">Mac Mini M4 + claude-fleet + Claude Max</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-value" id="pr-count">76</div><div class="stat-label">PRs</div></div>
+        <div class="stat"><div class="stat-value">268</div><div class="stat-label">Reports</div></div>
+        <div class="stat"><div class="stat-value">16</div><div class="stat-label">Projects</div></div>
+        <div class="stat"><div class="stat-value">9</div><div class="stat-label">Repos</div></div>
+        <div class="stat"><div class="stat-value">403</div><div class="stat-label">Fleet Tasks</div></div>
+      </div>
+    </a>
+
+    <!-- Placeholder for others -->
+    <div class="person-card" style="border-style: dashed; opacity: 0.5; cursor: default;">
+      <div class="name">Your Name Here</div>
+      <div class="role">Add your Claude Max showcase &mdash; see instructions below</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-value">?</div><div class="stat-label">PRs</div></div>
+        <div class="stat"><div class="stat-value">?</div><div class="stat-label">Reports</div></div>
+        <div class="stat"><div class="stat-value">?</div><div class="stat-label">Projects</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Create Your Own -->
+  <div class="cta-section">
+    <h2>Create Your Showcase</h2>
+    <p>Using Claude Max for something impressive? Share it here. It takes 5 minutes.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Open Claude Code</strong> in your project directory</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Paste the prompt below</strong> — it will scan your work and generate a showcase page</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Share the HTML file</strong> — add it to this repo or send it to Mags</div>
+      </div>
+    </div>
+
+    <div class="prompt-block">
+      <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+      <pre id="prompt-text">Build me a showcase page (single HTML file) for the Claude Usage Leaderboard.
+
+Scan my machine for:
+1. All git repos I've contributed to recently (git log --author)
+2. All PRs I've raised (gh search prs --author=@me)
+3. All reports/analysis files (*.md) in my project directories
+4. Any tools, dashboards, or presentations I've built
+
+Then create a showcase.html page that:
+- Uses this design system: dark theme (#0a0a0f bg), Inter font, purple/blue/orange accents
+- Shows my name, role, and key stats (PRs, reports, repos)
+- Lists all projects with status and description
+- Has a live PR tracker that fetches from GitHub API
+- Groups reports by type (audit, RCA, fix plan, implementation, etc.)
+- Includes "Why This Matters" impact text for each open PR
+- Is mobile responsive, single HTML file, no dependencies
+
+Match the style of leaderboard.magizhan.work/showcase/mags for consistency.
+
+Save it as showcase.html in the current directory.</pre>
+    </div>
+  </div>
+
+  <div class="footer">
+    Built with <a href="https://claude.ai/code">Claude Code</a> &middot;
+    <a href="/">Leaderboard</a> &middot;
+    <a href="/projects">Projects</a>
+  </div>
+</div>
+
+<script>
+// Update Mags PR count live from GitHub
+async function updatePRCount() {
+  try {
+    const res = await fetch('https://api.github.com/search/issues?q=author:Magizhan+org:nammayatri+is:pr&per_page=1');
+    const data = await res.json();
+    if (data.total_count) {
+      document.getElementById('pr-count').textContent = data.total_count;
+    }
+  } catch(e) { /* silently fail, keep static count */ }
+}
+updatePRCount();
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+
+</body>
+</html>

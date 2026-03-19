@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NammaYatri Driver App — Deep Dive & Fix Plan</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  :root { --r-heading-color: #1a1a2e; --r-main-color: #333; }
+  .reveal { font-family: 'Inter', -apple-system, sans-serif; }
+  .reveal h1 { font-size: 2.2em; font-weight: 800; }
+  .reveal h2 { font-size: 1.6em; font-weight: 700; color: #1a1a2e; }
+  .reveal h3 { font-size: 1.2em; font-weight: 600; color: #444; }
+  .reveal .slides section { text-align: left; }
+  .reveal table { font-size: 0.55em; margin: 0.5em auto; border-collapse: collapse; width: 95%; }
+  .reveal th { background: #1a1a2e; color: white; padding: 8px 12px; text-align: left; }
+  .reveal td { padding: 6px 12px; border-bottom: 1px solid #e0e0e0; }
+  .reveal tr:nth-child(even) { background: #f8f9fa; }
+  .reveal .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0; }
+  .reveal .stat-box { background: #f0f4ff; border-radius: 12px; padding: 20px; text-align: center; }
+  .reveal .stat-box .number { font-size: 2.2em; font-weight: 800; color: #1a1a2e; line-height: 1; }
+  .reveal .stat-box .label { font-size: 0.6em; color: #666; margin-top: 6px; }
+  .reveal .severity-critical { color: #dc2626; font-weight: 700; }
+  .reveal .severity-high { color: #ea580c; font-weight: 600; }
+  .reveal .severity-medium { color: #ca8a04; }
+  .reveal .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7em; font-weight: 600; margin: 2px; }
+  .reveal .tag-p0 { background: #fee2e2; color: #dc2626; }
+  .reveal .tag-p1 { background: #ffedd5; color: #ea580c; }
+  .reveal .tag-p2 { background: #fef9c3; color: #ca8a04; }
+  .reveal .tag-p3 { background: #e0f2fe; color: #0284c7; }
+  .reveal .tag-done { background: #dcfce7; color: #16a34a; }
+  .reveal .bar { height: 24px; border-radius: 4px; display: inline-block; vertical-align: middle; }
+  .reveal .bar-5 { background: #22c55e; } .reveal .bar-4 { background: #84cc16; }
+  .reveal .bar-3 { background: #eab308; } .reveal .bar-2 { background: #f97316; }
+  .reveal .bar-1 { background: #ef4444; }
+  .reveal ul { font-size: 0.8em; }
+  .reveal li { margin-bottom: 8px; }
+  .reveal .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .reveal .quote { background: #f8f9fa; border-left: 4px solid #1a1a2e; padding: 12px 16px; font-style: italic; font-size: 0.75em; margin: 12px 0; border-radius: 0 8px 8px 0; }
+  .reveal .section-title { text-align: center; }
+  .reveal .section-title h2 { font-size: 2em; }
+  .reveal .section-title p { font-size: 0.9em; color: #666; }
+  .reveal .emoji { font-style: normal; }
+  .reveal .highlight { background: linear-gradient(120deg, #fef08a 0%, #fde68a 100%); padding: 2px 6px; border-radius: 4px; }
+  .reveal .footer-note { font-size: 0.45em; color: #999; position: absolute; bottom: 20px; width: 90%; }
+  .reveal .timeline { display: flex; gap: 12px; margin: 20px 0; }
+  .reveal .timeline-item { flex: 1; background: #f0f4ff; border-radius: 10px; padding: 14px; font-size: 0.6em; }
+  .reveal .timeline-item h4 { margin: 0 0 6px; font-size: 1.1em; color: #1a1a2e; }
+  .reveal .sentiment-bar { display: flex; height: 30px; border-radius: 6px; overflow: hidden; margin: 6px 0; }
+  .reveal .sent-pos { background: #22c55e; } .reveal .sent-neu { background: #eab308; } .reveal .sent-neg { background: #ef4444; }
+  .reveal .vs-table td:first-child { font-weight: 600; }
+  .small { font-size: 0.7em; }
+  .reveal section.center-slide { text-align: center; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- TITLE -->
+<section class="center-slide" data-background-gradient="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
+  <h1 style="color:white; font-size:2.4em;">NammaYatri Driver App</h1>
+  <h3 style="color:#93c5fd; font-weight:400;">Deep Dive Analysis & Fix Plan</h3>
+  <p style="color:#94a3b8; font-size:0.6em; margin-top:40px;">
+    Based on 95,000+ Play Store Reviews | 21 Research Reports | Full Codebase Analysis<br>
+    March 2026
+  </p>
+</section>
+
+<!-- AGENDA -->
+<section>
+  <h2>Agenda</h2>
+  <ol style="font-size:0.85em;">
+    <li><strong>The Big Picture</strong> — Key metrics & rating trends</li>
+    <li><strong>What Drivers Are Saying</strong> — Review analysis & sentiment</li>
+    <li><strong>Root Causes</strong> — Deep dive into top pain points</li>
+    <li><strong>Competitive Landscape</strong> — How we compare</li>
+    <li><strong>Fix Plan</strong> — Prioritized fixes with implementation status</li>
+    <li><strong>Roadmap</strong> — Sprint timeline & expected impact</li>
+  </ol>
+</section>
+
+<!-- SECTION 1: BIG PICTURE -->
+<section class="section-title" data-background-color="#f0f4ff">
+  <h2>1. The Big Picture</h2>
+  <p>Platform health & key metrics</p>
+</section>
+
+<section>
+  <h2>Platform at a Glance</h2>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="number">700K+</div>
+        <div class="label">Registered Drivers</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">130M+</div>
+        <div class="label">Completed Rides</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">Rs 2,000 Cr+</div>
+        <div class="label">Cumulative Driver Earnings</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">~190K</div>
+        <div class="label">Daily Rides</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">15+</div>
+        <div class="label">Cities</div>
+      </div>
+      <div class="stat-box">
+        <div class="number">4.7/5</div>
+        <div class="label">Play Store Rating (271K reviews)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rating Trend — Jan 2025 to Mar 2026</h2>
+    <table>
+      <tr><th>Period</th><th>Avg Rating</th><th>5-Star %</th><th>1-Star %</th><th>Reviews</th><th>Complaints</th></tr>
+      <tr><td>Jan-May 2025</td><td><strong>4.64</strong></td><td>85.1%</td><td>4.8%</td><td>39,631</td><td>174</td></tr>
+      <tr><td>Jun-Sep 2025</td><td><strong>4.64</strong></td><td>85.2%</td><td>4.8%</td><td>29,913</td><td>163</td></tr>
+      <tr><td>Dec 2025-Mar 2026</td><td><strong>4.84</strong></td><td>92.5%</td><td>1.8%</td><td>24,198</td><td>113</td></tr>
+    </table>
+    <p style="font-size:0.7em; margin-top:16px;">
+      <strong>Good news:</strong> Rating improved from 4.64 to 4.84 (+0.20) between mid-2025 and early 2026.<br>
+      <strong>Concern:</strong> Despite high ratings, social media sentiment shows <span class="highlight">driver loyalty declining</span> — drivers treat NammaYatri as interchangeable with competitors.
+    </p>
+    <p class="footer-note">Note: Oct-Nov 2025 data incomplete (export gaps). 95,742 total reviews analyzed across all periods.</p>
+  </section>
+
+  <section>
+    <h2>Driver Sentiment Score</h2>
+    <table>
+      <tr><th>Dimension</th><th>Score</th><th>Trend</th></tr>
+      <tr><td>Economic value (vs competitors)</td><td><strong>8/10</strong></td><td>Stable</td></tr>
+      <tr><td>Trust in platform promises</td><td class="severity-critical"><strong>4/10</strong></td><td>Declining</td></tr>
+      <tr><td>App/tech satisfaction</td><td><strong>5/10</strong></td><td>Stable</td></tr>
+      <tr><td>Customer support satisfaction</td><td class="severity-critical"><strong>3/10</strong></td><td>Declining</td></tr>
+      <tr><td>Ride volume adequacy</td><td><strong>5/10</strong></td><td>Stable</td></tr>
+      <tr><td>Overall driver loyalty</td><td class="severity-critical"><strong>4/10</strong></td><td>Declining</td></tr>
+    </table>
+    <div class="quote">
+      "When they started, they said no fee. What if they increase this fee later?" — M. Manjunath, Auto Rickshaw Drivers' Union President
+    </div>
+</section>
+
+<!-- SECTION 2: WHAT DRIVERS ARE SAYING -->
+<section class="section-title" data-background-color="#fef3c7">
+  <h2>2. What Drivers Are Saying</h2>
+  <p>Top complaint categories from 95K+ reviews</p>
+</section>
+
+<section>
+  <h2>Top Complaint Categories (Oct 2025 - Mar 2026)</h2>
+    <table>
+      <tr><th>Rank</th><th>Category</th><th>% of Complaints</th><th>Severity</th></tr>
+      <tr><td>1</td><td><strong>Ride Allocation / No Rides</strong></td><td>20.8%</td><td class="severity-critical">CRITICAL</td></tr>
+      <tr><td>2</td><td><strong>App Crashes / Bugs</strong></td><td>11.9%</td><td class="severity-high">HIGH</td></tr>
+      <tr><td>3</td><td><strong>Customer Support Unresponsive</strong></td><td>11.3%</td><td class="severity-high">HIGH</td></tr>
+      <tr><td>4</td><td><strong>Earnings / Income Issues</strong></td><td>11.3%</td><td class="severity-critical">CRITICAL</td></tr>
+      <tr><td>5</td><td><strong>Fare Calculation Issues</strong></td><td>9.4%</td><td class="severity-high">HIGH</td></tr>
+      <tr><td>6</td><td>Customer Cancellation</td><td>5.0%</td><td class="severity-medium">MEDIUM</td></tr>
+      <tr><td>7</td><td>GPS / Navigation Issues</td><td>5.0%</td><td class="severity-medium">MEDIUM</td></tr>
+      <tr><td>8</td><td>App Performance / Battery Drain</td><td>4.4%</td><td class="severity-medium">MEDIUM</td></tr>
+      <tr><td>9</td><td>Commission / Platform Fee</td><td>4.4%</td><td class="severity-medium">MEDIUM</td></tr>
+    </table>
+    <p style="font-size:0.6em; color:#666; margin-top:8px;">"Ride allocation" and "Earnings" together account for 32% of all complaints — both are trust/transparency issues at their core.</p>
+  </section>
+
+  <section>
+    <h2>Critical Social Media Findings</h2>
+    <div class="two-col">
+      <div>
+        <h3 class="severity-critical">1. "No Tip, No Trip" Crisis</h3>
+        <ul style="font-size:0.7em;">
+          <li>Advance tipping corrupted the marketplace</li>
+          <li>90% of riders report cancellation pressure</li>
+          <li>CCPA investigation triggered</li>
+          <li>Government ban issued Dec 2025</li>
+          <li>Tips reportedly don't always reach drivers</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="severity-critical">2. Subscription Fee Trust Erosion</h3>
+        <ul style="font-size:0.7em;">
+          <li>"Zero commission" promise perceived as broken</li>
+          <li>Autopay debits on non-working days</li>
+          <li>Fear of future fee increases</li>
+          <li>Nationwide driver strike Feb 2026</li>
+          <li>50% cancellation rate reported by drivers</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote" style="margin-top:16px;">
+      Sentiment trajectory: <strong>2022-23</strong> Universal goodwill &rarr; <strong>Late 2023</strong> Subscription shock &rarr; <strong>2024</strong> Tip controversy &rarr; <strong>2025</strong> Competitors copy model &rarr; <strong>2026</strong> Net positive but declining
+    </div>
+  </section>
+
+  <section>
+    <h2>Driver Voices — Verbatim Quotes</h2>
+    <div class="quote">"Online for hours, no rides coming. New drivers suffering the most."</div>
+    <div class="quote">"App crashes during ride, customer thinks I cancelled. Lost the fare."</div>
+    <div class="quote">"I paid the subscription but didn't drive that day. Why am I being charged?"</div>
+    <div class="quote">"Fare breakup only shows 'extra charges' — I don't know what I'm earning"</div>
+    <div class="quote">"Helpline number doesn't even connect. Account blocked and nobody to talk to."</div>
+    <div class="quote">"Customer cancelled after I drove 3 km to pickup. No compensation at all."</div>
+    <p style="font-size:0.55em; color:#999; margin-top:12px;">Selected from 500+ complaint reviews across Jan 2025 - Mar 2026. Original languages: English, Kannada, Hindi, Tamil, Telugu.</p>
+</section>
+
+<!-- SECTION 3: ROOT CAUSES -->
+<section class="section-title" data-background-color="#fce4ec">
+  <h2>3. Root Causes</h2>
+  <p>Deep codebase analysis of top pain points</p>
+</section>
+
+<section>
+  <h2>Root Cause: "Not Getting Rides" (20.8%)</h2>
+    <div class="two-col">
+      <div>
+        <h3>How allocation works</h3>
+        <ul style="font-size:0.65em;">
+          <li><strong>Marketplace model</strong> — rides broadcast to pool, drivers bid (vs Ola/Uber dispatch)</li>
+          <li>Intelligent pool scores on 6 factors: acceptance rate, cancellation, speed, proximity, activity, ride frequency</li>
+          <li>GoHome pool gets priority in early batches</li>
+          <li>New drivers lack history &rarr; placed in random pool</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Hidden root causes</h3>
+        <ul style="font-size:0.65em;">
+          <li class="severity-critical"><strong>Silent ride blocking</strong> — outstanding dues > maxCreditLimit blocks rides with NO notification</li>
+          <li>Rich-get-richer: high-frequency drivers scored higher &rarr; get more rides &rarr; even higher scores</li>
+          <li>Location staleness (180s filter) drops drivers with poor GPS</li>
+          <li>No proximity weight floor — farther drivers with better scores outrank closer ones</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:0.6em; margin-top:10px;"><strong>Key file:</strong> <code>SendSearchRequestToDrivers/Handle/Internal/DriverPool.hs</code> (lines 772-795)</p>
+  </section>
+
+  <section>
+    <h2>Root Cause: Earnings Opacity (11.3%)</h2>
+    <div class="two-col">
+      <div>
+        <h3>The transparency gap</h3>
+        <ul style="font-size:0.65em;">
+          <li>FareBreakupPopup shows only 3 lines: estimated fare, "extra charges" (opaque delta), toll</li>
+          <li><strong>Tips exist in API but are never shown</strong> to drivers</li>
+          <li>Parking charges in data model but never displayed</li>
+          <li>Ride history shows total only — no toll/tip/special charge indicators</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Backend issues</h3>
+        <ul style="font-size:0.65em;">
+          <li>8+ open GitHub issues for fare calculation bugs across cities</li>
+          <li>7+ issues for payment button infinite-loading</li>
+          <li>Special zone fee breakup mismatch (#4790)</li>
+          <li><code>USE_DUMMY_PAYOUT_HISTORY = true</code> — settlement history shows dummy data</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote">This is primarily a <strong>transparency problem</strong>, not a fare structure problem. NammaYatri's commission-free model actually gives drivers more per-ride than competitors — but drivers can't see this.</div>
+  </section>
+
+  <section>
+    <h2>Root Cause: App Stability (11.9%)</h2>
+    <table>
+      <tr><th>Issue</th><th>Root Cause</th><th>Impact</th></tr>
+      <tr><td>Crashes during ride</td><td>No Sentry in driver app; ErrorBoundary catches UI only, not native crashes; 511 console.log statements in prod</td><td>Lost fares, poor rider experience</td></tr>
+      <tr><td>GPS drift / wrong navigation</td><td>No Kalman filter; raw GPS coordinates sent directly; no accuracy threshold filtering</td><td>Wrong ETAs, route deviations</td></tr>
+      <tr><td>Battery drain</td><td>3 separate foreground services; high-accuracy GPS always-on; no dual-mode switching</td><td>Drivers can't last full shift</td></tr>
+      <tr><td>Freezes on low-end devices</td><td>70+ screens loaded eagerly; no React.lazy; 27+ FlatLists without optimizations; no device capability detection</td><td>2GB RAM phones (common among auto drivers) freeze</td></tr>
+      <tr><td>OS kills app in background</td><td>No OEM battery exemption request; no heartbeat mechanism; Xiaomi/Realme/Samsung aggressive app killing</td><td>Drivers go "offline" unknowingly</td></tr>
+    </table>
+    <p style="font-size:0.6em;"><strong>Stack:</strong> React Native 0.83 | Hermes | 22+ Turbo Modules | 10 white-label variants | 252 API endpoints</p>
+</section>
+
+<!-- SECTION 4: COMPETITIVE LANDSCAPE -->
+<section class="section-title" data-background-color="#e0f2fe">
+  <h2>4. Competitive Landscape</h2>
+  <p>NammaYatri vs Ola vs Uber vs Rapido — driver perspective</p>
+</section>
+
+<section>
+  <h2>Driver App Ratings & Scale</h2>
+    <table class="vs-table">
+      <tr><th>Platform</th><th>Rating</th><th>Downloads</th><th>Daily Cost</th><th>Est. Monthly Income</th></tr>
+      <tr><td>NammaYatri</td><td><strong>4.7</strong></td><td>1.2M+</td><td>Rs 25-90/day</td><td>~Rs 48,000</td></tr>
+      <tr><td>Uber Driver</td><td>4.6</td><td>100M+ (global)</td><td>Rs 20-40/day</td><td>~Rs 37-45,000</td></tr>
+      <tr><td>Ola Driver</td><td>4.4</td><td>23M+</td><td>~Rs 67/day</td><td>~Rs 58,325</td></tr>
+      <tr><td>Rapido Captain</td><td>4.3</td><td>10M+</td><td>Rs 9-29/day</td><td>Varies</td></tr>
+      <tr><td>inDrive</td><td>4.8</td><td>360M+ (global)</td><td>5-10% per ride</td><td>Varies</td></tr>
+    </table>
+    <p style="font-size:0.65em; margin-top:10px;"><strong>NammaYatri's moat:</strong> Highest rating among India-focused apps, lowest barrier to entry (2 docs, 1-3 days), zero commission / open source trust.</p>
+  </section>
+
+  <section>
+    <h2>Competitive Gaps</h2>
+    <table>
+      <tr><th>Gap</th><th>What Competitors Offer</th><th>Priority</th></tr>
+      <tr><td><strong>No financial ecosystem</strong></td><td>Ola: loans, credit cards, micro-credit, insurance</td><td class="severity-high">HIGH</td></tr>
+      <tr><td><strong>No fuel benefits</strong></td><td>Ola: Indian Oil card | Uber: 6-7% cashback | Rapido: HPCL</td><td class="severity-high">HIGH</td></tr>
+      <tr><td><strong>No insurance</strong></td><td>Ola: medical+life+accident | Rapido: Rs 5L/ride</td><td class="severity-high">HIGH</td></tr>
+      <tr><td><strong>No demand heatmap</strong></td><td>Uber: real-time Rides Heatmap</td><td class="severity-medium">MEDIUM</td></tr>
+      <tr><td><strong>No tiered loyalty</strong></td><td>Ola Stars & Uber Pro: 4-tier progressive benefits</td><td class="severity-medium">MEDIUM</td></tr>
+      <tr><td><strong>Weak driver support</strong></td><td>Uber: Greenlight Hubs + video | Ola: physical hubs</td><td class="severity-high">HIGH</td></tr>
+    </table>
+    <div class="quote" style="margin-top:10px;">
+      <strong>Existential threat:</strong> Ola (Apr 2025) and Uber (Feb 2025) both adopted zero-commission subscription models in key cities — NammaYatri's primary differentiator is being neutralized.
+    </div>
+  </section>
+
+  <section>
+    <h2>What We Still Win On</h2>
+    <div class="stat-grid">
+      <div class="stat-box" style="background:#dcfce7;">
+        <div class="number" style="font-size:1.5em;">Zero Commission</div>
+        <div class="label">Rs 400-450/day more than Ola/Uber's old model</div>
+      </div>
+      <div class="stat-box" style="background:#dcfce7;">
+        <div class="number" style="font-size:1.5em;">1-3 Days</div>
+        <div class="label">Fastest onboarding (vs 1-4 weeks Ola/Uber)</div>
+      </div>
+      <div class="stat-box" style="background:#dcfce7;">
+        <div class="number" style="font-size:1.5em;">Open Source</div>
+        <div class="label">Can't be exploited later — anyone can fork</div>
+      </div>
+    </div>
+    <p style="font-size:0.7em; text-align:center; margin-top:10px;">
+      <strong>Remaining defensible moats:</strong> Open-source trust, ONDC backing, Rising Stars scholarships, driver community ethos
+    </p>
+</section>
+
+<!-- SECTION 5: FIX PLAN -->
+<section class="section-title" data-background-color="#dcfce7">
+  <h2>5. Fix Plan</h2>
+  <p>36 frontend fixes + 24 backend changes identified</p>
+</section>
+
+<section>
+  <h2>P0 — Fix This Week</h2>
+    <p style="font-size:0.7em; color:#666;">Quick wins with highest impact. All frontend-only, low risk. ~2-3 days for 1 dev.</p>
+    <table>
+      <tr><th>Fix</th><th>Effort</th><th>Why Now</th></tr>
+      <tr><td><strong>Console removal in production</strong> — 511 statements</td><td>S (5 min)</td><td>Immediate perf benefit, zero risk</td></tr>
+      <tr><td><strong>Global JS error handler</strong></td><td>S (30 min)</td><td>Captures ~30% of invisible JS crashes</td></tr>
+      <tr><td><strong>ErrorBoundary improvements</strong> — stack traces + device info</td><td>S (30 min)</td><td>Dramatically better crash diagnosis</td></tr>
+      <tr><td><strong>HyperKYC FileReader memory leak fix</strong></td><td>S (15 min)</td><td>Fixes document upload memory leak</td></tr>
+      <tr><td><strong>FastImage migration</strong></td><td>S (30 min)</td><td>Better image caching/memory</td></tr>
+      <tr><td><strong>Enhanced Fare Breakup Popup</strong> — itemized breakdown</td><td>M</td><td>#1 transparency fix — core trust complaint</td></tr>
+      <tr><td><strong>Blocked account screen</strong> — show reason + expiry + next steps</td><td>M</td><td>Critical for blocked drivers; data exists in API</td></tr>
+      <tr><td><strong>Enhanced Today Earnings Popup</strong></td><td>S</td><td>Quick win on daily earnings visibility</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>P1 — Two Weeks</h2>
+    <p style="font-size:0.7em; color:#666;">High-impact fixes, moderate effort. ~8-10 days for 2 devs.</p>
+    <table>
+      <tr><th>Fix</th><th>Effort</th><th>Impact</th></tr>
+      <tr><td><strong>Tip visibility</strong> — completion + details + history + weekly</td><td>M+S+S</td><td>Tips exist in API but never shown</td></tr>
+      <tr><td><strong>Parking charge display</strong></td><td>S</td><td>Complete fare transparency</td></tr>
+      <tr><td><strong>FlatList optimizations</strong> — 27+ lists</td><td>M</td><td>30-50% render improvement on low-end</td></tr>
+      <tr><td><strong>Device capability detection</strong></td><td>M</td><td>Foundation for all low-end optimizations</td></tr>
+      <tr><td><strong>"Why No Rides" Idle Nudge Card</strong></td><td>M</td><td>Addresses #1 complaint (20.8%)</td></tr>
+      <tr><td><strong>Pickup ETA + distance on ride requests</strong></td><td>M</td><td>Critical accept/reject info</td></tr>
+      <tr><td><strong>Document upload error messages</strong></td><td>M</td><td>Actionable errors vs "Error occurred"</td></tr>
+      <tr><td><strong>Upload retry with backoff</strong></td><td>M</td><td>Fix failures on slow networks</td></tr>
+      <tr><td><strong>Differentiate payout failure messages</strong></td><td>M</td><td>Specific reasons vs generic "failed"</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>P2 & P3 — One Month + Backlog</h2>
+    <div class="two-col">
+      <div>
+        <h3><span class="tag tag-p2">P2</span> One Month (12-15 days, 2 devs)</h3>
+        <ul style="font-size:0.6em;">
+          <li>Lazy screen loading (~40% cold start improvement)</li>
+          <li>Settlement Breakdown Screen</li>
+          <li>Settlement Status Timeline</li>
+          <li>Cash vs Online Payment Tracker</li>
+          <li>Failed Settlement Retry Banner</li>
+          <li>Autopay setup flow improvements</li>
+          <li>Earnings estimate on ride requests</li>
+          <li>Bid progress indicator</li>
+          <li>Timer color escalation + seconds</li>
+          <li>Larger accept button + haptic feedback</li>
+          <li>Document verification status UI</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="tag tag-p3">P3</span> Backlog</h3>
+        <ul style="font-size:0.6em;">
+          <li>Settlement history date/status filters</li>
+          <li>Settlement Statement Screen (exportable)</li>
+          <li>Special Zone Queue Indicator</li>
+          <li>Onboarding progress indicator</li>
+        </ul>
+        <h3 style="margin-top:20px;">Backend Required (24 changes)</h3>
+        <ul style="font-size:0.6em;">
+          <li class="severity-critical">Silent ride blocking notification</li>
+          <li class="severity-critical">Activity-based autopay gating</li>
+          <li class="severity-critical">Customer cancellation penalty</li>
+          <li class="severity-high">Fix special zone fee breakup (#4790)</li>
+          <li class="severity-high">Enable real payout history API</li>
+          <li class="severity-high">Earnings-aware allocation tie-breaking</li>
+          <li>+ 18 more (see full report)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Complaint-to-Fix Mapping</h2>
+    <table>
+      <tr><th>Complaint (% of all)</th><th>Primary Fixes</th><th>Expected Reduction</th></tr>
+      <tr><td><strong>No Rides</strong> (20.8%)</td><td>Idle Nudge, Pickup ETA, Silent block notification</td><td>-30% frontend, -50% with backend</td></tr>
+      <tr><td><strong>App Crashes</strong> (11.9%)</td><td>Console removal, Error handler, ErrorBoundary, Lazy loading</td><td>-60%</td></tr>
+      <tr><td><strong>Earnings</strong> (11.3%)</td><td>Fare breakup, Tips display, Settlement breakdown</td><td>-40%</td></tr>
+      <tr><td><strong>Support</strong> (11.3%)</td><td>Blocked screen, Error messages, Verification status</td><td>-20% (needs backend)</td></tr>
+      <tr><td><strong>Fare Calculation</strong> (9.4%)</td><td>Fare breakup, Parking display, Special zone fix</td><td>-50% with backend</td></tr>
+      <tr><td><strong>Cancellation</strong> (5.0%)</td><td>Cancellation penalty (backend only)</td><td>-40% with backend</td></tr>
+      <tr><td><strong>GPS/Nav</strong> (5.0%)</td><td>Map optimization, Kalman filter, Dual GPS</td><td>-70% with native</td></tr>
+      <tr><td><strong>Performance</strong> (4.4%)</td><td>Console, FlatList, Lazy loading, Device detection</td><td>-80% with native</td></tr>
+    </table>
+</section>
+
+<!-- SECTION 6: ROADMAP -->
+<section class="section-title" data-background-color="#f3e8ff">
+  <h2>6. Roadmap</h2>
+  <p>Sprint timeline & expected impact</p>
+</section>
+
+<section>
+  <h2>Sprint Timeline</h2>
+    <div class="timeline">
+      <div class="timeline-item" style="background:#fee2e2;">
+        <h4>Sprint 1</h4>
+        <p><strong>Week 1-2</strong><br>Mar 17-28</p>
+        <p>Foundation & Quick Wins<br><em>Console removal, error handlers, fare breakup popup, tip visibility, blocked account screen</em></p>
+        <p><span class="tag tag-p0">P0</span> + early <span class="tag tag-p1">P1</span></p>
+      </div>
+      <div class="timeline-item" style="background:#ffedd5;">
+        <h4>Sprint 2</h4>
+        <p><strong>Week 3-4</strong><br>Mar 31 - Apr 11</p>
+        <p>Allocation & Onboarding<br><em>Idle nudge, pickup ETA, document errors, upload retry, lazy loading</em></p>
+        <p><span class="tag tag-p1">P1</span></p>
+      </div>
+      <div class="timeline-item" style="background:#fef9c3;">
+        <h4>Sprint 3</h4>
+        <p><strong>Week 5-6</strong><br>Apr 14-25</p>
+        <p>Settlement & Bidding<br><em>Settlement breakdown, cash tracker, retry flow, bid progress, timer</em></p>
+        <p><span class="tag tag-p2">P2</span></p>
+      </div>
+      <div class="timeline-item" style="background:#e0f2fe;">
+        <h4>Sprint 4</h4>
+        <p><strong>Week 7-8</strong><br>Apr 28 - May 9</p>
+        <p>Polish & Backlog<br><em>Settlement statements, queue indicator, bug fixes from Sprint 1-3 feedback</em></p>
+        <p><span class="tag tag-p3">P3</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Expected Impact</h2>
+    <div class="two-col">
+      <div>
+        <h3>Rating & Complaints</h3>
+        <table>
+          <tr><th>Metric</th><th>Current</th><th>Post-Sprint 2</th><th>Post-Sprint 4</th></tr>
+          <tr><td>Avg rating</td><td>4.83</td><td>4.85</td><td>4.88</td></tr>
+          <tr><td>1-star %</td><td>1.8%</td><td>1.5%</td><td>1.2%</td></tr>
+          <tr><td>"No Rides" complaints</td><td>20.8%</td><td>-30%</td><td>-50%</td></tr>
+          <tr><td>"Earnings" complaints</td><td>11.3%</td><td>-40%</td><td>-60%</td></tr>
+          <tr><td>"Crashes" complaints</td><td>11.9%</td><td>-60%</td><td>-80%</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Technical Metrics</h3>
+        <table>
+          <tr><th>Metric</th><th>Current</th><th>After Sprint 4</th></tr>
+          <tr><td>Cold startup (2GB RAM)</td><td>~5-7s</td><td>~3-4s</td></tr>
+          <tr><td>Untracked JS crashes</td><td>~30%</td><td>~5%</td></tr>
+          <tr><td>Console statements in prod</td><td>511</td><td>0</td></tr>
+          <tr><td>List scroll jank (low-end)</td><td>Frequent</td><td>Rare</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Team Needed</h2>
+    <table>
+      <tr><th>Role</th><th>Focus</th><th>Sprints</th></tr>
+      <tr><td><strong>Dev A (Frontend Senior)</strong></td><td>Core UX + Performance: fare breakup, error handlers, lazy loading, settlement</td><td>1-4</td></tr>
+      <tr><td><strong>Dev B (Frontend Mid)</strong></td><td>Components + Lists: tip visibility, FlatList opts, idle nudge, document errors</td><td>1-4</td></tr>
+      <tr><td><strong>Dev C (Backend Haskell)</strong></td><td>Critical backend: silent ride blocking, autopay gating, fee fixes, payout API</td><td>1-4</td></tr>
+      <tr><td><strong>Dev D (Native Android)</strong></td><td>Android platform: battery exemption, dual-mode GPS, Kalman filter, service consolidation</td><td>2-4</td></tr>
+      <tr><td><strong>QA</strong></td><td>Regression testing per sprint, low-end device testing (Redmi, Realme, Samsung M)</td><td>1-4</td></tr>
+    </table>
+</section>
+
+<!-- CLOSING -->
+<section class="center-slide" data-background-gradient="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
+  <h2 style="color:white;">Key Takeaway</h2>
+    <p style="color:#93c5fd; font-size:0.9em; max-width:800px; margin:0 auto; line-height:1.6;">
+      NammaYatri's driver app has strong ratings (4.7/5) and a powerful economic proposition — but <strong style="color:#fbbf24;">driver trust is eroding</strong>. The good news: the top complaints are primarily <strong style="color:#34d399;">transparency and UX problems</strong>, not fundamental business model issues. 36 frontend fixes across 4 sprints can meaningfully address 80% of complaints — with 5 already implemented on git branches.
+    </p>
+</section>
+
+<section class="center-slide" data-background-gradient="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
+  <h2 style="color:white;">Appendix</h2>
+    <p style="color:#94a3b8; font-size:0.7em;">
+      Full reports available in <code style="color:#93c5fd;">/nyDriver/reports/</code>
+    </p>
+    <table style="font-size:0.5em; max-width:700px; margin:20px auto;">
+      <tr><th style="background:#0f3460;">Report</th><th style="background:#0f3460;">Size</th></tr>
+      <tr style="color:#ccc;"><td>review-analysis-jan-may-2025.md</td><td>100 KB</td></tr>
+      <tr style="color:#ccc;"><td>review-analysis-oct2025-mar2026.md</td><td>99 KB</td></tr>
+      <tr style="color:#ccc;"><td>social-media-driver-sentiment.md</td><td>46 KB</td></tr>
+      <tr style="color:#ccc;"><td>earnings-income-rca.md</td><td>44 KB</td></tr>
+      <tr style="color:#ccc;"><td>document-account-rca.md</td><td>31 KB</td></tr>
+      <tr style="color:#ccc;"><td>payment-settlement-rca.md</td><td>29 KB</td></tr>
+      <tr style="color:#ccc;"><td>ride-allocation-rca.md</td><td>25 KB</td></tr>
+      <tr style="color:#ccc;"><td>master-fix-priority-matrix.md</td><td>26 KB</td></tr>
+      <tr style="color:#ccc;"><td>competitive-analysis-driver.md</td><td>23 KB</td></tr>
+      <tr style="color:#ccc;"><td>+ 12 more fix plans & reports</td><td>~160 KB</td></tr>
+    </table>
+    <p style="color:#64748b; font-size:0.5em; margin-top:30px;">
+      Analysis: 95,000+ Play Store reviews | 21 reports | Full backend + frontend codebase analysis | March 2026
+    </p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  width: 1200,
+  height: 700,
+  margin: 0.08,
+  transition: 'slide',
+  backgroundTransition: 'fade',
+  center: false,
+  controlsTutorial: false,
+});
+</script>
+</body>
+</html>

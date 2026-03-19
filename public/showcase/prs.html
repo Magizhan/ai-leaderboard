@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR Tracker — Mags | Claude Usage Leaderboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-card-hover: #22223a;
+    --accent-orange: #f97316;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --accent-red: #ef4444;
+    --accent-yellow: #eab308;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+    --border-subtle: #161625;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    z-index: 0;
+  }
+  .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 24px 20px; }
+
+  .nav-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .back-link {
+    color: var(--text-secondary); text-decoration: none; font-size: 0.8rem;
+    font-weight: 500; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent-purple); }
+  .nav-sep { color: var(--text-dim); font-size: 0.8rem; }
+
+  .header { text-align: center; padding: 24px 0 32px; }
+  .header h1 {
+    font-size: 2rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .header .subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+
+  /* Summary Cards */
+  .pr-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+  .pr-summary-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 24px; flex: 1; min-width: 140px; text-align: center;
+  }
+  .pr-summary-card .num { font-size: 2rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+  .pr-summary-card .lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-top: 2px; }
+
+  /* Filter Tabs */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-secondary); cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent-purple); color: var(--text-primary); }
+  .filter-btn.active { background: rgba(168, 85, 247, 0.15); border-color: var(--accent-purple); color: var(--accent-purple); }
+  .filter-count { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; margin-left: 4px; opacity: 0.7; }
+
+  /* Repo filter */
+  .repo-bar { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .repo-btn {
+    padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle);
+    background: transparent; color: var(--text-dim); cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .repo-btn:hover { border-color: var(--accent-blue); color: var(--text-secondary); }
+  .repo-btn.active { background: rgba(59, 130, 246, 0.1); border-color: var(--accent-blue); color: var(--accent-blue); }
+
+  /* PR List */
+  .pr-group-title {
+    font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);
+    margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pr-group-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .pr-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .pr-item {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; display: flex; align-items: flex-start; gap: 12px;
+    transition: all 0.2s; cursor: pointer; text-decoration: none; color: inherit;
+  }
+  .pr-item:hover { border-color: rgba(168, 85, 247, 0.3); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .pr-item-body { flex: 1; min-width: 0; }
+  .pr-item-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
+  .pr-item-meta { font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pr-item-impact {
+    font-size: 0.75rem; color: var(--accent-orange); margin-top: 8px;
+    padding: 6px 10px; background: rgba(249, 115, 22, 0.06); border-radius: 6px;
+    border-left: 2px solid var(--accent-orange); line-height: 1.5;
+  }
+  .pr-item-date { font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+  .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+
+  .pr-loading { text-align: center; padding: 48px; color: var(--text-dim); font-size: 0.85rem; }
+
+  /* Impact legend */
+  .impact-legend {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 28px;
+  }
+  .impact-legend summary {
+    font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); cursor: pointer;
+    list-style: none;
+  }
+  .impact-legend summary::before { content: ''; }
+  .impact-legend summary::-webkit-details-marker { display: none; }
+  .impact-legend .legend-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px;
+    margin-top: 12px;
+  }
+  .impact-legend .legend-item {
+    font-size: 0.72rem; color: var(--text-dim); padding: 4px 0;
+  }
+  .impact-legend .legend-item strong { color: var(--accent-orange); font-weight: 600; }
+
+  .footer {
+    text-align: center; padding: 32px 0; border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 0.75rem; margin-top: 48px;
+  }
+  .footer a { color: var(--accent-purple); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.5rem; }
+    .pr-summary-card { min-width: 70px; padding: 12px; }
+    .pr-summary-card .num { font-size: 1.4rem; }
+    .pr-item { flex-direction: column; }
+    .pr-item-date { align-self: flex-end; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="nav-bar">
+    <a href="/showcase/" class="back-link">&larr; Showcase</a>
+    <span class="nav-sep">/</span>
+    <a href="/showcase/mags.html" class="back-link">Mags</a>
+    <span class="nav-sep">/</span>
+    <span style="color: var(--text-primary); font-size: 0.8rem; font-weight: 600;">PRs</span>
+  </div>
+
+  <div class="header">
+    <h1>PR Tracker</h1>
+    <p class="subtitle">Live from GitHub &mdash; PRs by <strong>Mags</strong> across nammayatri org</p>
+  </div>
+
+  <div id="pr-summary" class="pr-summary">
+    <div class="pr-summary-card"><div class="num" style="color:var(--text-dim)">...</div><div class="lbl">Total</div></div>
+    <div class="pr-summary-card"><div class="num" style="color:var(--text-dim)">...</div><div class="lbl">Merged</div></div>
+    <div class="pr-summary-card"><div class="num" style="color:var(--text-dim)">...</div><div class="lbl">Open</div></div>
+    <div class="pr-summary-card"><div class="num" style="color:var(--text-dim)">...</div><div class="lbl">Closed</div></div>
+  </div>
+
+  <div id="filter-bar" class="filter-bar"></div>
+  <div id="repo-bar" class="repo-bar"></div>
+
+  <details class="impact-legend">
+    <summary>Why these PRs matter (expand)</summary>
+    <div class="legend-grid">
+      <div class="legend-item"><strong>Payment / Pass:</strong> Without this &rarr; duplicate charges, user lockout, revenue loss</div>
+      <div class="legend-item"><strong>Fare / Pricing:</strong> Without this &rarr; wrong fares, user trust erosion</div>
+      <div class="legend-item"><strong>Circuit Breaker:</strong> Without this &rarr; one slow provider crashes search</div>
+      <div class="legend-item"><strong>GPS:</strong> Without this &rarr; wrong pickup/drop, failed rides</div>
+      <div class="legend-item"><strong>QR:</strong> Without this &rarr; tickets fail to scan, riders stranded</div>
+      <div class="legend-item"><strong>Safety:</strong> Without this &rarr; safety gaps, trust risk</div>
+      <div class="legend-item"><strong>Booking:</strong> Without this &rarr; booking failures, lost conversions</div>
+      <div class="legend-item"><strong>Cancellation:</strong> Without this &rarr; drivers cherry-pick, riders wait</div>
+      <div class="legend-item"><strong>Monitoring:</strong> Without this &rarr; issues undetected until users complain</div>
+      <div class="legend-item"><strong>Kafka:</strong> Without this &rarr; message loss, data inconsistency</div>
+      <div class="legend-item"><strong>Tests:</strong> Without this &rarr; regressions ship to production</div>
+      <div class="legend-item"><strong>Perf / Optimize:</strong> Without this &rarr; higher latency, more infra cost</div>
+      <div class="legend-item"><strong>Accessibility:</strong> Without this &rarr; unusable for visually impaired</div>
+      <div class="legend-item"><strong>GHC Warnings:</strong> Without this &rarr; technical debt compounds</div>
+      <div class="legend-item"><strong>Docs / Playbooks:</strong> Without this &rarr; ad-hoc incident response</div>
+      <div class="legend-item"><strong>Allocation:</strong> Without this &rarr; unfair ride distribution, driver churn</div>
+      <div class="legend-item"><strong>Onboarding:</strong> Without this &rarr; driver registration friction, supply loss</div>
+      <div class="legend-item"><strong>Settlement:</strong> Without this &rarr; drivers don't get paid correctly</div>
+    </div>
+  </details>
+
+  <div id="pr-container"><div class="pr-loading">Loading PRs from GitHub...</div></div>
+
+  <div class="footer">
+    <a href="/showcase/mags.html">Mags Showcase</a> &middot;
+    <a href="/">Leaderboard</a> &middot;
+    Built with <a href="https://claude.ai/code">Claude Code</a>
+  </div>
+</div>
+
+<script>
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Impact rules — ORDER MATTERS: more specific patterns first
+const IMPACT_RULES = [
+  { pattern: /pass.*activ|activ.*fail|lockout/i, text: "Without this: users pay for passes but can't activate them — locked out of the app" },
+  { pattern: /pass.*refund|compensat|auto.?refund/i, text: "Without this: failed pass purchases require manual refund by ops team" },
+  { pattern: /pass.*idempoten|webhook.*idempoten|redis.*lock.*pass/i, text: "Without this: duplicate payment webhooks create ghost passes, double charges" },
+  { pattern: /pass.*race|status.*race|lifecycle/i, text: "Without this: concurrent API calls corrupt pass state, users lose active passes" },
+  { pattern: /pass.*error|structured.*error/i, text: "Without this: support team can't diagnose pass failures — generic error messages" },
+  { pattern: /pass/i, text: "Without this: bus pass system failures, user lockout, revenue loss" },
+  { pattern: /premium.*bus|bus.*booking|bus.*UX|bus.*reliab/i, text: "Without this: premium bus booking fails, users can't ride" },
+  { pattern: /double.*deduct|payment.*atomic|payment.*retry|reconcil|settlement/i, text: "Without this: money deducted but no ticket, manual refund overhead" },
+  { pattern: /payment.*SDK|SDK.*warmup|polling.*timeout/i, text: "Without this: payment page hangs indefinitely, ~40% payment failure rate" },
+  { pattern: /payment|idempotency/i, text: "Without this: duplicate charges, manual refund ops burden" },
+  { pattern: /circuit.?breaker|resilience|beckn.*resilien/i, text: "Without this: one slow BPP takes down the entire search flow for all users" },
+  { pattern: /prometheus|metric.*funnel|alert.*rule/i, text: "Without this: no visibility into ride funnel drops — issues invisible until users complain en masse" },
+  { pattern: /monitoring|alert/i, text: "Without this: production issues go undetected until user complaints spike" },
+  { pattern: /GHC.?warn/i, text: "Without this: 500+ compiler warnings mask real bugs, technical debt compounds" },
+  { pattern: /N\+1|paralleliz/i, text: "Without this: every API call does N sequential DB queries — O(n) becomes O(1)" },
+  { pattern: /redis.*cach|caching.*geometry|caching.*business/i, text: "Without this: every request hits PostGIS for geometry lookups — DB is the bottleneck" },
+  { pattern: /db.*indic|database.*ind|critical.?path.*ind/i, text: "Without this: full table scans on hot paths, P99 latency spikes during peak hours" },
+  { pattern: /perf|optimize/i, text: "Without this: higher latency, more infrastructure cost at scale" },
+  { pattern: /accessibility|a11y|screen.*reader|wheelchair|WCAG/i, text: "Without this: app unusable by 70M+ Indians with disabilities, regulatory risk" },
+  { pattern: /GPS|gps|proximity.*radius|displacement/i, text: "Without this: wrong pickup/drop locations, rides fail before they start" },
+  { pattern: /QR.*compress|QR.*dark|QR.*payload|qr.*error/i, text: "Without this: QR tickets fail to scan at bus gates, riders stranded" },
+  { pattern: /QR|qr/i, text: "Without this: QR ticketing failures, riders can't board" },
+  { pattern: /ios|FCM|notification.*crash/i, text: "Without this: iOS app crashes, notifications don't arrive, dark mode broken" },
+  { pattern: /Kafka.*graceful|Kafka.*shutdown/i, text: "Without this: in-flight messages lost on deploy, booking state corrupted" },
+  { pattern: /Kafka/i, text: "Without this: message loss on restart, data inconsistency" },
+  { pattern: /unit.*test|test.*booking|test.*fare/i, text: "Without this: no test safety net — fare calculation regressions ship to prod" },
+  { pattern: /test/i, text: "Without this: regressions ship undetected to production" },
+  { pattern: /docs|playbook|audit.*report/i, text: "Without this: incident response is ad-hoc, tribal knowledge only" },
+  { pattern: /fare.*transparen|surge.*info|toll.*detect|fare.*cap/i, text: "Without this: riders don't understand surge pricing, trust erodes, 1-star reviews" },
+  { pattern: /fare|pricing/i, text: "Without this: wrong fares charged, user trust erosion" },
+  { pattern: /cancellation.*penalty|cancellation.*UX/i, text: "Without this: no deterrent for frivolous cancellations, riders wait endlessly" },
+  { pattern: /cancellation/i, text: "Without this: drivers cherry-pick profitable rides, riders abandoned" },
+  { pattern: /safety.*alert|route.*deviation|SOS/i, text: "Without this: route deviations go unnotified — safety incidents invisible" },
+  { pattern: /safety/i, text: "Without this: safety features have gaps, user trust risk" },
+  { pattern: /booking.*recover|booking.*retry/i, text: "Without this: failed bookings are permanent — user must restart the entire flow" },
+  { pattern: /booking/i, text: "Without this: booking failures, lost rides, poor conversion" },
+  { pattern: /allocation.*batch|allocation.*ETA|allocation.*proxim/i, text: "Without this: nearest driver not assigned, ETAs wrong during peak hours" },
+  { pattern: /allocation/i, text: "Without this: unfair ride distribution, driver churn" },
+  { pattern: /onboarding|RC.*fitness|registr/i, text: "Without this: driver registration blocked by stale configs, supply loss" },
+  { pattern: /settlement.*transparen/i, text: "Without this: drivers can't verify their earnings, trust deficit" },
+  { pattern: /connection.*pool|pool.*alert/i, text: "Without this: DB connection exhaustion during peak, cascading failures" },
+  { pattern: /FRFS|CMRL|chennai.*depot|multimodal/i, text: "Without this: Chennai transit integration unreliable, 96% booking failure rate continues" },
+];
+
+function getImpact(title) {
+  for (const r of IMPACT_RULES) {
+    if (r.pattern.test(title)) return r.text;
+  }
+  return "Improves platform reliability and user experience";
+}
+
+function prStatusBadge(pr) {
+  if (pr.pull_request && pr.pull_request.merged_at) return '<span class="badge badge-green">Merged</span>';
+  if (pr.state === 'open') return '<span class="badge badge-blue">Open</span>';
+  return '<span class="badge badge-red">Closed</span>';
+}
+
+function prStatusType(pr) {
+  if (pr.pull_request && pr.pull_request.merged_at) return 'merged';
+  if (pr.state === 'open') return 'open';
+  return 'closed';
+}
+
+function repoShort(url) {
+  const m = (url || '').match(/repos\/[^/]+\/([^/]+)/);
+  return m ? m[1] : 'unknown';
+}
+
+function relativeDate(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return diff + 'd ago';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function weekKey(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff < 7) return 'This Week';
+  if (diff < 14) return 'Last Week';
+  if (diff < 30) return 'This Month';
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+let allPRs = [];
+let activeFilter = 'all';
+let activeRepo = 'all';
+
+function getFilteredPRs() {
+  return allPRs.filter(pr => {
+    const status = prStatusType(pr);
+    const repo = repoShort(pr.repository_url);
+    if (activeFilter !== 'all' && status !== activeFilter) return false;
+    if (activeRepo !== 'all' && repo !== activeRepo) return false;
+    return true;
+  });
+}
+
+function renderFilters() {
+  const merged = allPRs.filter(p => prStatusType(p) === 'merged').length;
+  const open = allPRs.filter(p => prStatusType(p) === 'open').length;
+  const closed = allPRs.filter(p => prStatusType(p) === 'closed').length;
+
+  document.getElementById('filter-bar').innerHTML = [
+    { key: 'all', label: 'All', count: allPRs.length },
+    { key: 'open', label: 'Open', count: open },
+    { key: 'merged', label: 'Merged', count: merged },
+    { key: 'closed', label: 'Closed', count: closed },
+  ].map(f => `<button class="filter-btn ${activeFilter === f.key ? 'active' : ''}" onclick="activeFilter='${f.key}';renderAll()">${f.label}<span class="filter-count">${f.count}</span></button>`).join('');
+
+  // Repo filter
+  const repos = [...new Set(allPRs.map(p => repoShort(p.repository_url)))].sort();
+  document.getElementById('repo-bar').innerHTML =
+    `<button class="repo-btn ${activeRepo === 'all' ? 'active' : ''}" onclick="activeRepo='all';renderAll()">all</button>` +
+    repos.map(r => {
+      const count = allPRs.filter(p => repoShort(p.repository_url) === r).length;
+      return `<button class="repo-btn ${activeRepo === r ? 'active' : ''}" onclick="activeRepo='${r}';renderAll()">${r} (${count})</button>`;
+    }).join('');
+}
+
+function renderPRs() {
+  const filtered = getFilteredPRs();
+  const container = document.getElementById('pr-container');
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="pr-loading">No PRs match this filter.</div>';
+    return;
+  }
+
+  // Group by week
+  const groups = {};
+  filtered.forEach(pr => {
+    const wk = weekKey(pr.created_at);
+    if (!groups[wk]) groups[wk] = [];
+    groups[wk].push(pr);
+  });
+
+  let html = '';
+  for (const [group, prs] of Object.entries(groups)) {
+    html += `<div class="pr-group-title">${esc(group)} (${prs.length})</div><div class="pr-list">`;
+    html += prs.map(pr => {
+      const repo = repoShort(pr.repository_url);
+      const status = prStatusType(pr);
+      const impact = status === 'open'
+        ? `<div class="pr-item-impact">${esc(getImpact(pr.title))}</div>`
+        : '';
+      return `<a class="pr-item" href="${esc(pr.html_url)}" target="_blank" rel="noopener">
+        <div class="pr-item-body">
+          <div class="pr-item-title">${esc(pr.title)}</div>
+          <div class="pr-item-meta">
+            <span style="color:var(--accent-cyan);font-family:'JetBrains Mono',monospace;font-size:0.68rem">${esc(repo)}</span>
+            <span>#${pr.number}</span>
+            ${prStatusBadge(pr)}
+          </div>
+          ${impact}
+        </div>
+        <div class="pr-item-date">${relativeDate(pr.created_at)}</div>
+      </a>`;
+    }).join('');
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderAll() {
+  renderFilters();
+  renderPRs();
+}
+
+async function fetchPRs() {
+  try {
+    // Use embedded data (GitHub search API is unreliable — misses older PRs)
+    const PR_DATA = [{"c":"2026-03-19T16:28:20Z","n":6178,"r":"nammayatri/ny-react-native","s":"open","t":"fix(ys): payment SDK stability \u2014 timeout, persistence, prefetch, QR fixes","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T16:28:00Z","n":6177,"r":"nammayatri/ny-react-native","s":"open","t":"fix(ys): driver app stability \u2014 memory leaks, error boundaries, bridge fixes","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T16:27:36Z","n":14084,"r":"nammayatri/nammayatri","s":"open","t":"feat(ys): increase Kolkata payout retry count from 5 to 8","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T16:27:13Z","n":6176,"r":"nammayatri/ny-react-native","s":"open","t":"fix(driver): GPS accuracy filtering, navigation UI, location fallback chain","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T16:25:17Z","n":14083,"r":"nammayatri/nammayatri","s":"open","t":"fix(driver): block premature arrival >500m from pickup","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:42:39Z","n":14081,"r":"nammayatri/nammayatri","s":"open","t":"fix(payment): retry API, auto-refund, reconciliation for YS settlement","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:42:17Z","n":6175,"r":"nammayatri/ny-react-native","s":"open","t":"feat(driver): ride request UX, demand hints, onboarding improvements","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:42:12Z","n":14080,"r":"nammayatri/nammayatri","s":"open","t":"[Monitoring] Add Prometheus metrics for ride funnel, cancellation, and payment (19 metrics, 15 alert rules)","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:42:01Z","n":6174,"r":"nammayatri/ny-react-native","s":"open","t":"feat(ys): improve settlement transparency and payout UX for drivers","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:51Z","n":14079,"r":"nammayatri/nammayatri","s":"open","t":"[P1] Enable route deviation safety alerts for all rides (remove night-only gate)","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:44Z","n":6173,"r":"nammayatri/ny-react-native","s":"open","t":"[P1] GPS: accuracy indicator, pickup precision hint, stale route re-fetch, driver marker smoothing","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:35Z","n":14078,"r":"nammayatri/nammayatri","s":"open","t":"fix(allocation): proximity sorting, radius optimization, peak-hour ETA","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:23Z","n":6172,"r":"nammayatri/ny-react-native","s":"open","t":"[P1] Safety: floating SOS button, enhanced ride sharing, night safety mode","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:21Z","n":6171,"r":"nammayatri/ny-react-native","s":"open","t":"fix: call enableScreens() at app init for native screen optimization","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:17Z","n":14077,"r":"nammayatri/nammayatri","s":"open","t":"fix(onboarding): replace 50-year RC fitness expiry hardcode with 30-day grace","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:12Z","n":14076,"r":"nammayatri/nammayatri","s":"open","t":"[P0] Add fare transparency: breakdown logging, surge info, toll detection, and fare cap safety net","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:01Z","n":6170,"r":"nammayatri/ny-react-native","s":"open","t":"fix: process ride notifications on Android in JS layer","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:41:00Z","n":6169,"r":"nammayatri/ny-react-native","s":"open","t":"[P0] Fare transparency: surge badge, toll warning, fare breakdown, post-ride comparison","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:40:56Z","n":14075,"r":"nammayatri/nammayatri","s":"open","t":"fix(allocation): increase default dynamic batch size from [1] to [3,5,7]","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:40:44Z","n":14074,"r":"nammayatri/nammayatri","s":"open","t":"[P0] Fix payment double deduction, auto-refund on cancellation, and webhook reliability","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:40:42Z","n":14073,"r":"nammayatri/nammayatri","s":"open","t":"feat(monitoring): add Bharat Taxi alerting rules and dashboard metrics","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:40:20Z","n":14072,"r":"nammayatri/nammayatri","s":"open","t":"[P0] Fix cancellation penalty accuracy, metadata enrichment, and reallocation observability","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:40:14Z","n":6168,"r":"nammayatri/ny-react-native","s":"open","t":"[P0] Cancellation UX: re-search sheet, transparency, driver-not-moving warning, feedback","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:01:03Z","n":6167,"r":"nammayatri/ny-react-native","s":"open","t":"fix(booking): GPS fallback, progressive timeouts, unserviceable UX, state recovery","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T15:00:44Z","n":6166,"r":"nammayatri/ny-react-native","s":"open","t":"feat(support): driver-cancel report, fare dispute, complaint tracking, SOS visibility","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T09:17:46Z","n":14068,"r":"nammayatri/nammayatri","s":"open","t":"feat(monitoring): add alerting rules, Bharat Taxi dashboard, and cancellation metrics","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T08:26:30Z","n":14066,"r":"nammayatri/nammayatri","s":"open","t":"fix: replace blanket -Werror with selective -Werror for crash-class warnings","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T05:19:11Z","n":14063,"r":"nammayatri/nammayatri","s":"open","t":"docs: GHC warning strategy \u2014 selective -Werror migration plan","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T05:06:44Z","n":14062,"r":"nammayatri/nammayatri","s":"open","t":"feat: Purple Rides disability tag regression guards + integration tests","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-19T05:06:24Z","n":6162,"r":"nammayatri/ny-react-native","s":"open","t":"fix(tip): move tip to post-ride only, hide from driver pre-ride, cap at 30%/Rs200","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T22:05:04Z","n":6146,"r":"nammayatri/ny-react-native","s":"open","t":"fix: Premium bus UX \u2014 remove test OTPs, fix direction fallback, ticket display","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T22:04:45Z","n":14007,"r":"nammayatri/nammayatri","s":"open","t":"fix: Premium bus reliability \u2014 booking safety, idempotency, refund & pass verification","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T21:12:10Z","n":14005,"r":"nammayatri/nammayatri","s":"open","t":"fix(pass): P1 fix status race conditions, add refund endpoint, 24h renewal grace period","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T21:01:06Z","n":6145,"r":"nammayatri/ny-react-native","s":"open","t":"fix(pass): P0 handle activation failure gracefully \u2014 prevent app lockout","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T21:00:51Z","n":14004,"r":"nammayatri/nammayatri","s":"open","t":"fix(pass): P0 add compensating transactions and auto-refund for pass purchases","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T21:00:48Z","n":14003,"r":"nammayatri/nammayatri","s":"merged","t":"fix(pass): P0 add structured error codes for pass activation failures","x":"2026-03-17T05:02:58Z"},{"c":"2026-03-16T21:00:32Z","n":14002,"r":"nammayatri/nammayatri","s":"open","t":"fix(pass): P0 add idempotency check and Redis lock to pass payment webhook","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T20:24:41Z","n":13999,"r":"nammayatri/nammayatri","s":"open","t":"fix: remove GHC warnings across backend codebase","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T18:52:41Z","n":1165,"r":"nammayatri/shared-kernel","s":"open","t":"fix: remove GHC warnings and improve code quality in shared-kernel","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T18:51:19Z","n":3,"r":"nammayatri/json-logic-hs","s":"open","t":"fix: remove GHC warnings in json-logic-hs","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T18:51:17Z","n":94,"r":"nammayatri/beckn-gateway","s":"open","t":"fix: remove GHC warnings in beckn-gateway","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:32:43Z","n":13988,"r":"nammayatri/nammayatri","s":"open","t":"fix(frfs): P0 payment atomicity, retry API, auto-refund, QR simplification, CMRL retry","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:32:06Z","n":13987,"r":"nammayatri/nammayatri","s":"open","t":"fix(frfs): P0 Chennai depots, circuit breaker, alert thresholds, bus pass cloud backup","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:32:03Z","n":13986,"r":"nammayatri/nammayatri","s":"open","t":"fix(frfs): P1 partial-leg multimodal, fare calculation, CMRL v2 stability","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:30:40Z","n":6140,"r":"nammayatri/ny-react-native","s":"open","t":"fix(gps): P0 remove hardcoded fallback, increase proximity radius, reduce displacement filter","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:30:40Z","n":6139,"r":"nammayatri/ny-react-native","s":"open","t":"fix(a11y): P1 screen reader support, wheelchair-accessible bus filter, WCAG AA contrast","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:30:36Z","n":6138,"r":"nammayatri/ny-react-native","s":"open","t":"fix(qr): P0 QR payload compression, dark mode fix, error correction, direction confirmation","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:30:28Z","n":6137,"r":"nammayatri/ny-react-native","s":"open","t":"fix(ios): P1 FCM notifications, null crash guards, dark mode QR","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T10:30:05Z","n":6136,"r":"nammayatri/ny-react-native","s":"open","t":"fix(payment): P0 payment SDK warmup, polling timeout, double-process guard, SDK lifecycle","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:56Z","n":12,"r":"nammayatri/shared-kernel-rs","s":"open","t":"perf: optimize shared-kernel-rs utilities","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:53Z","n":80,"r":"nammayatri/gtfs-inmemory-server-rust","s":"open","t":"perf: optimize GTFS server data structures and caching","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:51Z","n":212,"r":"nammayatri/location-tracking-service","s":"open","t":"perf: optimize location tracking service","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:28Z","n":13979,"r":"nammayatri/nammayatri","s":"open","t":"[8/8] perf: N+1 elimination, I/O parallelization, error handling, metrics","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:26Z","n":13978,"r":"nammayatri/nammayatri","s":"open","t":"[7/8] fix: Kafka consumers graceful shutdown & error handling","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:10:24Z","n":13977,"r":"nammayatri/nammayatri","s":"open","t":"[6/8] feat: circuit breaker & retry for Beckn API resilience","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:09:44Z","n":13976,"r":"nammayatri/nammayatri","s":"open","t":"[5/8] test: unit tests for booking, fare calculation, allocation","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:09:42Z","n":13975,"r":"nammayatri/nammayatri","s":"open","t":"[4/8] ops: connection pool alerts & Kafka topic documentation","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:09:40Z","n":13974,"r":"nammayatri/nammayatri","s":"open","t":"[3/8] perf: Redis caching for Geometry, BusinessHour, ServiceCategory","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:09:18Z","n":13973,"r":"nammayatri/nammayatri","s":"open","t":"[2/8] perf: critical-path database indices & payment idempotency","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-16T00:09:16Z","n":13972,"r":"nammayatri/nammayatri","s":"open","t":"[1/8] docs: reliability audit reports & incident playbooks","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-09T20:54:34Z","n":6090,"r":"nammayatri/ny-react-native","s":"open","t":"consumer: fix: replace cut NammaYatri live activity logo with full SVG icon","x":"0001-01-01T00:00:00Z"},{"c":"2026-03-02T03:29:47Z","n":277,"r":"nammayatri/control-center","s":"merged","t":"fix: consolidate dashboard analytics fixes + 10min granularity","x":"2026-03-16T13:09:09Z"},{"c":"2026-03-02T03:11:17Z","n":276,"r":"nammayatri/control-center","s":"merged","t":"Fix: Segment tabs not visible in light mode","x":"2026-03-02T19:33:06Z"},{"c":"2026-03-02T03:04:03Z","n":275,"r":"nammayatri/control-center","s":"closed","t":"Fix: Ensure label column is visible in mobile SummaryTable view","x":"2026-03-02T03:09:25Z"},{"c":"2026-02-26T19:03:26Z","n":265,"r":"nammayatri/control-center","s":"merged","t":"feat: ride analytics - secondary comparisons, PT page rewrite & metric card enhancements","x":"2026-02-27T13:23:22Z"},{"c":"2026-02-24T06:26:47Z","n":241,"r":"nammayatri/control-center","s":"merged","t":"feat: auto-refresh for analytics dashboards with date picker & filter fixes","x":"2026-02-25T10:45:48Z"},{"c":"2026-02-23T16:04:56Z","n":238,"r":"nammayatri/control-center","s":"merged","t":"feat: revamp ride analytics dashboard with Others bucketing & PT unification","x":"2026-02-26T14:24:15Z"},{"c":"2026-02-21T05:06:02Z","n":13731,"r":"nammayatri/nammayatri","s":"merged","t":"backend/refactor: Replace verbose Maybe patterns with idiomatic Haskell","x":"2026-02-21T05:06:49Z"},{"c":"2026-02-20T10:46:50Z","n":221,"r":"nammayatri/control-center","s":"open","t":"Claude/anomaly ai summary mn8 i6","x":"0001-01-01T00:00:00Z"},{"c":"2026-02-20T09:50:17Z","n":220,"r":"nammayatri/control-center","s":"merged","t":"fix(anomaly): replace absolute-impact ranking with concentration-base\u2026","x":"2026-02-20T09:50:31Z"},{"c":"2026-02-20T03:49:07Z","n":216,"r":"nammayatri/control-center","s":"merged","t":"feat(analytics): Analytics dashboard improvements and bug fixes","x":"2026-02-20T03:49:57Z"},{"c":"2026-02-20T03:46:19Z","n":215,"r":"nammayatri/control-center","s":"merged","t":"feat(analytics): Analytics dashboard improvements and bug fixes","x":"2026-02-20T03:47:22Z"},{"c":"2026-02-13T12:42:34Z","n":168,"r":"nammayatri/control-center","s":"open","t":"docs: add Ask AI / Ask Bob architecture overview and improvement recommendations","x":"0001-01-01T00:00:00Z"},{"c":"2026-02-06T09:15:05Z","n":134,"r":"nammayatri/control-center","s":"merged","t":"feat(analytics): Analytics dashboard improvements and bug fixes","x":"2026-02-07T10:46:11Z"},{"c":"2026-02-04T13:42:14Z","n":125,"r":"nammayatri/control-center","s":"merged","t":"feat(access): add select all options for merchant and city access","x":"2026-02-05T03:56:05Z"},{"c":"2026-02-04T07:45:11Z","n":124,"r":"nammayatri/control-center","s":"merged","t":"fix(geometries): exclude AnyCity and * from overlap checks","x":"2026-02-04T07:46:52Z"},{"c":"2026-02-04T01:25:15Z","n":123,"r":"nammayatri/control-center","s":"merged","t":"feat: Add conversion funnel ETL","x":"2026-02-12T07:48:51Z"},{"c":"2026-02-03T11:05:31Z","n":120,"r":"nammayatri/control-center","s":"merged","t":"feat(analytics): add tooltip showing full number on KPI card hover","x":"2026-02-03T11:48:01Z"},{"c":"2026-02-02T15:04:06Z","n":117,"r":"nammayatri/control-center","s":"merged","t":"fix(receipt): improve readability of taxi booth booking receipt","x":"2026-02-02T15:15:46Z"},{"c":"2026-01-23T21:30:12Z","n":100,"r":"nammayatri/control-center","s":"closed","t":"fix: resolve UTC/IST timezone mismatch in Executive Metrics dashboard","x":"2026-01-27T15:43:40Z"}];
+    allPRs = PR_DATA.map(p => ({
+      number: p.n,
+      title: p.t,
+      state: p.s === 'merged' ? 'closed' : p.s,
+      created_at: p.c,
+      html_url: 'https://github.com/' + p.r + '/pull/' + p.n,
+      repository_url: 'https://api.github.com/repos/' + p.r,
+      pull_request: { merged_at: p.s === 'merged' ? p.x : null }
+    }));
+
+    const merged = allPRs.filter(p => p.pull_request && p.pull_request.merged_at).length;
+    const open = allPRs.filter(p => p.state === 'open').length;
+    const closed = allPRs.filter(p => p.state === 'closed' && !(p.pull_request && p.pull_request.merged_at)).length;
+
+    document.getElementById('pr-summary').innerHTML = `
+      <div class="pr-summary-card"><div class="num" style="color:var(--text-primary)">${allPRs.length}</div><div class="lbl">Total PRs</div></div>
+      <div class="pr-summary-card"><div class="num" style="color:var(--accent-green)">${merged}</div><div class="lbl">Merged</div></div>
+      <div class="pr-summary-card"><div class="num" style="color:var(--accent-blue)">${open}</div><div class="lbl">Open</div></div>
+      <div class="pr-summary-card"><div class="num" style="color:var(--accent-red)">${closed}</div><div class="lbl">Closed</div></div>
+    `;
+
+    renderAll();
+  } catch (e) {
+    document.getElementById('pr-container').innerHTML = '<div class="pr-loading">Failed to fetch PRs. GitHub API may be rate-limited. Try refreshing.</div>';
+  }
+}
+
+fetchPRs();
+</script>
+</body>
+</html>
