@@ -313,6 +313,8 @@
   }
   .lb-plan-tag.max5 { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
   .lb-plan-tag.max20 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .lb-plan-tag.pro { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+  .lb-plan-tag.free { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
   .lb-outdated-tag {
     font-size: 0.5rem; font-weight: 600; padding: 1px 5px; border-radius: 3px;
     background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);
@@ -1136,14 +1138,21 @@
   }
 
   /**
-   * Normalize usage relative to one Max 20x plan (the base).
-   * Returns a multiplier: 1.0x = 100% of one Max 20x plan.
+   * Normalize usage relative to one Max 20x plan ($200, the base).
+   * Returns a divisor: higher = smaller plan relative to Max 20x.
    *
-   * Max 5x = 1/4 capacity of Max 20x → normFactor = 4.
-   * Display: "0.25x" for Max 5x at 100%, "1.0x" for Max 20x at 100%.
+   * Max 20x ($200) = baseline   → normFactor = 1   (100% = 1.0x)
+   * Max 5x  ($100) = 1/4 cap   → normFactor = 4   (100% = 0.25x)
+   * Pro     ($20)  = 1/20 cap  → normFactor = 20  (100% = 0.05x)
+   * Free    ($0)   = 1/20 cap  → normFactor = 20  (100% = 0.05x)
    */
   function planNormFactor(u) {
-    return u.planType === 'max5' ? 4 : 1;
+    switch (u.planType) {
+      case 'max5': return 4;
+      case 'pro':  return 20;
+      case 'free': return 20;
+      default:     return 1; // max20 or unset
+    }
   }
 
   /** Returns effective usage as a percentage (for internal sorting/ranking) */
@@ -1187,7 +1196,7 @@
           <div class="lb-name">${fire}${escHtml(u.name)}</div>
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
-            ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
+            ${u.planType ? `<span class="lb-plan-tag ${escAttr(u.planType)}">${({'max5':'M5','max20':'M20','pro':'PRO','free':'FREE'})[u.planType] || escHtml(u.planType)}</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
             <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
             ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
@@ -1208,9 +1217,8 @@
 
   function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sparkKey = pctKey === 'sessionPct' ? 'sessionSparkline' : 'weeklySparkline';
-    // Exclude Pro/Free plans — leaderboard is for Max plan GPU utilization only
-    const maxUsers = users.filter(u => !u.planType || u.planType.startsWith('max'));
-    const sorted = [...maxUsers].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
+    // Include all plan types — usage is normalized relative to Max 20x ($200)
+    const sorted = [...users].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
 
     let filtered = sorted;
     if (currentTab === 'ny') filtered = sorted.filter(u => u.team === 'NY');

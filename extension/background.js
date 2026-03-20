@@ -261,6 +261,9 @@ async function detectPlanType() {
         if (match2) return `max${parseInt(match2[1])}`;
         // Match "Max plan" without multiplier
         if (text.match(/Max\s+plan/i)) return 'max20';
+        // Match Pro or Free plans
+        if (/\bPro\s+plan\b/i.test(text)) return 'pro';
+        if (/\bFree\s+plan\b/i.test(text)) return 'free';
         return null;
       },
     });
