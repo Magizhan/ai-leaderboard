@@ -108,9 +108,16 @@ async function scrapeAndSync() {
   // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
   if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
-  // Detect plan type (Max 5x, Max 20x, etc.)
-  const planMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
-  const planType = planMatch ? `max${planMatch[2] ? parseInt(planMatch[2]) : 20}` : null;
+  // Detect plan type (Max 5x, Max 20x, Pro, Free, etc.)
+  let planType = null;
+  const maxMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
+  if (maxMatch) {
+    planType = `max${maxMatch[2] ? parseInt(maxMatch[2]) : 20}`;
+  } else if (/\bPro\b/i.test(bodyText) && /usage/i.test(bodyText)) {
+    planType = 'pro';
+  } else if (/\bFree\b/i.test(bodyText) && /usage/i.test(bodyText)) {
+    planType = 'free';
+  }
 
   // Get saved team preference (default to NY)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
