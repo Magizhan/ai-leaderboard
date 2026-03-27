@@ -656,8 +656,9 @@ async function logUsage(body, env) {
   const combinedSessionPct = plan.sessionPct || 0;
   // weeklyPct = sum of all plans' weekly
   const combinedWeeklyPct = plans.reduce((sum, p) => sum + (p.weeklyPct || 0), 0);
-  // totalExtraUsageSpent = sum of all plans
-  const totalExtraUsageSpent = plans.reduce((sum, p) => sum + (p.extraUsageSpent || 0), 0);
+  // totalExtraUsageSpent = max across plans (extra is per-account, not per-plan —
+  // same $549 gets written to whichever plan is active during sync, so take max not sum)
+  const totalExtraUsageSpent = Math.max(...plans.map(p => p.extraUsageSpent || 0), 0);
 
   // --- Infer reset times (from active plan) ---
   let sessionResetSource = existing.sessionResetSource || null;
