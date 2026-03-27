@@ -1,1 +1,7 @@
 node_modules/
+.wrangler/
+logs/
+export/
+*.zip
+.DS_Store
+tasks-*.json
