@@ -1496,7 +1496,7 @@
       timeHtml = `<span class="urgency">${daysLeft > 0 ? daysLeft + 'd ' : ''}${hrsLeft}h left this week</span>`;
     }
 
-    const inrRate = 85;
+    const inrRate = 94.24;
     const lostPct = me.lostPct || 0;
     const oppPct = me.opportunityPct || 0;
     const lostDollars = Math.round((lostPct / 100) * budget);
@@ -1545,7 +1545,7 @@
     }
 
     // Utilisation Gauge
-    const INR_RATE = 94.7;
+    const INR_RATE = 94.24;
     const fmtINR = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
     const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
     const budgetUSD = data.users.reduce((s, u) => s + (u.budget || 0), 0);
@@ -2108,6 +2108,27 @@
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
         ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
         ${user.extraUsageLimit ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">$${user.extraUsageLimit}</div><div class="detail-stat-label">Spend Limit</div></div>` : ''}
+      </div>
+    </div>`;
+
+    // Financial summary
+    const _R = 94.24;
+    const _fI = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
+    const _bgt = user.budget || 0;
+    const _bPct = user.baseWeeklyPct || 0;
+    const _bUtil = Math.round((_bPct / 100) * _bgt);
+    const _ext = user.extraUsageSpent || 0;
+    const _lPct = user.lostPct || 0;
+    const _oPct = user.opportunityPct || 0;
+    const _lDol = Math.round((_lPct / 100) * _bgt);
+    const _oDol = Math.round((_oPct / 100) * _bgt);
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Financials</div>
+      <div class="detail-stats-grid">
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${_fI(_bUtil * _R)}</div><div class="detail-stat-label">Utilized (of ${_fI(_bgt * _R)})</div></div>
+        ${_ext > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${_fI(_ext * _R)}</div><div class="detail-stat-label">Extra Usage</div></div>` : ''}
+        ${_lDol > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:#ef4444">${_fI(_lDol * _R)}</div><div class="detail-stat-label">Lost Forever (${user.completedWeeks || 0} wk)</div></div>` : ''}
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${_fI(_oDol * _R)}</div><div class="detail-stat-label">Still Achievable</div></div>
       </div>
     </div>`;
 
