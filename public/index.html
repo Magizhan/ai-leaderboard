@@ -1492,9 +1492,11 @@
       timeHtml = `<span class="urgency">${daysLeft > 0 ? daysLeft + 'd ' : ''}${hrsLeft}h left this week</span>`;
     }
 
+    const inrRate = 85;
     const financialHtml = `<div class="my-status-financial">
-      <span class="spent">$${baseUtilized} / $${budget} plan</span>
-      ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+$${Math.round(extraSpent)} extra</span>` : ''}
+      <span class="spent">\u20B9${(baseUtilized * inrRate).toLocaleString('en-IN')} / \u20B9${(budget * inrRate).toLocaleString('en-IN')}</span>
+      <span style="color:var(--text-dim);font-size:0.65rem">($${baseUtilized}/$${budget})</span>
+      ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+\u20B9${Math.round(extraSpent * inrRate).toLocaleString('en-IN')} extra</span>` : ''}
       ${timeHtml}
     </div>`;
 
