@@ -940,11 +940,19 @@ async function getLeaderboardData(env) {
     // Lost = capacity from completed weeks that can never be recovered
     // e.g., week peaked at 94% of 100% capacity → lost 6% that week
     const completedWeeks = completedWeekPeaks.length;
-    const lostPct = completedWeekPeaks.reduce((s, peak) => s + Math.max(0, maxWeeklyCapacity - peak), 0) / 4;
-    // Opportunity = capacity still achievable (current week remainder + future weeks)
-    const futureWeeks = Math.max(0, 4 - completedWeeks - 1); // -1 for current week
+    // lostPct/opportunityPct = % of total budget (frontend does lostPct/100 * budget = dollars)
+    // Mags: 2 plans, maxCap=200%, peaked 166%, unused=34%, planCost=$200
+    //   unusedDollars = (34/100)*200 = $68, lostPct = (68/400)*100 = 17%
+    //   frontend: 17/100 * $400 = $68 → ₹6,440 ✓
+    const perPlanCost = planTypeCost(activePlanType);
+    const lostPct = completedWeekPeaks.reduce((s, peak) => {
+      const unusedDollars = (Math.max(0, maxWeeklyCapacity - peak) / 100) * perPlanCost;
+      return s + (budget > 0 ? (unusedDollars / budget) * 100 : 0);
+    }, 0);
+    const futureWeeks = Math.max(0, 4 - completedWeeks - 1);
     const currentWeekRemaining = Math.max(0, maxWeeklyCapacity - currentWeekValue);
-    const opportunityPct = (currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 4;
+    const oppDollars = ((currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 100) * perPlanCost;
+    const opportunityPct = budget > 0 ? (oppDollars / budget) * 100 : 0;
 
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
