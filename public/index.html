@@ -1585,23 +1585,14 @@
     document.getElementById('gaugeUsers').textContent = sessionsActive + ' active / ' + stats.totalUsers + ' users';
     document.getElementById('gaugeAvg').textContent = fmtMultiplier(stats.avgWeeklyPct || 0);
 
-    // Max possible gauge
-    let remainingPotentialUSD = 0;
-    data.users.forEach(u => {
-      const planCost = 200;
-      const scale = (u.planType === 'max5') ? 0.25 : 1.0;
-      const currentMult = (u.weeklyPct || 0) / 100;
-      const maxCapacity = 4 * scale * (u.numPlans || 1);
-      const remaining = Math.max(0, maxCapacity - currentMult);
-      remainingPotentialUSD += remaining * planCost;
-    });
-    const maxPossiblePct = budgetUSD > 0 ? Math.round(((utilisedUSD + remainingPotentialUSD) / budgetUSD) * 100) : 0;
-    document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 150) + '%';
-    document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
-
-    // Lost & opportunity (overall)
+    // Overall lost & achievable (base usage only, no extra)
     const totalLostUSD = data.users.reduce((s, u) => s + ((u.lostPct || 0) / 100) * (u.budget || 0), 0);
     const totalOppUSD = data.users.reduce((s, u) => s + ((u.opportunityPct || 0) / 100) * (u.budget || 0), 0);
+
+    // Max possible = budget - lost (can't recover lost weeks)
+    const maxPossiblePct = budgetUSD > 0 ? Math.round(((budgetUSD - totalLostUSD) / budgetUSD) * 100) : 0;
+    document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 100) + '%';
+    document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
     const lostEl = document.getElementById('gaugeLost');
     if (lostEl) {
       if (totalLostUSD > 0) {
