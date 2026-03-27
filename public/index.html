@@ -1551,10 +1551,10 @@
     const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
     const budgetUSD = data.users.reduce((s, u) => s + (u.budget || 0), 0);
     // Utilised = each user's monthly multiplier × their plan cost + extra usage
+    // Overall utilised = base usage only (no extra usage — we advise additional plans instead)
     const utilisedUSD = data.users.reduce((s, u) => {
-      const userMult = (u.weeklyPct || 0) / 100;
-      const userPlanCost = (u.budget || 200) / (u.numPlans || 1); // per-plan cost
-      return s + (userMult * userPlanCost) + (u.extraUsageSpent || 0);
+      const basePct = u.baseWeeklyPct || 0;
+      return s + (basePct / 100) * (u.budget || 0);
     }, 0);
     const pct = budgetUSD > 0 ? Math.round((utilisedUSD / budgetUSD) * 100) : 0;
     const sessionsActive = data.users.filter(u => (u.sessionPct || 0) > 0).length;

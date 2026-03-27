@@ -956,7 +956,7 @@ async function getLeaderboardData(env) {
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
 
-    // Extra usage contribution: (extraSpent / (planCost * 4)) * 100
+    // Extra usage adds to multiplier (for ranking) but NOT to overall budget math
     if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
       const extraSpent = usage.totalExtraUsageSpent || usage.extraUsageSpent || 0;
       displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
