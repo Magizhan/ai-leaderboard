@@ -854,6 +854,15 @@
     </div>
   </div>
 
+  <!-- Team tabs right after battle summary -->
+  <div class="tabs" id="teamTabs" style="margin-top:16px;">
+    <button class="tab active" onclick="setTab('ny',this)">NY</button>
+    <button class="tab" onclick="setTab('nc',this)">NC</button>
+    <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
+    <button class="tab" onclick="setTab('hs',this)">HS</button>
+    <button class="tab" onclick="setTab('jp',this)">JP</button>
+  </div>
+
   <div class="team-metrics" id="teamMetrics" style="margin:16px 0;">
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
       <div class="stat-card"><div class="stat-value green" id="teamMetricUtil">0x</div><div class="stat-label">Team Avg</div></div>
@@ -868,14 +877,7 @@
   </div>
 
   <!-- Team-filtered leaderboard -->
-  <div style="margin-top:24px;">
-    <div class="tabs" id="teamTabs">
-      <button class="tab active" onclick="setTab('ny',this)">NY</button>
-      <button class="tab" onclick="setTab('nc',this)">NC</button>
-      <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
-      <button class="tab" onclick="setTab('hs',this)">HS</button>
-      <button class="tab" onclick="setTab('jp',this)">JP</button>
-    </div>
+  <div style="margin-top:12px;">
     <div class="lb-dual">
       <div class="lb-section">
         <h3 class="lb-section-title">Current Session</h3>
