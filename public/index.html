@@ -860,6 +860,11 @@
       <div class="stat-card"><div class="stat-value blue" id="teamMetricMembers">0</div><div class="stat-label">Members</div></div>
       <div class="stat-card"><div class="stat-value orange" id="teamMetricBudget">$0</div><div class="stat-label">Team Budget</div></div>
     </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;">
+      <div class="stat-card"><div class="stat-value green" id="teamMetricUtilized">₹0</div><div class="stat-label">Utilized</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:#ef4444" id="teamMetricLost">₹0</div><div class="stat-label">Lost Forever</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--accent-cyan)" id="teamMetricAchievable">₹0</div><div class="stat-label">Still Achievable</div></div>
+    </div>
   </div>
 
   <!-- Team-filtered leaderboard -->
@@ -1870,9 +1875,18 @@
       const td = cachedData.teams[teamKey] || {};
       const teamUsers = cachedData.users.filter(u => u.team === teamKey);
       document.getElementById('teamMetricUtil').textContent = fmtMultiplier(td.avgWeeklyPct || 0);
-      document.getElementById('teamMetricMembers').textContent = td.members || 0;
+      document.getElementById('teamMetricMembers').textContent = (td.activeMembers || 0) + ' active / ' + (td.members || 0);
       const tBudget = teamUsers.reduce((s,u) => s + (u.budget || 200), 0);
       document.getElementById('teamMetricBudget').textContent = '$' + tBudget.toLocaleString();
+      // Team financials
+      const _R = 94.24;
+      const _fI = (v) => '\u20B9' + Math.round(v).toLocaleString('en-IN');
+      const tUtilized = teamUsers.reduce((s,u) => s + ((u.baseWeeklyPct || 0) / 100) * (u.budget || 0), 0);
+      const tLost = teamUsers.reduce((s,u) => s + ((u.lostPct || 0) / 100) * (u.budget || 0), 0);
+      const tAchievable = Math.max(0, tBudget - tUtilized - tLost);
+      document.getElementById('teamMetricUtilized').textContent = _fI(tUtilized * _R);
+      document.getElementById('teamMetricLost').textContent = _fI(tLost * _R);
+      document.getElementById('teamMetricAchievable').textContent = _fI(tAchievable * _R);
       document.getElementById('teamMetrics').style.display = '';
     }
   }
