@@ -105,6 +105,7 @@
   .gauge-sub { font-size: 0.72rem; color: rgba(255,255,255,0.45); display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .gauge-dot { opacity: 0.3; }
   .gauge-beyond { color: rgba(168,85,247,0.6); cursor: help; font-style: italic; }
+  .billing-countdown { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-align: center; margin-top: 6px; }
 
   /* Stats (legacy) */
   .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
@@ -355,6 +356,7 @@
     cursor: help;
   }
 
+  .lb-streak { font-size: 0.65rem; color: #ff6b35; font-weight: 700; margin-left: 4px; }
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
   .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
@@ -456,6 +458,15 @@
   .refresh-bar { display: none; }
 
   .confetti-piece { position: fixed; z-index: 3000; pointer-events: none; }
+
+  .milestone-toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-card); border: 1px solid var(--accent-purple);
+    color: var(--text-primary); padding: 10px 24px; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 700; z-index: 2500;
+    animation: toastIn 0.4s ease, toastOut 0.4s ease 2.5s forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); pointer-events: none;
+  }
 
   .last-updated { text-align: center; color: var(--text-dim); font-size: 0.7rem; margin-top: 24px; padding-bottom: 40px; }
 
@@ -767,6 +778,7 @@
       <span class="gauge-dot">·</span>
       <span>Max possible: <span id="gaugeMaxPossible">0%</span></span>
     </div>
+    <div class="billing-countdown" id="billingCountdown"></div>
   </div>
 
   <!-- My Status Card -->
@@ -1359,7 +1371,7 @@
             ${u.planType ? `<span class="lb-plan-tag ${escAttr(u.planType)}">${({'max5':'M5','max20':'M20','pro':'PRO','free':'FREE'})[u.planType] || escHtml(u.planType)}</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && !u.planType && u.source !== 'extension' ? `<span class="lb-outdated-tag" title="Plan type unknown. Install/update extension to detect automatically." style="background:rgba(255,159,28,0.15);color:#ff9f1c;">sync</span>` : ''}
-            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>${nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : ''}
+            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>${u.streak > 0 ? `<span class="lb-streak" title="${u.streak}-day streak">\u{1f525}${u.streak}</span>` : ''}${nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : ''}
             ${ago ? `<span class="lb-updated">${ago}</span>` : ''}${isStale ? `<span class="lb-stale-tag ${isInactive ? 'stale-72h' : 'stale-24h'}">${isInactive ? 'INACTIVE' : 'STALE'}</span>` : ''}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
@@ -1590,6 +1602,22 @@
     const maxPossiblePct = budgetUSD > 0 ? Math.round(((utilisedUSD + remainingPotentialUSD) / budgetUSD) * 100) : 0;
     document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 150) + '%';
     document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
+
+    // Billing countdown — find soonest weekly reset
+    const countdownEl = document.getElementById('billingCountdown');
+    const soonestReset = data.users
+      .filter(u => u.weeklyResetsAt)
+      .map(u => new Date(u.weeklyResetsAt).getTime())
+      .filter(t => t > Date.now())
+      .sort((a, b) => a - b)[0];
+    if (soonestReset) {
+      const diff = soonestReset - Date.now();
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      countdownEl.textContent = 'Weekly reset in ' + days + ' day' + (days !== 1 ? 's' : '') + ' ' + hours + ' hour' + (hours !== 1 ? 's' : '');
+    } else {
+      countdownEl.textContent = '';
+    }
 
     // Teams - use weekly for team battle (or could use session)
     const teamNames = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
