@@ -49,6 +49,23 @@ ul.bl li.r:before{background:var(--r)}ul.bl li.g:before{background:var(--g)}ul.b
 .sm{font-size:12px}.dm{color:var(--td)}.bd{font-weight:700}.ct{text-align:center}
 .q{font-size:22px;font-weight:300;font-style:italic;line-height:1.5;padding:20px;border-left:3px solid var(--a);max-width:650px}
 .fl1{flex:1}
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
 </style>
 </head>
 <body>

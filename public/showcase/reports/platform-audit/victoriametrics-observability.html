@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VictoriaMetrics & Observability — Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 220px; font-size: 14px; text-align: right; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; min-width: 40px; transition: width 0.8s ease; }
+  .bar-fill.green { background: linear-gradient(90deg, var(--ny-green), #1fa845); }
+  .bar-fill.red { background: linear-gradient(90deg, var(--p0), #d63a5e); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--ny-orange), #e88c14); }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--ny-blue), #3451cc); }
+
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .quote-green {
+    background: rgba(45,198,83,0.08);
+    border-left: 3px solid var(--ny-green);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+
+  .slide-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+  .slide-title h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, #fff 0%, var(--ny-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .grade { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 14px; }
+  .grade-a { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .grade-b { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+  .grade-c { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .grade-f { background: rgba(239,71,111,0.2); color: var(--p0); }
+
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 14px; }
+  .text-muted { color: rgba(255,255,255,0.5); }
+  .fw-700 { font-weight: 700; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  .back-link {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 200;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: rgba(255,255,255,0.8); }
+
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+<a href="/showcase/mags.html" class="back-link">&larr; Back to Showcase</a>
+<div class="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title active">
+  <div class="tag tag-green mb-16">Platform Audit &middot; March 2026</div>
+  <h1>VictoriaMetrics &amp;<br>Observability Deep Dive</h1>
+  <p class="subtitle">10.1M time series. 753 scrape targets. 102 nodes. One cardinality explosion ruling them all.</p>
+  <div class="grid-4" style="margin-top:48px; width:100%;">
+    <div class="stat">
+      <div class="stat-value">10.1M</div>
+      <div class="stat-label">Active Time Series</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value red">86%</div>
+      <div class="stat-label">From One Service (ETA)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value orange">30</div>
+      <div class="stat-label">Targets Down (of 753)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value blue">2,095</div>
+      <div class="stat-label">Unique Metrics</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: VM Architecture -->
+<div class="slide">
+  <div class="tag tag-blue mb-16">Architecture</div>
+  <h2>VictoriaMetrics Cluster Architecture</h2>
+  <p class="subtitle" style="margin-bottom:24px;">Clustered deployment on AWS EKS (ap-south-1) with 102 nodes across 35 namespaces</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Cluster Components</h3>
+      <table>
+        <thead><tr><th>Component</th><th>Replicas</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">vmstorage</td><td>7</td><td>Time series storage (86.2 GB RAM)</td></tr>
+          <tr><td style="font-weight:600;">vmselect</td><td>6</td><td>Query processing</td></tr>
+          <tr><td style="font-weight:600;">vminsert</td><td>4</td><td>Ingestion routing</td></tr>
+          <tr><td style="font-weight:600;">vmagent</td><td>4</td><td>Scrape &amp; remote-write (zone-a only)</td></tr>
+          <tr><td style="font-weight:600;">vmalert</td><td>1</td><td style="color:var(--ny-orange);">Alerting (proxy not configured)</td></tr>
+          <tr><td style="font-weight:600;">vmalertmanager</td><td>1</td><td>Alert routing</td></tr>
+        </tbody>
+      </table>
+
+      <div class="quote" style="margin-top:16px;">
+        Single-zone vmagent (zone-a only) means an AZ failure causes total monitoring blackout. No redundancy.
+      </div>
+    </div>
+
+    <div>
+      <h3>Scale Summary</h3>
+      <div class="card mb-16" style="padding:20px;">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Active time series</span><span class="fw-700">10,131,710</span></div>
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Label-value pairs</span><span class="fw-700">128,540,428</span></div>
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Unique metric names</span><span class="fw-700">2,095</span></div>
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Scrape targets</span><span class="fw-700">753</span></div>
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Target health</span><span class="fw-700" style="color:var(--ny-orange);">96.0% (30 down)</span></div>
+          <div style="display:flex; justify-content:space-between;"><span class="text-muted">Prometheus instance</span><span class="fw-700">monitoring/vm-zone-a</span></div>
+        </div>
+      </div>
+
+      <h3>Data Flow</h3>
+      <div class="card" style="padding:16px; font-size:13px; font-family:monospace; line-height:1.8; color:rgba(255,255,255,0.7);">
+        Targets (753) &rarr; vmagent (4) &rarr; vminsert (4)<br>
+        &nbsp;&nbsp;&rarr; vmstorage (7, 86.2 GB RAM)<br>
+        &nbsp;&nbsp;&rarr; vmselect (6) &rarr; Grafana<br>
+        &nbsp;&nbsp;&rarr; vmalert (1) &rarr; vmalertmanager (1)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Current Metrics Landscape -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">Metrics Landscape</div>
+  <h2>What's Being Tracked &mdash; and the Cardinality Crisis</h2>
+  <p class="subtitle" style="margin-bottom:16px;">ETA Compute alone generates 8.7M of 10.1M total series (86%)</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Top Metrics by Series Count</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>eta_calc_duration_bucket</code></div>
+          <div class="bar-track"><div class="bar-fill red" style="width:100%;">4.96M (49%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>eta_prediction_error_bucket</code></div>
+          <div class="bar-track"><div class="bar-fill red" style="width:40%;">2.0M (20%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>eta_calc_duration_sum</code></div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:8%;">405K (4%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>eta_prediction_bias</code></div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:5.5%;">277K (2.7%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>external_req_duration_bucket</code></div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:5.3%;">266K (2.6%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;"><code>gps_processing_bucket</code></div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:3.7%;">183K (1.8%)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:260px;">All other metrics (2,089)</div>
+          <div class="bar-track"><div class="bar-fill green" style="width:4%;">~400K (4%)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3>Root Cause: High-Cardinality Labels</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Label</th><th>Unique Values</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td><code>route_id</code></td><td style="color:var(--p0); font-weight:700;">2,861</td><td>8.3M series</td></tr>
+          <tr><td><code>num_stops</code></td><td style="color:var(--p0); font-weight:700;">~10</td><td>5.5M series</td></tr>
+          <tr><td><code>hour</code></td><td style="color:var(--ny-orange);">24</td><td>2.5M series</td></tr>
+          <tr><td><code>le</code> (histogram)</td><td>15-20</td><td>Multiplier on all above</td></tr>
+          <tr><td><code>pod</code></td><td>1,754</td><td>Per-pod cardinality</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card" style="margin-top:16px; padding:16px; border-left:4px solid var(--p0);">
+        <h3 style="color:var(--p0); font-size:16px; margin-bottom:8px;">Cardinality Formula</h3>
+        <p class="text-sm text-muted" style="font-family:monospace;">
+          route_id (2,861) x num_stops (~10) x hour (24) x le (~15) x pods (10) = 100M+ potential series
+        </p>
+        <p class="text-sm" style="color:var(--p0); margin-top:8px;">Queries hit the 5M series vmstorage search limit and fail.</p>
+      </div>
+
+      <div class="quote-green" style="margin-top:12px;">
+        Fix: Drop route_id + num_stops from histograms. Use recording rules for city-level aggregates. Reduces 10.1M to ~1.5M series.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Dashboard Gap Analysis -->
+<div class="slide">
+  <div class="tag tag-red mb-16">Gap Analysis</div>
+  <h2>Dashboard Gaps: What Exists vs. What's Needed</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Rich data collection, minimal visualization. 12 gaps identified across 8 categories.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--ny-green);">What Exists (Grafana)</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Dashboard</th><th>Source</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Live Conversion Funnel</td><td>ClickHouse</td><td><span class="grade grade-a">Active</span></td></tr>
+          <tr><td>Geographic Heatmap</td><td>ClickHouse</td><td><span class="grade grade-a">Active</span></td></tr>
+          <tr><td>Cancellation Monitor</td><td>ClickHouse</td><td><span class="grade grade-a">Active</span></td></tr>
+          <tr><td>Driver Matching Summary</td><td>ClickHouse</td><td><span class="grade grade-b">Aggregate only</span></td></tr>
+          <tr><td>Driver Supply</td><td>ClickHouse</td><td><span class="grade grade-b">No geo detail</span></td></tr>
+          <tr><td>GPS Server Dashboard</td><td>VM</td><td><span class="grade grade-f">Empty</span></td></tr>
+          <tr><td>GRPC/FCM Delivery</td><td>ClickHouse MV</td><td><span class="grade grade-c">No dashboard</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="color:var(--p0);">Critical Missing Dashboards</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Dashboard Needed</th><th>Priority</th><th>Data?</th></tr></thead>
+        <tbody>
+          <tr><td>ETA Accuracy</td><td><span class="priority priority-p0">P0</span></td><td>Needs recording rules</td></tr>
+          <tr><td>GPS Pipeline Health</td><td><span class="priority priority-p0">P1</span></td><td>50 metrics exist</td></tr>
+          <tr><td>Kafka Consumer Lag</td><td><span class="priority priority-p0">P1</span></td><td>Exporters down</td></tr>
+          <tr><td>Notification Delivery</td><td><span class="priority priority-p1">P1</span></td><td>Needs instrumentation</td></tr>
+          <tr><td>Deployment Comparison</td><td><span class="priority priority-p1">P1</span></td><td>JSON ready to import</td></tr>
+          <tr><td>Public Transport (FRFS)</td><td><span class="priority priority-p2">P2</span></td><td>Beckn metrics exist</td></tr>
+          <tr><td>App Health Monitor</td><td><span class="priority priority-p2">P2</span></td><td>Needs 5 new MVs</td></tr>
+          <tr><td>Cost Attribution</td><td><span class="priority priority-p2">P2</span></td><td>Kubecost deployed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-top:20px; flex:0;">
+    <div class="card" style="padding:16px; border-left:4px solid var(--p0);">
+      <h3 style="font-size:14px; color:var(--p0);">No Wait Time Visibility</h3>
+      <p class="text-sm text-muted">#1 cancellation reason (126K/week) but city teams can't see actual wait times &mdash; only complaints.</p>
+    </div>
+    <div class="card" style="padding:16px; border-left:4px solid var(--p0);">
+      <h3 style="font-size:14px; color:var(--p0);">No Search Funnel Diagnosis</h3>
+      <p class="text-sm text-muted">44% search-to-booking conversion. No visibility into WHERE the drop happens (no estimate? price? speed?).</p>
+    </div>
+    <div class="card" style="padding:16px; border-left:4px solid var(--p0);">
+      <h3 style="font-size:14px; color:var(--p0);">No Driver Cohort Analysis</h3>
+      <p class="text-sm text-muted">2.6% accept rate as city-wide aggregate only. Can't identify worst-performing driver segments.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: App Monitor Utilization -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">App Monitor</div>
+  <h2>app_monitor: Gold Mine Treated as Landfill</h2>
+  <p class="subtitle" style="margin-bottom:16px;">156M events/day collected, stored 8 days, deleted without analysis</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Scale of Unused Data</h3>
+      <div class="grid-2" style="gap:12px; margin-bottom:16px;">
+        <div class="card stat" style="padding:14px;">
+          <div class="stat-value" style="font-size:32px;">156M</div>
+          <div class="stat-label" style="font-size:11px;">Events/Day</div>
+        </div>
+        <div class="card stat" style="padding:14px;">
+          <div class="stat-value red" style="font-size:32px;">8 days</div>
+          <div class="stat-label" style="font-size:11px;">Then Deleted</div>
+        </div>
+        <div class="card stat" style="padding:14px;">
+          <div class="stat-value orange" style="font-size:32px;">82M</div>
+          <div class="stat-label" style="font-size:11px;">API Latency Records/Day</div>
+        </div>
+        <div class="card stat" style="padding:14px;">
+          <div class="stat-value blue" style="font-size:32px;">15</div>
+          <div class="stat-label" style="font-size:11px;">Apps Tracked</div>
+        </div>
+      </div>
+
+      <h3>Driver Ride Request Pipeline</h3>
+      <div class="card" style="padding:16px; font-size:12px; font-family:monospace; line-height:2; color:rgba(255,255,255,0.7);">
+        GRPC/FCM received &rarr; 8.7M/day<br>
+        App processes &rarr; 7.5M/day<br>
+        Request rendered &rarr; 8.3M/day<br>
+        Request shown &rarr; 2.4M/day<br>
+        <span style="color:var(--ny-green);">Accepted &rarr; 191K/day</span><br>
+        <span style="color:var(--p0);">Rejected &rarr; 1.2M/day</span><br>
+        <span style="color:var(--ny-orange);">Timed out &rarr; 2.4M/day</span>
+      </div>
+    </div>
+
+    <div>
+      <h3>7 High-Impact Use Cases</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>#</th><th>Use Case</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Driver request response pipeline</td><td style="color:var(--ny-green);">+0.3-0.5% accept rate</td></tr>
+          <tr><td>2</td><td>API latency &rarr; business correlation</td><td style="color:var(--ny-green);">Prevent 1-2% conversion drops</td></tr>
+          <tr><td>3</td><td>Rider journey instrumentation</td><td style="color:var(--ny-green);">+1-2% search-to-booking</td></tr>
+          <tr><td>4</td><td>Notification delivery effectiveness</td><td>GRPC vs FCM optimization</td></tr>
+          <tr><td>5</td><td>Driver lifecycle instrumentation</td><td>Churn signal detection</td></tr>
+          <tr><td>6</td><td>OTA update rollout monitoring</td><td>Catch bad versions in hours</td></tr>
+          <tr><td>7</td><td>Anti-fraud detection</td><td style="color:var(--p0);">22K auto-clicker detections/day</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card" style="margin-top:16px; padding:16px;">
+        <h3 style="font-size:14px;">Critical API Endpoints</h3>
+        <table style="font-size:11px;">
+          <thead><tr><th>Endpoint</th><th>Vol/day</th><th>P99</th></tr></thead>
+          <tbody>
+            <tr><td><code>/dobpp/ui/pickup/route</code></td><td>12.1M</td><td>2.4s</td></tr>
+            <tr><td><code>/driver/searchRequest/quote/respond</code></td><td>3.9M</td><td style="color:var(--p0);">5.9s</td></tr>
+            <tr><td><code>/v2/frontend/flowStatus</code></td><td>1.1M</td><td style="color:var(--p0);">20.3s</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="quote-green" style="margin-top:12px;">
+        Estimated impact: 10-15K incremental rides/week by activating this data with 5 materialized views.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: Observability Action Plan -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Action Plan</div>
+  <h2>Observability Roadmap: 24 Weeks to Full Visibility</h2>
+  <p class="subtitle" style="margin-bottom:16px;">4 phases, peak 5 engineers, 10 dashboards, 50+ alerts, distributed tracing</p>
+
+  <div class="grid-2">
+    <div>
+      <div class="card mb-16" style="border-left:4px solid var(--p0); padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; color:var(--p0);">Phase 0: Critical Fixes (Week 1-2)</h3>
+          <span class="priority priority-p0">UNBLOCK</span>
+        </div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:2;">
+          1. Fix ETA cardinality &mdash; 10.1M &rarr; 2.8M series (1 day)<br>
+          2. Restore 3/5 ClickHouse exporters (1 day)<br>
+          3. Fix all 4 Kafka JMX exporters (1 day)<br>
+          4. Configure vmalert proxy (2 hours)<br>
+          5. Deploy kafka_exporter (2 days)<br>
+          6. Investigate Anna app >265% failure rate (1 day)<br>
+          7. Investigate BAP 11.6% 4xx rate (1 day)
+        </div>
+      </div>
+
+      <div class="card mb-16" style="border-left:4px solid var(--ny-orange); padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; color:var(--ny-orange);">Phase 1: Core Dashboards (Week 3-5)</h3>
+          <span class="priority priority-p1">VISIBILITY</span>
+        </div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:2;">
+          GPS Pipeline Health (38 panels, metrics exist)<br>
+          Kafka Consumer Lag (7 rows)<br>
+          ETA Accuracy (9 panels via recording rules)<br>
+          Public Transport Reliability (6 rows)<br>
+          Deployment Version Comparison (JSON ready)<br>
+          Deploy 40+ alert rules (P0/P1)
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card mb-16" style="border-left:4px solid var(--ny-blue); padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; color:var(--ny-blue);">Phase 2: Instrumentation (Week 6-10)</h3>
+          <span class="priority priority-p2">DEPTH</span>
+        </div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:2;">
+          Instrument notification service (~490 new series)<br>
+          Create 5 app_monitor materialized views<br>
+          Build App Health Monitor dashboard (5 tabs)<br>
+          Multi-AZ vmagent deployment<br>
+          Enable MSK Open Monitoring<br>
+          Extend app_monitor retention to 90 days
+        </div>
+      </div>
+
+      <div class="card mb-16" style="border-left:4px solid var(--ny-gray); padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0;">Phase 3-4: Analytics + Tracing (Week 11-24)</h3>
+          <span class="tag tag-blue">STRATEGIC</span>
+        </div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:2;">
+          5 new ClickHouse aggregates (wait time, funnel, retention, economics, acceptance)<br>
+          City Command Centre + Conversion Doctor dashboards<br>
+          Deploy Grafana Tempo + OTel Collector<br>
+          Instrument Haskell + Rust services for tracing<br>
+          Cross-system causal analytics
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px; text-align:center;">
+        <div style="display:flex; justify-content:space-around;">
+          <div>
+            <div style="font-size:28px; font-weight:800; color:var(--ny-green);">10</div>
+            <div class="text-sm text-muted">New Dashboards</div>
+          </div>
+          <div>
+            <div style="font-size:28px; font-weight:800; color:var(--ny-orange);">50+</div>
+            <div class="text-sm text-muted">Alert Rules</div>
+          </div>
+          <div>
+            <div style="font-size:28px; font-weight:800; color:var(--ny-blue);">24</div>
+            <div class="text-sm text-muted">Weeks Total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Summary -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Summary</div>
+  <h2>Key Takeaways &amp; Expected Business Impact</h2>
+
+  <div class="grid-3" style="margin-bottom:24px;">
+    <div class="card stat" style="padding:20px;">
+      <div class="stat-value red" style="font-size:36px;">5</div>
+      <div class="stat-label">Critical Issues</div>
+    </div>
+    <div class="card stat" style="padding:20px;">
+      <div class="stat-value orange" style="font-size:36px;">8</div>
+      <div class="stat-label">Dashboard Gaps</div>
+    </div>
+    <div class="card stat" style="padding:20px;">
+      <div class="stat-value" style="font-size:36px;">156M</div>
+      <div class="stat-label">Events/Day Wasted</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--p0);">Fix Now (Week 1-2)</h3>
+      <div class="card" style="padding:20px;">
+        <table style="font-size:13px;">
+          <tbody>
+            <tr><td><span class="priority priority-p0">P0</span></td><td>ETA cardinality: 8.7M series from one service</td></tr>
+            <tr><td><span class="priority priority-p0">P0</span></td><td>3/5 ClickHouse nodes unmonitored</td></tr>
+            <tr><td><span class="priority priority-p0">P0</span></td><td>All 4 Kafka JMX exporters down</td></tr>
+            <tr><td><span class="priority priority-p0">P0</span></td><td>Anna app FRFS: >265% search failure rate</td></tr>
+            <tr><td><span class="priority priority-p1">P1</span></td><td>vmalert proxy not configured</td></tr>
+            <tr><td><span class="priority priority-p1">P1</span></td><td>Single-AZ vmagent (zone-a only)</td></tr>
+            <tr><td><span class="priority priority-p1">P1</span></td><td>BAP 11.6% 4xx error rate</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:var(--ny-green);">Expected Business Impact</h3>
+      <div class="card" style="padding:20px;">
+        <table style="font-size:13px;">
+          <thead><tr><th>Improvement</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td>Fix notification drops</td><td style="color:var(--ny-green);">+2K rides/day</td></tr>
+            <tr><td>API latency monitoring</td><td style="color:var(--ny-green);">~5K saved rides/week</td></tr>
+            <tr><td>Rider journey funnel</td><td style="color:var(--ny-green);">+8K bookings/week</td></tr>
+            <tr><td>Fraud detection action</td><td>Block 22K auto-clickers/day</td></tr>
+            <tr><td>FRFS search reliability</td><td>Restore Chennai public transport</td></tr>
+            <tr><td>Wait time visibility</td><td>Target #1 cancel reason (126K/wk)</td></tr>
+            <tr><td>ETA accuracy dashboard</td><td>Validate ETA across 20+ cities</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote-green" style="margin-top:16px;">
+    The data is extraordinarily rich &mdash; 50B+ ClickHouse rows, 10M+ time series, 156M app events/day. The gap is not data collection. It's data activation. The 24-week roadmap transforms raw telemetry into actionable city-team dashboards, proactive alerts, and end-to-end distributed tracing.
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prev()">&#8592; Prev</button>
+  <button onclick="next()">Next &#8594;</button>
+</div>
+<div class="slide-counter"><span id="current">1</span> / <span id="total">7</span></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('current').textContent = current + 1;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+</script>
+</body>
+</html>

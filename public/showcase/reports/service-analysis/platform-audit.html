@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NammaYatri Platform Audit</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.min.css">
+<style>
+  :root {
+    --ny-green: #00C853;
+    --ny-red: #FF1744;
+    --ny-amber: #FFD600;
+    --ny-blue: #448AFF;
+    --ny-purple: #AA00FF;
+    --bg-dark: #0a0a0a;
+  }
+  .reveal { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; text-transform: none; letter-spacing: -0.02em; }
+  .reveal h1 { font-size: 2.2em; }
+  .reveal h2 { font-size: 1.6em; }
+  .reveal h3 { font-size: 1.2em; color: var(--ny-green); }
+  .reveal p, .reveal li { font-size: 0.7em; line-height: 1.5; }
+  .reveal .small { font-size: 0.55em; opacity: 0.7; }
+  .reveal section { text-align: left; }
+
+  /* Big number callout */
+  .big-num { font-size: 4em; font-weight: 800; line-height: 1; margin: 0.1em 0; }
+  .big-num.red { color: var(--ny-red); }
+  .big-num.green { color: var(--ny-green); }
+  .big-num.amber { color: var(--ny-amber); }
+  .big-num.blue { color: var(--ny-blue); }
+  .big-num.purple { color: var(--ny-purple); }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8em; margin-top: 0.4em; }
+  .stat-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .stat-box { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.6em 0.8em; border-left: 4px solid var(--ny-green); }
+  .stat-box.red { border-left-color: var(--ny-red); }
+  .stat-box.amber { border-left-color: var(--ny-amber); }
+  .stat-box.blue { border-left-color: var(--ny-blue); }
+  .stat-box .stat-val { font-size: 1.8em; font-weight: 800; color: #fff; }
+  .stat-box.red .stat-val { color: var(--ny-red); }
+  .stat-box.amber .stat-val { color: var(--ny-amber); }
+  .stat-box.blue .stat-val { color: var(--ny-blue); }
+  .stat-box .stat-label { font-size: 0.6em; opacity: 0.7; margin-top: 0.2em; }
+
+  /* Issue cards */
+  .issue-card { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.35em 0.8em; margin: 0.25em 0; display: flex; align-items: center; gap: 0.6em; }
+  .issue-card .severity { font-size: 0.55em; font-weight: 700; padding: 0.15em 0.5em; border-radius: 4px; white-space: nowrap; }
+  .severity.p0 { background: var(--ny-red); color: #fff; }
+  .severity.p1 { background: var(--ny-amber); color: #000; }
+  .severity.p2 { background: var(--ny-blue); color: #fff; }
+  .issue-card .issue-text { font-size: 0.55em; }
+  .issue-card .issue-impact { font-size: 0.45em; opacity: 0.6; }
+
+  /* Progress bar */
+  .progress-bar { background: rgba(255,255,255,0.1); border-radius: 8px; height: 24px; overflow: hidden; margin: 0.3em 0; }
+  .progress-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 0.5em; font-weight: 700; }
+  .progress-fill.good { background: linear-gradient(90deg, var(--ny-green), #00E676); }
+  .progress-fill.bad { background: linear-gradient(90deg, var(--ny-red), #FF5252); }
+  .progress-fill.warn { background: linear-gradient(90deg, var(--ny-amber), #FFFF00); color: #000; }
+
+  /* Funnel */
+  .funnel { margin: 0.5em auto; max-width: 700px; }
+  .funnel-step { padding: 0.5em 1em; margin: 0.15em auto; border-radius: 8px; text-align: center; font-size: 0.65em; font-weight: 600; }
+
+  /* Sprint timeline */
+  .timeline { display: flex; gap: 0.5em; margin-top: 0.8em; }
+  .timeline-item { flex: 1; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.6em; border-top: 3px solid var(--ny-green); }
+  .timeline-item.active { border-top-color: var(--ny-red); background: rgba(255,23,68,0.1); }
+  .timeline-item h4 { font-size: 0.6em; margin: 0 0 0.3em; color: var(--ny-green); }
+  .timeline-item.active h4 { color: var(--ny-red); }
+  .timeline-item ul { font-size: 0.45em; margin: 0; padding-left: 1em; }
+  .timeline-item li { margin: 0.15em 0; }
+
+  /* PR list */
+  .pr-list { list-style: none; padding: 0; }
+  .pr-list li { font-size: 0.55em; padding: 0.2em 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.4em; align-items: baseline; }
+  .pr-num { color: var(--ny-green); font-weight: 700; min-width: 60px; }
+  .pr-tag { font-size: 0.8em; padding: 0.1em 0.4em; border-radius: 3px; font-weight: 600; }
+  .pr-tag.perf { background: var(--ny-blue); color: #fff; }
+  .pr-tag.fix { background: var(--ny-red); color: #fff; }
+  .pr-tag.feat { background: var(--ny-green); color: #000; }
+  .pr-tag.test { background: var(--ny-purple); color: #fff; }
+  .pr-tag.docs { background: rgba(255,255,255,0.2); }
+  .pr-tag.ops { background: var(--ny-amber); color: #000; }
+  .pr-status { font-size: 0.7em; padding: 0.15em 0.5em; border-radius: 3px; background: rgba(255,23,68,0.2); color: var(--ny-amber); border: 1px solid rgba(255,214,0,0.3); font-weight: 600; }
+  .pr-list a.pr-num { color: var(--ny-green); text-decoration: none; }
+  .pr-list a.pr-num:hover { text-decoration: underline; }
+
+  /* Before/After */
+  .compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.4em; align-items: center; margin: 0.2em 0; }
+  .compare-box { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.35em 0.7em; }
+  .compare-box.before { border: 1px solid var(--ny-red); }
+  .compare-box.after { border: 1px solid var(--ny-green); }
+  .compare-arrow { font-size: 1.5em; color: var(--ny-green); }
+  .compare-label { font-size: 0.5em; opacity: 0.5; text-transform: uppercase; }
+  .compare-val { font-size: 1.2em; font-weight: 700; }
+  .compare-box.before .compare-val { color: var(--ny-red); }
+  .compare-box.after .compare-val { color: var(--ny-green); }
+  .compare-detail { font-size: 0.5em; opacity: 0.7; }
+
+  /* center helper */
+  .centered { text-align: center; }
+
+  /* Slide-specific overrides */
+  .reveal .slide-background { background: var(--bg-dark); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ==================== TITLE ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)">
+  <div class="centered">
+    <p style="font-size:0.6em; color:var(--ny-green); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:0;">Platform Audit</p>
+    <h1 style="margin:0.1em 0;">NammaYatri</h1>
+    <p style="font-size:0.7em; opacity:0.6; margin-top:0;">Infrastructure &middot; Reliability &middot; Performance &middot; Observability</p>
+    <div style="margin-top:1.5em; display:flex; justify-content:center; gap:2em;">
+      <div><span style="font-size:1.8em; font-weight:800; color:var(--ny-green);">403</span><br><span class="small">tasks completed</span></div>
+      <div><span style="font-size:1.8em; font-weight:800; color:var(--ny-blue);">8</span><br><span class="small">PRs ready</span></div>
+      <div><span style="font-size:1.8em; font-weight:800; color:var(--ny-amber);">7</span><br><span class="small">dashboards designed</span></div>
+      <div><span style="font-size:1.8em; font-weight:800; color:var(--ny-red);">10</span><br><span class="small">P0 findings</span></div>
+    </div>
+    <p class="small" style="margin-top:2em;">March 2026 &middot; 65 cities &middot; 100+ microservices &middot; 50B+ rows analyzed</p>
+  </div>
+</section>
+
+<!-- ==================== SCALE ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0d1b2a 100%)">
+  <h2>What We Audited</h2>
+  <div class="stat-grid three">
+    <div class="stat-box">
+      <div class="stat-val">20</div>
+      <div class="stat-label">ClickHouse databases<br>400+ tables &middot; 50B+ rows</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">12</div>
+      <div class="stat-label">OpenSearch nodes<br>282 indices &middot; 1.65B docs</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">10.1M</div>
+      <div class="stat-label">VictoriaMetrics time series<br>753 scrape targets</div>
+    </div>
+    <div class="stat-box blue">
+      <div class="stat-val">100+</div>
+      <div class="stat-label">Microservices<br>Haskell + Rust + supporting</div>
+    </div>
+    <div class="stat-box blue">
+      <div class="stat-val">156M</div>
+      <div class="stat-label">Events/day<br>3,505 peak RPS at mesh</div>
+    </div>
+    <div class="stat-box blue">
+      <div class="stat-val">65</div>
+      <div class="stat-label">Operating cities<br>India + 4 international</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== THE HEADLINE NUMBER ==================== -->
+<section data-background="linear-gradient(135deg, #1a0000 0%, #0a0a0a 100%)">
+  <div class="centered">
+    <p style="font-size:0.8em; opacity:0.6;">Driver Accept Rate</p>
+    <div class="big-num red">2.6%</div>
+    <p style="font-size:0.9em; margin-top:0.3em;">191K accepts out of <strong>7.3M daily offers</strong></p>
+    <p style="font-size:0.7em; opacity:0.6; margin-top:1em;">97.4% of ride requests go unanswered</p>
+    <div style="margin-top:1.5em; background:rgba(255,255,255,0.05); border-radius:10px; padding:0.8em; display:inline-block;">
+      <p style="font-size:0.7em; margin:0; color:var(--ny-green);">The data exists (5.82B rows) but isn't surfaced with diagnostic granularity.</p>
+      <p style="font-size:0.7em; margin:0.3em 0 0; color:var(--ny-amber);">Estimated impact of fixing funnel leaks: <strong>10-15K incremental rides/week</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SEARCH FUNNEL ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)">
+  <h2>Search-to-Booking Funnel</h2>
+  <div class="funnel">
+    <div class="funnel-step" style="background:var(--ny-blue); width:100%;">5.7M daily searches</div>
+    <div class="funnel-step" style="background:rgba(68,138,255,0.7); width:85%;">4.8M get estimates</div>
+    <div class="funnel-step" style="background:rgba(68,138,255,0.5); width:60%;">3.4M confirm intent</div>
+    <div class="funnel-step" style="background:var(--ny-amber); width:44%; color:#000;">2.5M bookings (44%)</div>
+    <div class="funnel-step" style="background:var(--ny-green); width:33%;">1.8M completed rides (75% of bookings)</div>
+  </div>
+  <div style="margin-top:1em; text-align:center;">
+    <p style="font-size:0.7em; opacity:0.7;">56% of searches drop off &mdash; but we have <strong>zero stage-level visibility</strong> into where or why</p>
+    <p style="font-size:0.6em; color:var(--ny-amber);">Wait time is #1 cancellation reason (126K/week) &mdash; but no actual wait time data is measured</p>
+  </div>
+</section>
+
+<!-- ==================== MONITORING IS BLIND ==================== -->
+<section data-background="linear-gradient(135deg, #1a0000 0%, #0a0a0a 100%)">
+  <h2 style="color:var(--ny-red);">We're Flying Blind</h2>
+  <div class="stat-grid">
+    <div class="stat-box red">
+      <div class="stat-val">3 / 5</div>
+      <div class="stat-label">ClickHouse nodes unmonitored<br>60% of analytics store is dark</div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">4 / 4</div>
+      <div class="stat-label">Kafka JMX exporters down<br>Zero consumer lag visibility</div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">86%</div>
+      <div class="stat-label">of TSDB consumed by one service<br>eta-compute: 8.7M of 10.1M series</div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">1 AZ</div>
+      <div class="stat-label">All monitoring in ap-south-1a<br>Zone failure = total blackout</div>
+    </div>
+  </div>
+  <p style="font-size:0.65em; margin-top:1em; color:var(--ny-red);">341 Kafka topics &middot; 407 consumers &middot; Zero pipeline visibility</p>
+</section>
+
+<!-- ==================== P0 ISSUES ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 100%)">
+  <h2>P0 &mdash; Fix This Week</h2>
+  <div class="issue-card"><span class="severity p0">SEC</span><div><div class="issue-text">Gupshup API password exposed in production logs</div><div class="issue-impact">Active credential leak in OpenSearch &mdash; plaintext password queryable</div></div></div>
+  <div class="issue-card"><span class="severity p0">DATA</span><div><div class="issue-text">Redis HMGET bug breaking all bus/multimodal search</div><div class="issue-impact">Anna App public transit completely non-functional</div></div></div>
+  <div class="issue-card"><span class="severity p0">PAY</span><div><div class="issue-text">Booking &amp; payment idempotency missing</div><div class="issue-impact">Duplicate charges possible under retry &mdash; PR #13973 ready</div></div></div>
+  <div class="issue-card"><span class="severity p0">MON</span><div><div class="issue-text">3/5 ClickHouse nodes + all Kafka exporters down</div><div class="issue-impact">60% of analytics + 100% of pipeline monitoring is blind</div></div></div>
+  <div class="issue-card"><span class="severity p0">FRFS</span><div><div class="issue-text">Anna App search: 265% failure rate</div><div class="issue-impact">Chennai public transport &mdash; timeout mismatch: 45s vs 120s (one config change)</div></div></div>
+  <div class="issue-card"><span class="severity p0">API</span><div><div class="issue-text">BAP rider-app: 11.6% 4xx error rate</div><div class="issue-impact">1 in 9 rider API calls failing &mdash; no status code metric to diagnose</div></div></div>
+</section>
+
+<!-- ==================== BROKEN FEATURES ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a1a0a 100%)">
+  <h2>Features That Don't Work</h2>
+  <div class="stat-grid">
+    <div class="stat-box red">
+      <div class="stat-val">265%</div>
+      <div class="stat-label">Anna App search failure rate<br>2,188 failures vs 825 successes<br><em style="color:var(--ny-green);">Fix: one timeout config change</em></div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">85%</div>
+      <div class="stat-label">Go-Home failure rate<br>54.1K FAILED vs 4.2K SUCCESS<br><em style="color:var(--ny-amber);">Matching algorithm broken</em></div>
+    </div>
+    <div class="stat-box amber">
+      <div class="stat-val">0%</div>
+      <div class="stat-label">Payment reconciliation success<br>All /on_receiver_recon timeout<br><em style="color:var(--ny-amber);">0 bytes after 60s &mdash; systematic</em></div>
+    </div>
+    <div class="stat-box amber">
+      <div class="stat-val">M/day</div>
+      <div class="stat-label">DriverTier null errors<br>Across BPP, Allocator, BAP<br><em style="color:var(--ny-amber);">Impacts ride allocation priority</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== OPENSEARCH STORAGE ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0d1b2a 100%)">
+  <h2>OpenSearch: 93% Waste</h2>
+  <div style="display:flex; gap:2em; align-items:center; margin-top:0.5em;">
+    <div style="flex:1;">
+      <div style="display:flex; gap:0.4em; align-items:flex-end; justify-content:center;">
+        <div style="width:160px; height:200px; background:linear-gradient(180deg, var(--ny-red), #B71C1C); border-radius:8px; display:flex; flex-direction:column; justify-content:flex-end; padding:0.5em; text-align:center;">
+          <div style="font-size:1.1em; font-weight:800;">894 GB</div>
+          <div style="font-size:0.45em;">Istio proxy logs<br>Health checks + access logs<br><strong>93% of storage</strong></div>
+        </div>
+        <div style="width:160px; height:30px; background:linear-gradient(180deg, var(--ny-green), #1B5E20); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+          <div style="font-size:0.45em;">107 GB &mdash; App logs (7%)</div>
+        </div>
+      </div>
+      <p style="font-size:0.6em; text-align:center; margin-top:0.5em;">Ingesting <strong>450 GB/day</strong> &mdash; app log retention only <strong>2 days</strong></p>
+    </div>
+    <div style="flex:1;">
+      <div class="compare">
+        <div class="compare-box before">
+          <div class="compare-label">Today</div>
+          <div class="compare-val">450 GB/day</div>
+          <div class="compare-detail">2-day app log retention</div>
+        </div>
+        <div class="compare-arrow">&rarr;</div>
+        <div class="compare-box after">
+          <div class="compare-label">After fix</div>
+          <div class="compare-val">~50 GB/day</div>
+          <div class="compare-detail">14-day app log retention</div>
+        </div>
+      </div>
+      <p style="font-size:0.6em; color:var(--ny-green); margin-top:0.5em;">Filter health checks + sample istio at 10% = <strong>89% storage reduction</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TSDB CARDINALITY ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%)">
+  <h2>TSDB Cardinality Explosion</h2>
+  <div class="centered">
+    <p style="font-size:0.7em;">One service consumes 86% of all monitoring capacity</p>
+    <div style="margin:1em 0;">
+      <div class="progress-bar" style="max-width:600px; margin:0 auto;">
+        <div class="progress-fill bad" style="width:86%;">eta-compute: 8.7M series (86%)</div>
+      </div>
+      <div class="progress-bar" style="max-width:600px; margin:0.3em auto;">
+        <div class="progress-fill good" style="width:14%;">Everything else: 1.4M series (14%)</div>
+      </div>
+    </div>
+    <p style="font-size:0.65em; margin-top:1em;">Root cause: <code>route_id</code> &times; <code>num_stops</code> &times; <code>hour</code> &times; <code>le</code> histogram buckets</p>
+    <div class="compare" style="max-width:600px; margin:0.8em auto;">
+      <div class="compare-box before">
+        <div class="compare-label">Today</div>
+        <div class="compare-val">10.1M series</div>
+        <div class="compare-detail">Queries fail at 5M limit</div>
+      </div>
+      <div class="compare-arrow">&rarr;</div>
+      <div class="compare-box after">
+        <div class="compare-label">After fix</div>
+        <div class="compare-val">2.8M series</div>
+        <div class="compare-detail">72% reduction</div>
+      </div>
+    </div>
+    <p style="font-size:0.6em; color:var(--ny-green);">Fix: remove <code>route_id</code> from histogram labels</p>
+  </div>
+</section>
+
+<!-- ==================== OBSERVABILITY GAPS ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)">
+  <h2>What We Can't See Today</h2>
+  <div class="stat-grid" style="margin-top:0.3em;">
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">Distributed tracing</div>
+      <div class="stat-label">Zero cross-service request tracing</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">HTTP status codes</div>
+      <div class="stat-label">Can't tell 400 from 401 from 404</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">Kafka consumer lag</div>
+      <div class="stat-label">341 topics, pipeline stalls invisible</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">Notification delivery</div>
+      <div class="stat-label">383 RPS, zero delivery visibility</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">Driver acceptance drill-down</div>
+      <div class="stat-label">Per-zone, per-distance, per-driver</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">Rider wait time</div>
+      <div class="stat-label">#1 cancellation reason, zero data</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">ETA accuracy</div>
+      <div class="stat-label">Cardinality makes metrics unusable</div>
+    </div>
+    <div class="stat-box red" style="padding:0.5em 0.8em;">
+      <div style="font-size:0.8em; font-weight:700;">GPS pipeline health</div>
+      <div class="stat-label">Month-long gap went undetected</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== COST OPPORTUNITIES ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0a1a0a 100%)">
+  <h2>Performance &amp; Cost Wins</h2>
+  <div class="compare" style="max-width:700px;">
+    <div class="compare-box before"><div class="compare-label">Allocator queries/batch</div><div class="compare-val">60</div></div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-box after"><div class="compare-label">After N+1 fix</div><div class="compare-val">4</div><div class="compare-detail">10-20x faster</div></div>
+  </div>
+  <div class="compare" style="max-width:700px;">
+    <div class="compare-box before"><div class="compare-label">Beam query bandwidth</div><div class="compare-val">SELECT *</div></div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-box after"><div class="compare-label">Projection</div><div class="compare-val">6% of columns</div><div class="compare-detail">94% bandwidth reduction</div></div>
+  </div>
+  <div class="compare" style="max-width:700px;">
+    <div class="compare-box before"><div class="compare-label">PostgreSQL connections</div><div class="compare-val">3,000+</div></div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-box after"><div class="compare-label">With PgBouncer</div><div class="compare-val">~300</div><div class="compare-detail">10x connection efficiency</div></div>
+  </div>
+  <div class="compare" style="max-width:700px;">
+    <div class="compare-box before"><div class="compare-label">ETA compute throughput</div><div class="compare-val">28 RPS/core</div></div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-box after"><div class="compare-label">Peer Rust services</div><div class="compare-val">976 RPS/core</div><div class="compare-detail">35x headroom</div></div>
+  </div>
+</section>
+
+<!-- ==================== DRIVER ECONOMICS ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a1a0a 100%)">
+  <h2>Driver Economics &mdash; Hidden Problems</h2>
+  <div class="stat-grid">
+    <div class="stat-box amber">
+      <div class="stat-val">&#8377;466.75</div>
+      <div class="stat-label">Average driver earnings<br>Per active period</div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">24.3%</div>
+      <div class="stat-label">Driver fees in PAYMENT_PENDING<br>or OVERDUE status</div>
+    </div>
+    <div class="stat-box red">
+      <div class="stat-val">22K/day</div>
+      <div class="stat-label">Auto-clicker detections<br>~4.2% of all drivers</div>
+    </div>
+    <div class="stat-box amber">
+      <div class="stat-val">180+</div>
+      <div class="stat-label">Spelling variants for vehicle type<br>Pollutes all analytics queries</div>
+    </div>
+  </div>
+  <p style="font-size:0.6em; margin-top:0.8em; opacity:0.7;">No driver economics dashboard exists. No automated response to fraud detections. No payment collection pipeline visibility.</p>
+</section>
+
+<!-- ==================== WHAT'S DONE ==================== -->
+<section data-background="linear-gradient(135deg, #0a1a0a 0%, #0a0a0a 100%)">
+  <h2 style="color:var(--ny-green);">What's Already Done</h2>
+  <div class="centered">
+    <div class="progress-bar" style="max-width:600px; margin:0.5em auto 1em;">
+      <div class="progress-fill good" style="width:99%;">399 / 403 tasks complete (99%)</div>
+    </div>
+  </div>
+  <ul class="pr-list">
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13972" target="_blank">#13972</a> <span class="pr-tag docs">docs</span> <span class="pr-status">REVIEW REQUIRED</span> Reliability audit reports &amp; incident playbooks <span style="opacity:0.4;">+5,388</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13973" target="_blank">#13973</a> <span class="pr-tag perf">perf</span> <span class="pr-status">REVIEW REQUIRED</span> Critical-path DB indices &amp; payment idempotency <span style="opacity:0.4;">+162</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13974" target="_blank">#13974</a> <span class="pr-tag perf">perf</span> <span class="pr-status">REVIEW REQUIRED</span> Redis caching for Geometry, BusinessHour, ServiceCategory <span style="opacity:0.4;">+237</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13975" target="_blank">#13975</a> <span class="pr-tag ops">ops</span> <span class="pr-status">REVIEW REQUIRED</span> Connection pool alerts &amp; Kafka topic documentation <span style="opacity:0.4;">+228</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13976" target="_blank">#13976</a> <span class="pr-tag test">test</span> <span class="pr-status">REVIEW REQUIRED</span> Unit tests for booking, fare calculation, allocation <span style="opacity:0.4;">+1,311</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13977" target="_blank">#13977</a> <span class="pr-tag feat">feat</span> <span class="pr-status">REVIEW REQUIRED</span> Circuit breaker &amp; retry for Beckn API resilience <span style="opacity:0.4;">+156</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13978" target="_blank">#13978</a> <span class="pr-tag fix">fix</span> <span class="pr-status">REVIEW REQUIRED</span> Kafka consumers graceful shutdown &amp; error handling <span style="opacity:0.4;">+41</span></li>
+    <li><a class="pr-num" href="https://github.com/nammayatri/nammayatri/pull/13979" target="_blank">#13979</a> <span class="pr-tag perf">perf</span> <span class="pr-status">REVIEW REQUIRED</span> N+1 elimination, I/O parallelization, metrics <span style="opacity:0.4;">+6,418/-4,361</span></li>
+  </ul>
+</section>
+
+<!-- ==================== DASHBOARDS ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0d1b2a 100%)">
+  <h2>7 Dashboards Designed <span style="font-size:0.5em; opacity:0.5;">(Grafana JSON-ready)</span></h2>
+  <div class="stat-grid three" style="margin-top:0.8em;">
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">Deployment Comparison</div>
+      <div class="stat-label">11 panels &middot; traffic split, error rates, latency by version</div>
+    </div>
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">Kafka Consumer Lag</div>
+      <div class="stat-label">7 rows &middot; cluster health, lag, throughput, broker health</div>
+    </div>
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">Notification Delivery</div>
+      <div class="stat-label">FCM/GRPC/SMS/WhatsApp channel health</div>
+    </div>
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">ETA Accuracy</div>
+      <div class="stat-label">9 panels &middot; accuracy %, bias, fallback rates</div>
+    </div>
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">GPS Pipeline Health</div>
+      <div class="stat-label">9 rows &middot; ingestion, latency, route matching</div>
+    </div>
+    <div class="stat-box blue">
+      <div style="font-size:0.9em; font-weight:700;">Public Transport (FRFS)</div>
+      <div class="stat-label">Search health, booking funnel, fleet status</div>
+    </div>
+  </div>
+  <p style="font-size:0.6em; margin-top:0.8em;">+ <strong>30+ alert rules</strong> defined &middot; ~4,600 new series (0.05% of TSDB &mdash; negligible)</p>
+</section>
+
+<!-- ==================== AI-ACCELERATED PLAN ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%)">
+  <h2>Fast-Track with AI: 4 Weeks &rarr; <span style="color:var(--ny-green);">5 Days</span></h2>
+  <p style="font-size:0.65em; opacity:0.7;">This audit was done by Claude in 3 days. The fixes can be deployed the same way &mdash; using Claude Max sessions as force multipliers.</p>
+  <div class="compare" style="max-width:700px; margin-top:0.8em;">
+    <div class="compare-box before">
+      <div class="compare-label">Traditional</div>
+      <div class="compare-val">4 weeks</div>
+      <div class="compare-detail">1 SRE + 2 engineers sequentially</div>
+    </div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-box after">
+      <div class="compare-label">AI-Accelerated</div>
+      <div class="compare-val">~5 days</div>
+      <div class="compare-detail">Parallel Claude sessions + 1 human reviewer</div>
+    </div>
+  </div>
+  <div style="margin-top:1em; background:rgba(170,0,255,0.08); border:1px solid rgba(170,0,255,0.3); border-radius:10px; padding:0.6em 1em;">
+    <p style="font-size:0.65em; margin:0; color:var(--ny-purple);"><strong>How this audit was done:</strong> 403 tasks across 16 manifests, 12 reports, 13 findings, 8 PRs with 14K+ lines of production code &mdash; all generated by Claude Max fleet sessions in ~72 hours.</p>
+  </div>
+</section>
+
+<!-- ==================== AI EXECUTION: DAY 1-2 ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%)">
+  <h2>AI Execution &mdash; Day 1 &amp; 2</h2>
+  <div class="stat-grid">
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.9em; font-weight:700; color:var(--ny-purple);">Day 1: Monitoring Recovery</div>
+      <div class="stat-label" style="margin-top:0.4em; font-size:0.65em; line-height:1.6;">
+        <strong>5 parallel Claude sessions</strong>, one per system:<br>
+        &bull; ClickHouse exporter restart + port fix<br>
+        &bull; kafka_exporter deploy + MSK config<br>
+        &bull; ETA cardinality label removal<br>
+        &bull; vmalert proxy Helm/CRD fix<br>
+        &bull; Gupshup credential rotation + log purge
+      </div>
+      <div style="margin-top:0.5em; font-size:0.6em; color:var(--ny-green);"><em>Human: approve infra changes, verify scrape targets</em></div>
+    </div>
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.9em; font-weight:700; color:var(--ny-purple);">Day 2: Revenue-Critical Fixes</div>
+      <div class="stat-label" style="margin-top:0.4em; font-size:0.65em; line-height:1.6;">
+        <strong>3 parallel sessions:</strong><br>
+        &bull; Anna App timeout fix + verify in staging<br>
+        &bull; PR review + rebase for #13973 (idempotency)<br>
+        &bull; BAP 4xx instrumentation + metric deploy
+      </div>
+      <div style="margin-top:0.5em; font-size:0.6em; color:var(--ny-green);"><em>Human: approve DB migrations, sign off on staging</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== AI EXECUTION: DAY 3-5 ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%)">
+  <h2>AI Execution &mdash; Day 3, 4 &amp; 5</h2>
+  <div class="stat-grid">
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.9em; font-weight:700; color:var(--ny-purple);">Day 3: Dashboard &amp; Observability Blitz</div>
+      <div class="stat-label" style="margin-top:0.4em; font-size:0.65em; line-height:1.6;">
+        <strong>7 parallel sessions</strong> &mdash; one per dashboard:<br>
+        &bull; Import JSON, wire data sources, verify panels, enable alerts<br>
+        &bull; Bonus session: deploy OpenSearch istio log sampling
+      </div>
+      <div style="margin-top:0.5em; font-size:0.6em; color:var(--ny-green);"><em>Human: verify dashboard accuracy, tune alert thresholds</em></div>
+    </div>
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.9em; font-weight:700; color:var(--ny-purple);">Day 4-5: Code Deploy + Validation</div>
+      <div class="stat-label" style="margin-top:0.4em; font-size:0.65em; line-height:1.6;">
+        <strong>8 parallel sessions</strong> &mdash; one per PR:<br>
+        &bull; Address review comments, fix CI, rebase, verify tests<br>
+        &bull; Claude reviews Claude's code for cross-PR conflicts
+      </div>
+      <div style="margin-top:0.5em; font-size:0.6em; color:var(--ny-green);"><em>Human: final approval, merge sequencing, production deploy</em></div>
+    </div>
+  </div>
+  <p style="font-size:0.6em; margin-top:0.8em; color:var(--ny-purple); text-align:center;"><strong>Total: ~26 Claude sessions over 5 days</strong> &mdash; human effort: ~2-3 hours/day of review and approvals</p>
+</section>
+
+<!-- ==================== WHY AI WORKS HERE ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%)">
+  <h2>Why AI Is the Right Tool for This</h2>
+  <div class="stat-grid" style="margin-top:0.3em;">
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.8em; font-weight:700; color:var(--ny-purple);">Massive parallelism</div>
+      <div class="stat-label">8 PRs reviewed, rebased, and fixed simultaneously. Humans do this sequentially.</div>
+    </div>
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.8em; font-weight:700; color:var(--ny-purple);">Full codebase context</div>
+      <div class="stat-label">Claude holds 100+ files in context. Finds cross-service impacts humans miss.</div>
+    </div>
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.8em; font-weight:700; color:var(--ny-purple);">Runbook execution</div>
+      <div class="stat-label">Monitoring fixes are procedural &mdash; perfect for AI. Human just approves.</div>
+    </div>
+    <div class="stat-box" style="border-left-color:var(--ny-purple);">
+      <div style="font-size:0.8em; font-weight:700; color:var(--ny-purple);">Continuous operation</div>
+      <div class="stat-label">Fleet tasks run overnight. Morning = results ready for review.</div>
+    </div>
+  </div>
+  <div style="margin-top:0.6em; background:rgba(170,0,255,0.08); border:1px solid rgba(170,0,255,0.3); border-radius:10px; padding:0.5em 1em;">
+    <p style="font-size:0.6em; margin:0; color:var(--ny-purple);"><strong>Proof of concept:</strong> This entire audit &mdash; 403 tasks, 12 reports, 8 PRs, 14K lines &mdash; completed by Claude in 72 hours.</p>
+  </div>
+</section>
+
+<!-- ==================== SUGGESTED CLAUDE SESSIONS ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0a0a1a 100%)">
+  <h2>Suggested Claude Max Sessions</h2>
+  <div style="font-size:0.55em;">
+  <table style="width:100%; border-collapse:collapse;">
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+      <th style="text-align:left; padding:0.3em; color:var(--ny-purple);">Session</th>
+      <th style="text-align:left; padding:0.3em; color:var(--ny-purple);">Task</th>
+      <th style="text-align:left; padding:0.3em; color:var(--ny-purple);">Parallel?</th>
+      <th style="text-align:left; padding:0.3em; color:var(--ny-purple);">Human</th>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Fleet &times;5</td><td>Infra monitoring restoration</td><td style="color:var(--ny-green);">Yes</td><td>Approve infra</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Fleet &times;7</td><td>Dashboard import + alert wiring</td><td style="color:var(--ny-green);">Yes</td><td>Verify accuracy</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Fleet &times;8</td><td>PR review comment resolution</td><td style="color:var(--ny-green);">Yes</td><td>Merge approval</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Fleet &times;3</td><td>Revenue fixes (FRFS, BAP 4xx, PgBouncer)</td><td style="color:var(--ny-green);">Yes</td><td>Staging sign-off</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Single</td><td>Cross-PR conflict detection + merge sequencing</td><td style="color:var(--ny-amber);">Sequential</td><td>Deploy ordering</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Single</td><td>OpenSearch log sampling config</td><td style="color:var(--ny-green);">Yes</td><td>Approve policy</td></tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3em;">Single</td><td>Driver acceptance materialized view + dashboard</td><td style="color:var(--ny-green);">Yes</td><td>Validate logic</td></tr>
+    <tr><td style="padding:0.3em;">Overnight</td><td>Go-Home failure RCA + fix</td><td style="color:var(--ny-green);">Yes</td><td>Morning review</td></tr>
+  </table>
+  </div>
+  <p style="font-size:0.55em; margin-top:0.6em; color:var(--ny-purple);"><strong>~26 Claude sessions over 5 days</strong>, mostly parallel. Human effort: ~2-3 hours/day of review.</p>
+</section>
+
+<!-- ==================== STRATEGIC ==================== -->
+<section data-background="linear-gradient(135deg, #0a0a0a 0%, #0a0a1a 100%)">
+  <h2>Strategic Recommendations</h2>
+  <div style="margin-top:0.3em;">
+    <div class="issue-card" style="border-left:3px solid var(--ny-green);"><div><div class="issue-text"><strong style="color:var(--ny-green);">1.</strong> Establish observability as a P0 initiative</div><div class="issue-impact">5 Claude sessions &times; 1 day + human approval</div></div></div>
+    <div class="issue-card" style="border-left:3px solid var(--ny-green);"><div><div class="issue-text"><strong style="color:var(--ny-green);">2.</strong> Instrument the driver acceptance funnel</div><div class="issue-impact">2.6% accept rate &mdash; materialized view design ready</div></div></div>
+    <div class="issue-card" style="border-left:3px solid var(--ny-green);"><div><div class="issue-text"><strong style="color:var(--ny-green);">3.</strong> Fix data quality foundation</div><div class="issue-impact">180+ spelling variants &mdash; Claude can run migration scripts overnight</div></div></div>
+    <div class="issue-card" style="border-left:3px solid var(--ny-green);"><div><div class="issue-text"><strong style="color:var(--ny-green);">4.</strong> Reliability primitives before new features</div><div class="issue-impact">Circuit breakers, tracing, idempotency &mdash; all coded in PRs</div></div></div>
+    <div class="issue-card" style="border-left:3px solid var(--ny-green);"><div><div class="issue-text"><strong style="color:var(--ny-green);">5.</strong> Make AI-assisted ops standard practice</div><div class="issue-impact">Claude fleet for discovery, sessions for fixes, humans for judgment</div></div></div>
+  </div>
+</section>
+
+<!-- ==================== CTA ==================== -->
+<section data-background="linear-gradient(135deg, #0a1a0a 0%, #0a0a0a 100%)">
+  <div class="centered">
+    <h2>The Code Is Written.<br><span style="color:var(--ny-green);">Let's Ship It &mdash; Fast.</span></h2>
+    <div style="margin-top:1.5em; display:flex; justify-content:center; gap:1.5em;">
+      <div class="stat-box" style="text-align:center; min-width:150px;">
+        <div class="stat-val" style="font-size:1.5em;">8 PRs</div>
+        <div class="stat-label">Ready for review</div>
+      </div>
+      <div class="stat-box" style="text-align:center; min-width:150px;">
+        <div class="stat-val" style="font-size:1.5em;">7 Dashboards</div>
+        <div class="stat-label">Ready to import</div>
+      </div>
+      <div class="stat-box" style="text-align:center; min-width:150px;">
+        <div class="stat-val" style="font-size:1.5em;">~5 Days</div>
+        <div class="stat-label">With Claude Max fleet</div>
+      </div>
+    </div>
+    <div style="margin-top:2em; background:rgba(170,0,255,0.1); border:1px solid var(--ny-purple); border-radius:12px; padding:1em; display:inline-block;">
+      <p style="font-size:0.8em; margin:0;"><strong>Step 1:</strong> Assign P0 owners today</p>
+      <p style="font-size:0.8em; margin:0.3em 0 0;"><strong>Step 2:</strong> Spin up Day 1 Claude fleet (5 infra sessions) tomorrow</p>
+      <p style="font-size:0.8em; margin:0.3em 0 0;"><strong>Step 3:</strong> Review + merge PRs <a href="https://github.com/nammayatri/nammayatri/pull/13972" target="_blank" style="color:var(--ny-green);">#13972</a>&ndash;<a href="https://github.com/nammayatri/nammayatri/pull/13979" target="_blank" style="color:var(--ny-green);">#13979</a> by end of week</p>
+    </div>
+    <p style="font-size:0.55em; opacity:0.5; margin-top:1.5em;">This audit: 403 tasks &middot; 12 reports &middot; 8 PRs &middot; 14K lines of code &mdash; generated by Claude Max in 72 hours</p>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: true,
+  transition: 'fade',
+  transitionSpeed: 'fast',
+  width: 1280,
+  height: 720,
+  margin: 0.08,
+  center: false,
+});
+</script>
+</body>
+</html>

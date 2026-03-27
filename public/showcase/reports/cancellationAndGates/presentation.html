@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cancellations & Gates — Zone Strategy Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 200px; font-size: 14px; text-align: right; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; min-width: 40px; transition: width 0.8s ease; }
+  .bar-fill.green { background: linear-gradient(90deg, var(--ny-green), #1fa845); }
+  .bar-fill.red { background: linear-gradient(90deg, var(--p0), #d63a5e); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--ny-orange), #e88c14); }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--ny-blue), #3451cc); }
+
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+  .priority-p3 { background: var(--ny-gray); color: #fff; }
+
+  .timeline { display: flex; gap: 0; flex: 1; align-items: stretch; }
+  .timeline-phase {
+    flex: 1;
+    padding: 24px;
+    border-radius: 12px;
+    position: relative;
+  }
+  .timeline-phase::after {
+    content: '\2192';
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: rgba(255,255,255,0.3);
+  }
+  .timeline-phase:last-child::after { display: none; }
+  .phase-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .phase-items { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.8; }
+
+  .gap-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    align-items: flex-start;
+  }
+  .gap-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .gap-text { font-size: 15px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+  .gap-text strong { color: #fff; }
+
+  ul.clean { list-style: none; padding: 0; }
+  ul.clean li {
+    padding: 6px 0;
+    font-size: 15px;
+    color: rgba(255,255,255,0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  ul.clean li::before {
+    content: '\2022';
+    color: var(--ny-green);
+    font-weight: 700;
+    margin-right: 10px;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide active" id="s1">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <span class="tag tag-red" style="margin-bottom:20px;width:fit-content;">Research Report</span>
+      <h1>Cancellations &<br>Zone Management</h1>
+      <p class="subtitle">How geographic intelligence can reduce ride cancellations — backend audit, mobile audit, industry research, and a path forward.</p>
+      <div class="grid-4" style="margin-top:40px;flex:unset;">
+        <div class="stat">
+          <div class="stat-value red">25-35%</div>
+          <div class="stat-label">Industry Cancel Rate</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value orange">22+</div>
+          <div class="stat-label">Zone Categories</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value blue">2</div>
+          <div class="stat-label">Parallel Backend Systems</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Zone Effectiveness Metrics</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Cancellation Problem -->
+  <div class="slide" id="s2">
+    <h2>The Cancellation Problem</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Why Rides Get Cancelled</h3>
+        <div class="quote">Only 60.1% of requests receive driver responses in dense cities. 39.9% go unfulfilled due to supply-demand mismatch.</div>
+        <ul class="clean" style="margin-top:16px;">
+          <li><strong>Pickup too far</strong> — drivers cancel when actual driving distance exceeds expectations</li>
+          <li><strong>Destination undesirable</strong> — office parks (mornings), residential outskirts (evenings)</li>
+          <li><strong>Confusing pickup points</strong> — no gate, wrong gate, blocked gate at airports/malls</li>
+          <li><strong>Long wait times</strong> — rider cancels when ETA is too high or driver not moving</li>
+          <li><strong>Supply hoarding</strong> — drivers in popular areas cherry-pick, ignoring peripheral requests</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Geographic Clustering</h3>
+        <p style="margin-bottom:16px;">Cancellations are not random — they cluster at specific locations where structural problems repeat.</p>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Key Insight</div>
+          <p style="font-size:16px;">Airports, metro stations, malls, and corporate parks generate disproportionate cancellations. These locations need <strong style="color:var(--ny-green);">structured pickup zones with gates</strong> — but only if placed using data, not intuition.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Attribution Capability</div>
+          <p style="font-size:14px;"><span class="tag tag-green">Strong</span> Driver cancellations — GPS + distance + reason code available</p>
+          <p style="font-size:14px;margin-top:6px;"><span class="tag tag-red">Weak</span> Rider cancellations — no GPS captured at cancel time</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Industry Benchmarks -->
+  <div class="slide" id="s3">
+    <h2>Industry Benchmarks</h2>
+    <p class="subtitle" style="margin-bottom:20px;">What Uber, Lyft, Grab, Ola, and DiDi have proven works.</p>
+    <div style="flex:1;">
+      <div class="bar-chart" style="margin-bottom:32px;">
+        <div class="bar-row">
+          <div class="bar-label">Geofenced Zones (JFK)</div>
+          <div class="bar-track"><div class="bar-fill green" style="width:60%;">-27% pickup time</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Successful Matches (JFK)</div>
+          <div class="bar-track"><div class="bar-fill green" style="width:70%;">+35% match rate</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Unicast Model (Ola)</div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:50%;">-50% driver cancels</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">RL Positioning (Uber)</div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:22%;">-2.2% rider cancels</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Cancel Penalties (Sim)</div>
+          <div class="bar-track"><div class="bar-fill red" style="width:76%;">2,500 &rarr; 600 cancels</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Driver Subsidies (Beijing)</div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:82%;">Response 42% &rarr; 82%</div></div>
+        </div>
+      </div>
+      <div class="grid-3" style="flex:unset;">
+        <div class="card">
+          <h3>Automated Discovery</h3>
+          <p style="font-size:14px;">Uber/Grab use DBSCAN + KDE to detect cancellation hotspots. DiDi patented automated zone creation &rarr; deployment &rarr; updating lifecycle.</p>
+        </div>
+        <div class="card">
+          <h3>FIFO Queue Fairness</h3>
+          <p style="font-size:14px;">Grab KLIA: queue position updates every 5 min, 25-min return grace period. Uber/Lyft: digital FIFO with visible position and wait-time display.</p>
+        </div>
+        <div class="card">
+          <h3>Dynamic Zones</h3>
+          <p style="font-size:14px;">DiDi: time-restricted zones, trigger-based activation, auto-resizing via geohash precision. Grab: flight tracking for dynamic airport pickup adjustment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Backend Audit Findings -->
+  <div class="slide" id="s4">
+    <h2>Backend Audit Findings</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Architecture: Two Parallel Systems</h3>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--ny-green);font-weight:600;margin-bottom:6px;">System A: lib/special-zone (Production)</div>
+          <p style="font-size:14px;">Drives all ride flow — fare products, driver allocation, OTP verification. PostGIS MultiPolygon zones + gate_info with queue polygons, extra fare, entry fees, walk descriptions.</p>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--ny-orange);font-weight:600;margin-bottom:6px;">System B: app/special-zone (Standalone)</div>
+          <p style="font-size:14px;">Simpler model, only system enforcing non-overlapping geometries via ST_Relate. Not used in ride flow.</p>
+        </div>
+        <h3 style="margin-top:20px;">Ride Flow Integration</h3>
+        <ul class="clean">
+          <li>Pickup zone check via <code style="color:var(--ny-green);">ST_Contains</code> at search time</li>
+          <li>Gate match enables <code style="color:var(--ny-green);">SpecialZoneQueuePool</code> (batch -1 priority)</li>
+          <li>Zone-specific FareProduct via Area ADT</li>
+          <li><code style="color:var(--ny-green);">specialLocationTag</code> propagates through booking &rarr; fare calc</li>
+          <li>Drop zone re-check and fare recalculation at ride end</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Data Richness for Analysis</h3>
+        <table>
+          <thead><tr><th>Source</th><th>Rating</th><th>Key Signals</th></tr></thead>
+          <tbody>
+            <tr><td>PG: search_request_for_driver</td><td><span class="tag tag-green">High</span></td><td>Distance, ETA, cancel ratio, pickup zone</td></tr>
+            <tr><td>PG: booking_cancellation_reason</td><td><span class="tag tag-green">High</span></td><td>Driver GPS at cancel, distance, reason code</td></tr>
+            <tr><td>PG: booking</td><td><span class="tag tag-green">High</span></td><td>special_location_tag, pickup_gate_id</td></tr>
+            <tr><td>PG: ride</td><td><span class="tag tag-green">High</span></td><td>Arrival time, start time, trip coords</td></tr>
+            <tr><td>PG: special_location + gate_info</td><td><span class="tag tag-orange">Med</span></td><td>PostGIS boundaries, static only</td></tr>
+            <tr><td>CH: driver_eda_kafka</td><td><span class="tag tag-orange">Med</span></td><td>Real-time GPS trail, ride status</td></tr>
+            <tr><td>VictoriaMetrics / OpenSearch</td><td><span class="tag tag-red">Low</span></td><td>Aggregated metrics, no geo detail</td></tr>
+          </tbody>
+        </table>
+        <div class="quote" style="margin-top:16px;">Missing: rider GPS at cancellation, zone context on cancel records, driver-side cancel timestamp, zone-specific cancel reasons.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Mobile App Audit -->
+  <div class="slide" id="s5">
+    <h2>Mobile App Audit</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Rider Experience</h3>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">CLOSED ZONES (Airports)</div>
+          <p style="font-size:14px;">Must select from predefined gates. Horizontal scroll list, auto-zoom to zone polygon. Nearest gate auto-selected via haversine.</p>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">OPEN ZONES (Malls)</div>
+          <p style="font-size:14px;">Custom pickup allowed if >20m from any gate. Gate sub-polygons highlight on selection (orange selected, dashed unselected).</p>
+        </div>
+        <div class="card">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">CANCELLATION UI</div>
+          <p style="font-size:14px;">Dynamic reasons from server. No zone-specific reasons exist. No GPS captured at cancel time. Reason stage tracked (OnSearch/OnConfirm/OnAssign).</p>
+        </div>
+      </div>
+      <div>
+        <h3>Driver Experience</h3>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">ZONE PICKUPS</div>
+          <p style="font-size:14px;">Visual tags: ZONE PICKUP (green), METRO (blue). specialZoneExtraTip incentivizes acceptance. OTP replaces PIN for zone rides.</p>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">METRO WARRIOR</div>
+          <p style="font-size:14px;">Opt-in mode for metro station pickups. Primary/secondary station preferences. Unique to NammaYatri.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;">DEMAND HOTSPOTS</div>
+          <p style="font-size:14px;">H3 hexagonal heatmap via h3-js. Red/orange/gray color coding. Completely separate from special zones — no integration.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: NammaYatri vs. Industry Gaps -->
+  <div class="slide" id="s6">
+    <h2>NammaYatri vs. Industry</h2>
+    <p class="subtitle" style="margin-bottom:16px;">What we do well, and where we fall short.</p>
+    <div class="grid-2">
+      <div>
+        <h3 style="color:var(--ny-green);">Strengths</h3>
+        <ul class="clean">
+          <li><strong>Open/Closed zone model</strong> — flexible for airports vs. malls</li>
+          <li><strong>Metro Warrior specialization</strong> — unique in industry</li>
+          <li><strong>Gate-level pricing & queueing</strong> — architecturally sound</li>
+          <li><strong>PostGIS spatial queries</strong> — production-grade infrastructure</li>
+          <li><strong>Zero-commission model</strong> — reduces driver cherry-picking</li>
+          <li><strong>OTP-based zone verification</strong> — adds security layer</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--p0);">Critical Gaps</h3>
+        <div class="gap-item">
+          <div class="gap-icon" style="background:var(--p0);color:#fff;">1</div>
+          <div class="gap-text"><strong>No queue visibility</strong> — canQueueUpOnGate exists but no position or wait time shown. Grab shows queue position + ETA.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon" style="background:var(--p0);color:#fff;">2</div>
+          <div class="gap-text"><strong>No automated zone discovery</strong> — entirely manual. Uber/Grab use DBSCAN/HDBSCAN + KDE for hotspot detection.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon" style="background:var(--ny-orange);color:#000;">3</div>
+          <div class="gap-text"><strong>No zone effectiveness metrics</strong> — cannot measure if a zone actually reduces cancellations.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon" style="background:var(--ny-orange);color:#000;">4</div>
+          <div class="gap-text"><strong>Hotspots &amp; zones are siloed</strong> — demand signals and zone management are separate systems.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon" style="background:var(--ny-blue);color:#fff;">5</div>
+          <div class="gap-text"><strong>No dynamic zone lifecycle</strong> — zones are static and permanent. No time-of-day activation or auto-deprecation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Control Center Scalability -->
+  <div class="slide" id="s7">
+    <h2>Control Center Scalability Gaps</h2>
+    <div style="flex:1;">
+      <table>
+        <thead><tr><th>#</th><th>Gap</th><th>Severity</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>One-at-a-time zone creation</td><td><span class="priority priority-p0">Critical</span></td><td>100 zones = ~100 manual sessions. Backend CSV upsert exists but UI serializes to single-zone.</td></tr>
+          <tr><td>2</td><td>No cancellation heatmap on zone map</td><td><span class="priority priority-p0">Critical</span></td><td>Analytics and zone management completely siloed. H3 heatmap is "Coming Soon" placeholder.</td></tr>
+          <tr><td>3</td><td>No data-driven zone suggestions</td><td><span class="priority priority-p0">Critical</span></td><td>Hotspot categories exist but manually created. Cancellation groupBy dimensions never surface in geo UI.</td></tr>
+          <tr><td>4</td><td>No zone effectiveness metrics</td><td><span class="priority priority-p1">High</span></td><td>No per-zone cancellation rate, conversion rate, or ride volume. Cannot identify underperforming zones.</td></tr>
+          <tr><td>5</td><td>No approval workflow</td><td><span class="priority priority-p1">High</span></td><td>Changes go live immediately. No staging, review, versioning, or audit trail.</td></tr>
+          <tr><td>6</td><td>2,000 location hard limit</td><td><span class="priority priority-p2">Medium</span></td><td>Hardcoded limit in GeospatialPage and SpecialLocationsPage. No pagination.</td></tr>
+          <tr><td>7</td><td>No bulk import/export</td><td><span class="priority priority-p2">Medium</span></td><td>Backend handles batch CSV. Limitation is purely UI — no batch upload flow.</td></tr>
+          <tr><td>8</td><td>Pending changes lost on refresh</td><td><span class="priority priority-p2">Medium</span></td><td>All edits in client-side Map, no localStorage persistence.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Proposed Solutions & Roadmap -->
+  <div class="slide" id="s8">
+    <h2>Proposed Solutions &amp; Roadmap</h2>
+    <div class="timeline" style="margin-bottom:24px;">
+      <div class="timeline-phase" style="background:rgba(239,71,111,0.1);">
+        <div class="phase-title" style="color:var(--p0);">P0 — Data Foundation</div>
+        <div class="phase-items">
+          &bull; Cancellation heatmap in control center (H3 overlay on zone map)<br>
+          &bull; Zone effectiveness dashboard (per-zone cancel rate, ride volume, completion rate)<br>
+          &bull; No schema changes needed — pure query + UI
+        </div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(255,159,28,0.1);">
+        <div class="phase-title" style="color:var(--ny-orange);">P1 — Scalability</div>
+        <div class="phase-items">
+          &bull; Bulk zone import UI (CSV/KML upload to existing batch API)<br>
+          &bull; HDBSCAN hotspot detection (nightly batch)<br>
+          &bull; Auto-suggest zones with one-click creation<br>
+          &bull; Alpha shape boundaries + MCLP gate placement
+        </div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(67,97,238,0.1);">
+        <div class="phase-title" style="color:var(--ny-blue);">P2 — Data Enrichment</div>
+        <div class="phase-items">
+          &bull; Capture rider GPS at cancel (2 nullable columns)<br>
+          &bull; Zone-specific cancel reasons ("gate closed," "wrong gate," "walking too far")<br>
+          &bull; Crowdsource API for real-time gate status
+        </div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(108,117,125,0.1);">
+        <div class="phase-title" style="color:var(--ny-gray);">P3 — Advanced</div>
+        <div class="phase-items">
+          &bull; Dynamic zone lifecycle (time-based activation, auto-deprecation)<br>
+          &bull; FIFO queue visibility (position + wait time at gates)<br>
+          &bull; Switchback experiments for zone A/B testing
+        </div>
+      </div>
+    </div>
+    <div class="grid-3" style="flex:unset;">
+      <div class="card card-accent">
+        <h3>Validation Path</h3>
+        <p style="font-size:14px;">1. Prove geographic clustering (HDBSCAN + Getis-Ord Gi*)<br>2. Characterize hotspots (reason codes, time patterns)<br>3. Measure existing zone effectiveness<br>4. Pilot 3 new zones with diff-in-diff measurement</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Success Criteria</h3>
+        <p style="font-size:14px;">&ge;3 significant clusters not covered by existing zones. &ge;5% cancellation rate reduction with p&lt;0.05. Measurably lower cancel rate inside zones vs. comparable outside locations.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Core Hypothesis</h3>
+        <p style="font-size:14px;">Cancellations cluster geographically, and zones/gates placed at high-cancellation locations — using data-driven boundaries and optimized gate placement — will measurably reduce them.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="go(-1)">&larr; Prev</button>
+  <button onclick="go(1)">Next &rarr;</button>
+</div>
+<div class="slide-counter" id="counter"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    cur = (n + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + slides.length;
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  });
+
+  show(0);
+</script>
+</body>
+</html>

@@ -47,6 +47,11 @@ async function scrapeAndSync() {
   // Scrape percentages — anchored to section headings, with positional fallback
   const bodyText = document.body.innerText;
 
+  // Get email for multi-plan identification
+  let email = null;
+  const emailMatch = bodyText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch) email = emailMatch[1].toLowerCase();
+
   // Anchored extraction: find % near known section headings
   const sessionMatch = bodyText.match(/(?:current\s+)?session[\s\S]{0,200}?(\d{1,3})%\s*used/i);
   const weeklyMatch = bodyText.match(/weekly[\s\S]{0,200}?(\d{1,3})%\s*used/i);
@@ -140,6 +145,7 @@ async function scrapeAndSync() {
   try {
     const manifest = chrome.runtime.getManifest();
     const payload = { name, team, source: 'extension', extensionVersion: manifest.version };
+    if (email) payload.email = email;
     if (planType) payload.planType = planType;
     if (sessionPct !== null) payload.sessionPct = sessionPct;
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;

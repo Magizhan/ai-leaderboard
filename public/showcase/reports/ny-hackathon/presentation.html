@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>26 Ways of Booking NammaYatri</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  /* Typography */
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.1; }
+  h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); font-weight: 700; margin-bottom: 0.8em; }
+  h3 { font-size: clamp(1rem, 2vw, 1.3rem); font-weight: 600; margin-bottom: 0.5em; }
+
+  .subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    color: rgba(255,255,255,0.6);
+    font-weight: 300;
+    margin-top: 0.5em;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  /* Slide 1 — Title */
+  .title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+  }
+  .title-slide .big-number {
+    font-size: clamp(5rem, 15vw, 12rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--ny-green), var(--ny-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .title-slide .byline {
+    font-size: clamp(0.85rem, 1.5vw, 1rem);
+    color: rgba(255,255,255,0.4);
+    margin-top: 1rem;
+  }
+
+  /* Slide 2 — Channels Grid */
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+    gap: 12px;
+    margin-top: 1rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+  }
+  .channel-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background 0.2s;
+  }
+  .channel-card:hover { background: rgba(255,255,255,0.1); }
+  .channel-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .channel-card .ch-name { font-weight: 600; font-size: 0.85rem; }
+  .channel-card .ch-desc { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  /* Slide 3 — Architecture */
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 24px);
+    flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+  .arch-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .arch-box.highlight {
+    background: rgba(45,198,83,0.15);
+    border-color: var(--ny-green);
+  }
+  .arch-arrow { font-size: 1.5rem; color: rgba(255,255,255,0.3); }
+  .locations-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1.5rem;
+    justify-content: center;
+  }
+  .loc-chip {
+    background: rgba(67,97,238,0.15);
+    border: 1px solid rgba(67,97,238,0.3);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  /* Slide 4 — Test Results */
+  .results-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+  }
+  .results-summary {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .result-stat {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px 28px;
+    text-align: center;
+  }
+  .result-stat .num {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+  }
+  .result-stat .label { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+  .results-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+    gap: 8px;
+  }
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-pass { background: var(--ny-green); }
+  .status-pending { background: var(--ny-orange); }
+
+  /* Slide 5 — Demo Highlights */
+  .demos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: 20px;
+    margin-top: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+  }
+  .demo-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .demo-card .demo-cmd {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: rgba(0,0,0,0.4);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    margin: 12px 0;
+    color: var(--ny-green);
+    overflow-x: auto;
+  }
+  .demo-card .demo-result {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Slide 6 — Why This Matters */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    gap: 24px;
+    margin-top: 1.5rem;
+    flex: 1;
+  }
+  .why-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .why-card h3 { color: var(--ny-green); }
+  .why-card p { font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6; }
+
+  /* Data slides */
+  .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; margin-top: 1rem; }
+  .data-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 22px; }
+  .data-card h3 { color: var(--ny-green); font-size: 1rem; margin-bottom: 6px; }
+  .data-card p { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.6; }
+  .data-card .big { font-size: 2rem; font-weight: 900; color: var(--ny-green); }
+  .data-card .big.orange { color: var(--ny-orange); }
+  .data-card .big.red { color: var(--ny-red); }
+  .data-card .big.blue { color: var(--ny-blue); }
+  .data-card .sub { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; margin-top: 16px; }
+  .bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .bar { border-radius: 4px 4px 0 0; width: 100%; min-width: 24px; transition: height 0.5s; }
+  .bar-label { font-size: 0.6rem; color: rgba(255,255,255,0.4); margin-top: 4px; text-align: center; writing-mode: vertical-lr; transform: rotate(180deg); max-height: 60px; }
+  .bar-val { font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+
+  .persona-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 14px; margin-top: 1rem; }
+  .persona-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; text-align: center; }
+  .persona-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .persona-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+  .persona-card p { font-size: 0.78rem; color: rgba(255,255,255,0.55); line-height: 1.5; }
+
+  .highlight-box { background: rgba(45,198,83,0.1); border: 1px solid rgba(45,198,83,0.25); border-radius: 12px; padding: 18px 22px; margin: 12px 0; }
+  .highlight-box p { font-size: 0.88rem; color: rgba(255,255,255,0.8); line-height: 1.7; }
+  .highlight-box strong { color: var(--ny-green); }
+
+  .warning-box { background: rgba(239,71,111,0.1); border: 1px solid rgba(239,71,111,0.25); border-radius: 12px; padding: 18px 22px; margin: 12px 0; }
+  .warning-box p { font-size: 0.88rem; color: rgba(255,255,255,0.8); line-height: 1.7; }
+  .warning-box strong { color: var(--ny-red); }
+
+  .flow-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+  .flow-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 18px; font-size: 0.85rem; font-weight: 600; }
+  .flow-arrow { color: var(--ny-green); font-size: 1.2rem; }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    .arch-flow { flex-direction: column; }
+    .arch-arrow { transform: rotate(90deg); }
+    .results-summary { flex-direction: column; gap: 12px; }
+    .result-stat { padding: 14px 20px; }
+    .persona-grid { grid-template-columns: 1fr 1fr; }
+    [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    .flow-row { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+    .channels-grid { grid-template-columns: 1fr; gap: 8px; }
+    .title-slide .big-number { font-size: 5rem; }
+    .persona-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide title-slide active" data-slide="1">
+    <div class="big-number">26</div>
+    <h1>Ways of Booking NammaYatri</h1>
+    <p class="subtitle">One API, every interface.</p>
+    <p class="byline">Hackathon project by Mags</p>
+  </div>
+
+  <!-- Slide 2: The Channels -->
+  <div class="slide" data-slide="2">
+    <h2>The Channels</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">19 interfaces, one endpoint</p>
+    <div class="channels-grid">
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(67,97,238,0.2);color:var(--ny-blue);">AI</div><div><div class="ch-name">Claude AI (MCP)</div><div class="ch-desc">"book me a ride" in chat</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(45,198,83,0.2);color:var(--ny-green);">💬</div><div><div class="ch-name">Slack / WhatsApp</div><div class="ch-desc">via OpenClaw</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,159,28,0.2);color:var(--ny-orange);">🌐</div><div><div class="ch-name">Web App</div><div class="ch-desc">ny.magizhan.work</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,255,255,0.1);color:#fff;">📱</div><div><div class="ch-name">QR Code Scan</div><div class="ch-desc">Scan to book</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(67,97,238,0.2);color:var(--ny-blue);">🗣</div><div><div class="ch-name">Siri / iOS Shortcuts</div><div class="ch-desc">Voice-triggered</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(239,71,111,0.2);color:var(--ny-red);">👆</div><div><div class="ch-name">Phone Gesture</div><div class="ch-desc">Back Tap to book</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,159,28,0.2);color:var(--ny-orange);">🔊</div><div><div class="ch-name">Alexa</div><div class="ch-desc">via IFTTT</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(67,97,238,0.2);color:var(--ny-blue);">🎙</div><div><div class="ch-name">Google Assistant</div><div class="ch-desc">Voice command</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(45,198,83,0.2);color:var(--ny-green);">🤖</div><div><div class="ch-name">ChatGPT GPT</div><div class="ch-desc">Custom GPT action</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,255,255,0.1);color:#fff;">⌚</div><div><div class="ch-name">Apple Watch</div><div class="ch-desc">Wrist tap</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(239,71,111,0.2);color:var(--ny-red);">📲</div><div><div class="ch-name">iOS Lite App</div><div class="ch-desc">Minimal native app</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(45,198,83,0.2);color:var(--ny-green);">📨</div><div><div class="ch-name">Twilio SMS</div><div class="ch-desc">Text to book</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,159,28,0.2);color:var(--ny-orange);">🔘</div><div><div class="ch-name">IoT Button</div><div class="ch-desc">Physical button press</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(45,198,83,0.2);color:var(--ny-green);">$</div><div><div class="ch-name">Shell Script</div><div class="ch-desc">./book-ride.sh</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(67,97,238,0.2);color:var(--ny-blue);">&gt;_</div><div><div class="ch-name">CLI Tool</div><div class="ch-desc">ny book work</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(67,97,238,0.2);color:var(--ny-blue);">VS</div><div><div class="ch-name">VS Code</div><div class="ch-desc">Cmd+Shift+P</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,159,28,0.2);color:var(--ny-orange);">📅</div><div><div class="ch-name">Calendar Trigger</div><div class="ch-desc">via IFTTT</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(255,255,255,0.1);color:#fff;">🔲</div><div><div class="ch-name">iOS Widget</div><div class="ch-desc">Home screen tap</div></div></div>
+      <div class="channel-card"><div class="channel-icon" style="background:rgba(45,198,83,0.2);color:var(--ny-green);">{ }</div><div><div class="ch-name">Quick-book API</div><div class="ch-desc">POST /api/quick-book</div></div></div>
+    </div>
+  </div>
+
+  <!-- Slide 3: How It Works -->
+  <div class="slide" data-slide="3">
+    <h2>How It Works</h2>
+    <p class="subtitle">All channels funnel to one endpoint</p>
+    <div class="arch-flow">
+      <div class="arch-box">
+        <div style="font-size:1.5rem;margin-bottom:6px;">📱 🖥 🗣</div>
+        <h3 style="margin-bottom:2px;">Any Channel</h3>
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">19 interfaces</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box highlight">
+        <h3 style="margin-bottom:2px;color:var(--ny-green);">Quick-book API</h3>
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">POST /api/quick-book</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <h3 style="margin-bottom:2px;">NammaYatri</h3>
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">search → estimate → confirm</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:1rem;">
+      <p style="color:rgba(255,255,255,0.5);font-size:0.9rem;margin-bottom:1rem;">One POST does all 3 steps. Saved locations:</p>
+      <div class="locations-grid">
+        <span class="loc-chip">🏠 home</span>
+        <span class="loc-chip">💼 work</span>
+        <span class="loc-chip">🏥 kims</span>
+        <span class="loc-chip">🚇 metro</span>
+        <span class="loc-chip">🌳 park</span>
+        <span class="loc-chip">✈️ airport</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: Test Results -->
+  <div class="slide" data-slide="4">
+    <h2>Test Results</h2>
+    <div class="results-container">
+      <div class="results-summary">
+        <div class="result-stat">
+          <div class="num" style="color:var(--ny-green);">13</div>
+          <div class="label">PASS</div>
+        </div>
+        <div class="result-stat">
+          <div class="num" style="color:var(--ny-orange);">7</div>
+          <div class="label">PENDING</div>
+        </div>
+        <div class="result-stat">
+          <div class="num" style="color:rgba(255,255,255,0.3);">20</div>
+          <div class="label">TOTAL FLOWS</div>
+        </div>
+      </div>
+      <div class="results-list">
+        <div class="result-item"><span class="status-dot status-pass"></span>Claude MCP</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Slack</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>WhatsApp</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Web App</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>QR Code</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Siri</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Phone Gesture</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>iOS Lite App</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>CLI Tool</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>VS Code</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Shell Script</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>iOS Widget</div>
+        <div class="result-item"><span class="status-dot status-pass"></span>Quick-book API</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>Calendar (IFTTT)</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>Alexa (IFTTT)</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>Google Assistant</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>ChatGPT GPT</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>Apple Watch</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>Twilio SMS</div>
+        <div class="result-item"><span class="status-dot status-pending"></span>IoT Button</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Demo Highlights -->
+  <div class="slide" data-slide="5">
+    <h2>Demo Highlights</h2>
+    <div class="demos">
+      <div class="demo-card">
+        <span class="tag tag-green">CLI</span>
+        <div class="demo-cmd">$ ny book work</div>
+        <div class="demo-result">Ride confirmed in 2 seconds from terminal</div>
+      </div>
+      <div class="demo-card">
+        <span class="tag tag-orange">Gesture</span>
+        <div class="demo-cmd">*back-tap phone*</div>
+        <div class="demo-result">Ride booked via iOS Back Tap gesture — no screen interaction</div>
+      </div>
+      <div class="demo-card">
+        <span class="tag tag-blue">Claude MCP</span>
+        <div class="demo-cmd">"Book me a ride to KIMS"</div>
+        <div class="demo-result">MCP calls API → auto-rickshaw confirmed, estimated fare ₹76</div>
+      </div>
+      <div class="demo-card">
+        <span class="tag tag-green">QR Code</span>
+        <div class="demo-cmd">*scan QR*</div>
+        <div class="demo-result">Ride pre-filled with destination and confirmed instantly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Why This Matters -->
+  <div class="slide" data-slide="6">
+    <h2>Why This Matters</h2>
+    <div class="why-grid">
+      <div class="why-card">
+        <h3>Open Source</h3>
+        <p>NammaYatri runs on Beckn/ONDC — an open protocol. The Quick-book API pattern means ANY developer can build a booking interface on top of it.</p>
+      </div>
+      <div class="why-card">
+        <h3>Zero Commission</h3>
+        <p>NammaYatri charges 0% commission to drivers. Combined with an open API, this enables infinite distribution channels without extracting value.</p>
+      </div>
+      <div class="why-card">
+        <h3>Infinite Distribution</h3>
+        <p>Open API + zero commission = anyone can build a booking channel. Slack bots, CLI tools, IoT buttons, voice assistants — the ride network grows without gatekeepers.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: The Data — User Ride Patterns (from ClickHouse) -->
+  <div class="slide" data-slide="7">
+    <h2>The Data: Why Quick-Book Works</h2>
+    <p class="subtitle" style="margin-bottom:0.8rem;">Live from ClickHouse &mdash; 104M rides, 4.4M riders</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
+      <div>
+        <div class="data-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="data-card">
+            <div class="big">1.67M</div>
+            <h3>Power Users (10+ rides)</h3>
+            <p>38% of all riders</p>
+          </div>
+          <div class="data-card">
+            <div class="big">240K</div>
+            <h3>Super Users (100+ rides)</h3>
+            <p>5.4% of all riders</p>
+          </div>
+          <div class="data-card">
+            <div class="big blue">5</div>
+            <h3>Median Unique Pickups</h3>
+            <p>Per power user. They go to the same places.</p>
+          </div>
+          <div class="data-card">
+            <div class="big blue">5</div>
+            <h3>Median Unique Dropoffs</h3>
+            <p>Home, work, hospital, metro, airport.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="data-card" style="height:100%;">
+          <h3>Ride Frequency Distribution</h3>
+          <div class="bar-chart">
+            <div class="bar-col"><div class="bar-val">23%</div><div class="bar" style="height:46%;background:rgba(255,255,255,0.15);"></div><div class="bar-label">1</div></div>
+            <div class="bar-col"><div class="bar-val">28%</div><div class="bar" style="height:56%;background:rgba(255,255,255,0.2);"></div><div class="bar-label">2-5</div></div>
+            <div class="bar-col"><div class="bar-val">13%</div><div class="bar" style="height:26%;background:rgba(67,97,238,0.4);"></div><div class="bar-label">6-10</div></div>
+            <div class="bar-col"><div class="bar-val">25%</div><div class="bar" style="height:50%;background:rgba(45,198,83,0.5);"></div><div class="bar-label">11-50</div></div>
+            <div class="bar-col"><div class="bar-val">6%</div><div class="bar" style="height:12%;background:rgba(45,198,83,0.7);"></div><div class="bar-label">51-100</div></div>
+            <div class="bar-col"><div class="bar-val">5%</div><div class="bar" style="height:10%;background:var(--ny-green);"></div><div class="bar-label">100+</div></div>
+          </div>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:10px;">1.67M users with 10+ rides have just 5 unique locations each. These are the Quick-Book sweet spot.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <p><strong>Key Insight:</strong> A user with 10+ rides has only 5 locations they ever go. That means a one-time setup of their top 5 saved locations covers virtually all their future rides. Quick-Book becomes: pick a destination, confirm. 2 taps or 1 voice command.</p>
+    </div>
+  </div>
+
+  <!-- Slide 8: Who Benefits — User Personas -->
+  <div class="slide" data-slide="8">
+    <h2>NammaYatri Everywhere: Who Benefits</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">Every demographic has a reason to book outside the app</p>
+
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-icon">👵</div>
+        <h4>Elderly / Non-Tech</h4>
+        <p>Can't navigate the app. <strong style="color:var(--ny-green);">IoT button on bedside table</strong> or <strong style="color:var(--ny-green);">WhatsApp message</strong> books a ride to the hospital. Family sets it up once.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">👨‍💼</div>
+        <h4>Daily Commuter</h4>
+        <p>Same route every day. <strong style="color:var(--ny-green);">iOS Widget</strong>, <strong style="color:var(--ny-green);">Apple Watch tap</strong>, or <strong style="color:var(--ny-green);">Siri shortcut</strong> &mdash; "Hey Siri, book my ride to work." Zero friction.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">👩‍🎓</div>
+        <h4>Students</h4>
+        <p>Budget-conscious, tech-native. <strong style="color:var(--ny-green);">CLI tool</strong>, <strong style="color:var(--ny-green);">VS Code extension</strong>, or <strong style="color:var(--ny-green);">QR codes at campus</strong> gates for instant booking.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">👨‍👩‍👧</div>
+        <h4>Parents / Caregivers</h4>
+        <p>Book rides for kids or elderly parents remotely. <strong style="color:var(--ny-green);">WhatsApp bot</strong> or <strong style="color:var(--ny-green);">web app</strong> with saved destinations &mdash; kid taps, parent approves.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏢</div>
+        <h4>Businesses</h4>
+        <p>Corporate travel. <strong style="color:var(--ny-green);">Slack integration</strong> &mdash; employees type <code>/book ride to client office</code>. Expense tracking built in via API.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">♿</div>
+        <h4>Accessibility</h4>
+        <p>Visual/motor impairments. <strong style="color:var(--ny-green);">Voice commands</strong> (Siri/Alexa/Google), <strong style="color:var(--ny-green);">Back Tap gesture</strong>, or large-button <strong style="color:var(--ny-green);">iOS Widget</strong>. No fine motor skills needed.</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🌍</div>
+        <h4>Tourists</h4>
+        <p>No app installed. <strong style="color:var(--ny-green);">QR code at hotel</strong>, <strong style="color:var(--ny-green);">web app</strong>, or <strong style="color:var(--ny-green);">ChatGPT action</strong> &mdash; "book me a ride from Bangalore airport to MG Road."</p>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon">🏥</div>
+        <h4>Hospitals / Institutions</h4>
+        <p>Place <strong style="color:var(--ny-green);">QR codes at exit</strong>. Patients scan, ride pre-filled to nearest metro/home. No app download. Works on any phone with a camera.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 9: One-Time Setup Based on History -->
+  <div class="slide" data-slide="9">
+    <h2>One-Time Setup: Smart Onboarding</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">Use ride history to auto-configure Quick-Book for every user</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3>How It Works</h3>
+          <div class="flow-row">
+            <div class="flow-box">ClickHouse query</div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-box">Top 5 locations</div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-box">Reverse geocode</div>
+          </div>
+          <div class="flow-row">
+            <div class="flow-box">Auto-label</div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-box">Pre-configured</div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-box">Ready to Quick-Book</div>
+          </div>
+          <p style="margin-top:12px;">For every user with 10+ rides, we already know their top locations. Auto-create their saved places. They just confirm once.</p>
+        </div>
+
+        <div class="data-card">
+          <h3>Example: Auto-Generated Profile</h3>
+          <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:14px;font-family:monospace;font-size:0.8rem;line-height:1.8;color:var(--ny-green);margin-top:8px;">
+            Rider: Priya (87 rides)<br>
+            <span style="color:rgba(255,255,255,0.5);">Auto-detected locations:</span><br>
+            &nbsp;&nbsp;🏠 home &rarr; Koramangala 4th Block<br>
+            &nbsp;&nbsp;💼 work &rarr; Whitefield IT Park<br>
+            &nbsp;&nbsp;🏥 hospital &rarr; Manipal Hospital<br>
+            &nbsp;&nbsp;🚇 metro &rarr; Indiranagar Metro<br>
+            &nbsp;&nbsp;✈️ airport &rarr; KIA Terminal 1<br>
+            <span style="color:rgba(255,255,255,0.4);">---</span><br>
+            <span style="color:var(--ny-orange);">Quick-Book: "Hey Siri, book to work"</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3>Who Gets Auto-Setup</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div style="text-align:center;padding:12px;background:rgba(45,198,83,0.1);border-radius:8px;">
+              <div style="font-size:1.6rem;font-weight:900;color:var(--ny-green);">1.67M</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);">NammaYatri (10+ rides)</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:rgba(67,97,238,0.1);border-radius:8px;">
+              <div style="font-size:1.6rem;font-weight:900;color:var(--ny-blue);">342K</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);">BharatTaxi (10+ rides)</div>
+            </div>
+          </div>
+          <p style="margin-top:10px;">Each has only ~5 unique locations. Auto-setup covers 90%+ of their trips.</p>
+        </div>
+
+        <div class="data-card">
+          <h3>Progressive Setup for New Users</h3>
+          <p style="margin-top:6px;">After 3 rides, suggest: "We noticed you go to Whitefield often. Save it as 'work'?" After 5 rides: "Add Quick-Book widget?" After 10 rides: full auto-setup.</p>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="tag tag-green">3 rides: suggest saves</span>
+            <span class="tag tag-blue">5 rides: widget nudge</span>
+            <span class="tag tag-orange">10 rides: full setup</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: Retention — Win Back Churned Users -->
+  <div class="slide" data-slide="10">
+    <h2>Win Back 597K Churned Power Users</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">Power users who stopped booking &mdash; they already know NY. Quick-Book gives them a reason to come back.</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div class="warning-box">
+          <p><strong>597,672 churned power users</strong> (10+ rides, no ride in 90+ days). Average: 33 lifetime rides. Average gone: 258 days. These aren't casual users &mdash; they were loyal.</p>
+        </div>
+
+        <div class="data-card" style="margin-top:14px;">
+          <h3>WhatsApp Re-Engagement Campaign</h3>
+          <p style="margin-top:8px;">We have their ride history. We know their routes. Send a personalized WhatsApp message:</p>
+          <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;margin-top:12px;border-left:3px solid var(--ny-green);">
+            <div style="font-size:0.8rem;color:rgba(255,255,255,0.7);line-height:1.7;">
+              <strong style="color:#fff;">NammaYatri</strong><br>
+              Hi Priya! 👋<br><br>
+              We miss you! You used to ride NY 3x/week to Whitefield.<br><br>
+              New: <strong style="color:var(--ny-green);">Quick-Book</strong> &mdash; book your ride in 1 tap. No app needed.<br><br>
+              Reply <strong style="color:var(--ny-green);">"WORK"</strong> to book to Whitefield right now.<br>
+              Reply <strong style="color:var(--ny-green);">"HOME"</strong> to book to Koramangala.<br><br>
+              <span style="color:rgba(255,255,255,0.4);">Or tap: ny.magizhan.work/quick</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3>Why This Works</h3>
+          <div style="margin-top:8px;">
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;">
+              <span style="color:var(--ny-green);font-size:1.2rem;">1.</span>
+              <p><strong style="color:#fff;">Zero friction re-entry</strong> &mdash; no app to reinstall, no login, no searching. Reply to a WhatsApp message and you're riding.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;">
+              <span style="color:var(--ny-green);font-size:1.2rem;">2.</span>
+              <p><strong style="color:#fff;">Personalized</strong> &mdash; the message uses their actual locations and frequency. Not generic marketing.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;">
+              <span style="color:var(--ny-green);font-size:1.2rem;">3.</span>
+              <p><strong style="color:#fff;">Conversational</strong> &mdash; WhatsApp is where people already are. No push notifications that get ignored.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <span style="color:var(--ny-green);font-size:1.2rem;">4.</span>
+              <p><strong style="color:#fff;">Measurable</strong> &mdash; "WORK" reply &rarr; ride booked &rarr; reactivation tracked. Clear ROI per message.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box">
+          <p>Even a <strong>5% reactivation rate</strong> = <strong>29,883 users</strong> booking again. At avg 33 rides/user lifetime, that's <strong>~1M potential rides recovered</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 11: Marketing & PR Campaign -->
+  <div class="slide" data-slide="11">
+    <h2>Marketing & PR: "NammaYatri Everywhere"</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">The story writes itself &mdash; the world's most accessible ride-hailing platform</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3 style="color:var(--ny-orange);">The Narrative</h3>
+          <p style="margin-top:6px;font-style:italic;">"While Uber needs you to download their app, NammaYatri lets you book from WhatsApp, Siri, your Apple Watch, a QR code at the hospital, or an IoT button on your grandma's bedside table. 26 ways, zero commission, open source."</p>
+        </div>
+
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3 style="color:var(--ny-orange);">Campaign Angles</h3>
+          <div style="margin-top:8px;">
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:#fff;">Accessibility story:</strong> <span style="color:rgba(255,255,255,0.6);">Grandma books with a button. Blind user books with Siri. Zero visual UI required.</span>
+            </div>
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:#fff;">Open source story:</strong> <span style="color:rgba(255,255,255,0.6);">The Quick-Book API is open. Anyone can build a NammaYatri booking channel. Uber can't say that.</span>
+            </div>
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:#fff;">Tech innovation story:</strong> <span style="color:rgba(255,255,255,0.6);">First ride-hailing platform with native AI booking (Claude MCP, ChatGPT action). The future of travel.</span>
+            </div>
+            <div style="padding:8px 0;">
+              <strong style="color:#fff;">Community story:</strong> <span style="color:rgba(255,255,255,0.6);">Hospitals place QR codes. Colleges add Slack bots. Community builds distribution.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3 style="color:var(--ny-orange);">PR Playbook</h3>
+          <div style="margin-top:8px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+              <span class="tag tag-green" style="flex-shrink:0;">Week 1</span>
+              <p>Launch video: "26 Ways" demo reel. Post on X/Twitter, LinkedIn. Tag Beckn, ONDC, accessibility orgs.</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+              <span class="tag tag-blue" style="flex-shrink:0;">Week 2</span>
+              <p>Partner placement: QR codes at 100 hospital exits, 50 metro stations, 20 college campuses in Bangalore.</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+              <span class="tag tag-orange" style="flex-shrink:0;">Week 3</span>
+              <p>WhatsApp re-engagement blast to 597K churned users with personalized Quick-Book messages.</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span class="tag tag-green" style="flex-shrink:0;">Week 4</span>
+              <p>Tech press: "How an open-source ride app became the most accessible in the world." Pitch to TechCrunch, YourStory, The Ken.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>Why it works as PR:</strong> Uber/Ola can never do this. Their business model requires the app (for ads, data lock-in). NY's zero-commission open model is the only one where "book from anywhere" actually makes sense.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 12: BharatTaxi AI-Native -->
+  <div class="slide" data-slide="12">
+    <h2>BharatTaxi: Born AI-Native</h2>
+    <p class="subtitle" style="margin-bottom:0.5rem;">BT doesn't need to retrofit &mdash; it can launch with Quick-Book as the primary interface</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3 style="color:var(--ny-blue);">BharatTaxi Today</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <div style="text-align:center;padding:14px;background:rgba(67,97,238,0.1);border-radius:8px;">
+              <div style="font-size:1.4rem;font-weight:900;color:var(--ny-blue);">2.4M</div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">Total riders</div>
+            </div>
+            <div style="text-align:center;padding:14px;background:rgba(67,97,238,0.1);border-radius:8px;">
+              <div style="font-size:1.4rem;font-weight:900;color:var(--ny-blue);">16.6M</div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">Total rides</div>
+            </div>
+            <div style="text-align:center;padding:14px;background:rgba(67,97,238,0.1);border-radius:8px;">
+              <div style="font-size:1.4rem;font-weight:900;color:var(--ny-blue);">342K</div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">Users with 10+ rides</div>
+            </div>
+            <div style="text-align:center;padding:14px;background:rgba(67,97,238,0.1);border-radius:8px;">
+              <div style="font-size:1.4rem;font-weight:900;color:var(--ny-blue);">7</div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">Avg rides/user</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <h3 style="color:var(--ny-blue);">The AI-Native Playbook</h3>
+          <div style="margin-top:8px;">
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:var(--ny-green);">1. WhatsApp-first in new cities</strong>
+              <p>Don't launch with an app. Launch with a WhatsApp number. "Text BT to book." Lower CAC, instant adoption. App comes later.</p>
+            </div>
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:var(--ny-green);">2. QR at taxi stands</strong>
+              <p>Print QR codes at every existing BharatTaxi stand. Passenger scans, ride booked. No app install friction.</p>
+            </div>
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:var(--ny-green);">3. Voice booking for regional languages</strong>
+              <p>Hindi, Telugu, Tamil voice booking via Google Assistant or phone call IVR. "BharatTaxi, ghar chalo."</p>
+            </div>
+            <div style="padding:8px 0;">
+              <strong style="color:var(--ny-green);">4. Hotel/railway station partnerships</strong>
+              <p>Pre-configured Quick-Book for common destinations. Hotel front desk has a tablet with one-tap booking to airport/station.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card" style="margin-bottom:14px;">
+          <h3 style="color:var(--ny-blue);">Why BT Should Be AI-First</h3>
+          <p style="margin-top:6px;">BharatTaxi operates in Tier 2/3 cities where:</p>
+          <div style="margin-top:10px;">
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
+              <span style="color:var(--ny-orange);font-weight:800;">&#8226;</span>
+              <p>Users have <strong style="color:#fff;">lower smartphone literacy</strong> &mdash; WhatsApp is often the only app they use fluently</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
+              <span style="color:var(--ny-orange);font-weight:800;">&#8226;</span>
+              <p><strong style="color:#fff;">Data costs matter</strong> &mdash; a WhatsApp message costs nothing vs. downloading a 100MB app</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
+              <span style="color:var(--ny-orange);font-weight:800;">&#8226;</span>
+              <p><strong style="color:#fff;">Older demographics</strong> &mdash; grandparents, non-English speakers. Voice and simple text beat complex UIs</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <span style="color:var(--ny-orange);font-weight:800;">&#8226;</span>
+              <p><strong style="color:#fff;">Physical presence exists</strong> &mdash; BT already has taxi stands. QR codes convert foot traffic to digital bookings</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>The moat:</strong> Every other ride app requires an app download. BharatTaxi can be the first ride-hailing service you use <strong>without ever installing anything</strong>. WhatsApp message. QR code. Voice call. Done.</p>
+        </div>
+
+        <div class="data-card" style="margin-top:14px;border:1px solid rgba(45,198,83,0.3);">
+          <h3>Quick Win: Auto-setup for 342K existing power users</h3>
+          <p>Same ClickHouse query. Extract top locations. Send WhatsApp: "BharatTaxi Quick-Book is here. Reply OFFICE to book." Instant reactivation channel.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="slide-counter"><span id="current">1</span> / <span id="total">6</span></div>
+<div class="nav">
+  <button onclick="go(-1)">← Prev</button>
+  <button onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  let cur = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total').textContent = total;
+
+  function show(n) {
+    slides.forEach(s => s.classList.remove('active'));
+    cur = ((n % total) + total) % total;
+    slides[cur].classList.add('active');
+    document.getElementById('current').textContent = cur + 1;
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') go(-1);
+  });
+
+  // Touch/swipe support for mobile
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  show(0);
+</script>
+</body>
+</html>

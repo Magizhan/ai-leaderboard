@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-fleet — Parallel Task Orchestrator for Claude Code</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+    --fleet-purple: #a855f7;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .back-link {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: rgba(255,255,255,0.8); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+  .tag-purple { background: rgba(168,85,247,0.2); color: var(--fleet-purple); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+  .stat-value.purple { color: var(--fleet-purple); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .quote-green {
+    background: rgba(45,198,83,0.08);
+    border-left: 3px solid var(--ny-green);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .quote-purple {
+    background: rgba(168,85,247,0.08);
+    border-left: 3px solid var(--fleet-purple);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .slide-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+  .slide-title h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, #fff 0%, var(--fleet-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 14px; }
+  .text-muted { color: rgba(255,255,255,0.5); }
+  .fw-700 { font-weight: 700; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  .cmd-table td:first-child { font-family: monospace; color: var(--fleet-purple); font-weight: 600; white-space: nowrap; }
+
+  .highlight-card {
+    border: 2px solid var(--fleet-purple);
+    box-shadow: 0 0 30px rgba(168,85,247,0.15), 0 0 60px rgba(168,85,247,0.05);
+    position: relative;
+  }
+  .highlight-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(67,97,238,0.1), rgba(168,85,247,0.3));
+    z-index: -1;
+    filter: blur(8px);
+  }
+
+  .terminal {
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .terminal .prompt { color: var(--ny-green); }
+  .terminal .cmd { color: #fff; }
+  .terminal .output { color: rgba(255,255,255,0.5); }
+  .terminal .highlight { color: var(--fleet-purple); }
+  .terminal .arrow { color: var(--ny-orange); }
+
+  .pipeline-stage {
+    text-align: center;
+    padding: 24px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--fleet-purple);
+  }
+
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+
+  .grade { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 14px; }
+  .grade-a { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .grade-c { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    h3 { font-size: 1.1rem !important; }
+    .subtitle { font-size: 16px !important; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+    .stat-value { font-size: 32px !important; }
+    .terminal { font-size: 11px; padding: 14px 16px; }
+    .back-link { top: 12px; left: 12px; font-size: 12px; }
+    .slide-title h1 { font-size: 2.2rem !important; }
+    .pipeline-arrow { font-size: 24px; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+    .terminal { font-size: 10px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/showcase/mags.html">&larr; Back to Showcase</a>
+
+<div class="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title active">
+  <div class="tag tag-purple mb-16">Parallel Task Orchestrator &middot; Open Source</div>
+  <h1>claude-fleet</h1>
+  <p class="subtitle">Run hundreds of Claude Code sessions in parallel</p>
+  <div class="grid-4" style="margin-top:48px; width:100%;">
+    <div class="stat">
+      <div class="stat-value purple">403</div>
+      <div class="stat-label">Tasks Executed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value orange">48h</div>
+      <div class="stat-label">Wall Clock Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value blue">15</div>
+      <div class="stat-label">Repositories</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">30</div>
+      <div class="stat-label">Concurrent Sessions</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: The Problem -->
+<div class="slide">
+  <div class="tag tag-red mb-16">The Problem</div>
+  <h2>Claude Code is Sequential.<br>You Pay for a Firehose, Use a Garden Hose.</h2>
+
+  <div class="grid-2" style="margin-top:16px;">
+    <div>
+      <div class="card" style="border-left:4px solid var(--p0); margin-bottom:24px;">
+        <h3 style="color:var(--p0);">Without Fleet</h3>
+        <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:8px;">
+          <span style="font-size:36px; font-weight:800; color:var(--p0);">1</span>
+          <span class="text-muted">session at a time</span>
+        </div>
+        <p class="text-sm text-muted mb-8">1 session &times; 12 min/task &times; 403 tasks</p>
+        <div style="font-size:28px; font-weight:800; color:var(--p0);">= 80+ hours</div>
+        <p class="text-sm text-muted" style="margin-top:8px;">Spread across weeks. Context lost between sessions. Human bottleneck on every task handoff.</p>
+      </div>
+
+      <div class="quote">
+        You have a Max plan. You could run 30 sessions. Instead you run 1 and wait. That is 97% waste.
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="border-left:4px solid var(--ny-green); margin-bottom:24px;">
+        <h3 style="color:var(--ny-green);">With Fleet</h3>
+        <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:8px;">
+          <span style="font-size:36px; font-weight:800; color:var(--ny-green);">30</span>
+          <span class="text-muted">sessions in parallel</span>
+        </div>
+        <p class="text-sm text-muted mb-8">30 sessions &times; 12 min/task &times; ~14 tasks each</p>
+        <div style="font-size:28px; font-weight:800; color:var(--ny-green);">= done in hours</div>
+        <p class="text-sm text-muted" style="margin-top:8px;">Each session gets its own worktree. No conflicts. No context switching. Results collected automatically.</p>
+      </div>
+
+      <div class="quote-green">
+        Same plan. Same rate limits. 30x the throughput. The only thing that changed is orchestration.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: How It Works -->
+<div class="slide">
+  <div class="tag tag-blue mb-16">Architecture</div>
+  <h2>How It Works</h2>
+  <p class="subtitle" style="margin-bottom:20px;">Write tasks &rarr; Convert &rarr; Run &rarr; Monitor</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>The Workflow</h3>
+      <div class="card mb-16" style="padding:20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="background:var(--fleet-purple); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">1</div>
+          <div class="text-sm">Write <code>tasks.md</code> &mdash; one heading per task, with context and instructions</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="background:var(--fleet-purple); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">2</div>
+          <div class="text-sm"><code>fleet-convert tasks.md</code> &rarr; generates <code>tasks.json</code></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="background:var(--fleet-purple); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">3</div>
+          <div class="text-sm"><code>fleet tasks.json</code> &rarr; spawns parallel Claude sessions in git worktrees</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:var(--fleet-purple); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">4</div>
+          <div class="text-sm"><code>fleet-dashboard</code> &rarr; live monitoring of all sessions</div>
+        </div>
+      </div>
+
+      <h3>Config Hierarchy</h3>
+      <div class="card" style="padding:16px;">
+        <p class="text-sm text-muted" style="line-height:2;">
+          <code>~/.fleetrc</code> &rarr; global defaults<br>
+          <code>.fleetrc</code> &rarr; per-repo overrides<br>
+          <code>tasks.json</code> &rarr; per-task tool permissions
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <h3>7 CLI Commands</h3>
+      <table class="cmd-table">
+        <thead>
+          <tr><th>Command</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>fleet</td><td>Run tasks in parallel Claude sessions</td></tr>
+          <tr><td>fleet-convert</td><td>Convert tasks.md to tasks.json</td></tr>
+          <tr><td>fleet-dashboard</td><td>Live TUI for monitoring sessions</td></tr>
+          <tr><td>fleet-review</td><td>Review and merge completed task branches</td></tr>
+          <tr><td>fleet-status</td><td>Quick status check of running fleet</td></tr>
+          <tr><td>fleet-task</td><td>AI-generate task files from descriptions</td></tr>
+          <tr><td>fleet-cleanup</td><td>Remove worktrees and temp branches</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Slash Commands (KEY HIGHLIGHT) -->
+<div class="slide">
+  <div class="tag tag-purple mb-16">Key Feature</div>
+  <h2>Slash Commands &mdash; Fleet Inside Claude</h2>
+  <p class="subtitle" style="margin-bottom:20px;">Stay in your session. No terminal switching. No context loss.</p>
+
+  <div class="grid-2">
+    <div class="card highlight-card" style="padding:24px;">
+      <h3 style="color:var(--fleet-purple); font-size:18px;">Available Commands</h3>
+      <table class="cmd-table" style="font-size:14px;">
+        <tbody>
+          <tr><td>/fleet &lt;tasks&gt;</td><td>Spawn parallel sessions from within Claude</td></tr>
+          <tr><td>/fleet-task &lt;desc&gt;</td><td>AI generates task files from natural language</td></tr>
+          <tr><td>/fleet-status</td><td>Monitor running fleets without leaving</td></tr>
+        </tbody>
+      </table>
+
+      <div class="quote-purple" style="margin-top:20px;">
+        The AI writes better task prompts than you would. Each generated task includes the right file paths, the right context, and the right acceptance criteria.
+      </div>
+    </div>
+
+    <div class="terminal highlight-card" style="border-radius:12px;">
+      <div style="margin-bottom:4px;">
+        <span class="prompt">&gt;</span> <span class="highlight">/fleet-task</span> <span class="cmd">"audit payment, booking, and allocation for error handling"</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <span class="arrow">&rarr;</span> <span class="output">Creates tasks-audit-services.md with 3 focused tasks</span>
+      </div>
+      <div style="margin-bottom:4px;">
+        <span class="prompt">&gt;</span> <span class="highlight">/fleet</span> <span class="cmd">tasks-audit-services.md</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <span class="arrow">&rarr;</span> <span class="output">Spawns 3 parallel sessions in background</span>
+      </div>
+      <div style="margin-bottom:4px;">
+        <span class="prompt">&gt;</span> <span class="highlight">/fleet-status</span>
+      </div>
+      <div>
+        <span class="arrow">&rarr;</span> <span class="output">Fleet Status:</span> <span style="color:var(--ny-green);">1/3 done</span> <span class="output">|</span> <span style="color:var(--ny-orange);">2 running</span> <span class="output">|</span> <span class="output">0 pending</span>
+      </div>
+      <div style="margin-top:16px; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+        <span class="output" style="font-size:12px;">You never leave your Claude session.<br>You keep working while fleet runs in the background.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Case Study: NammaYatri -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Case Study</div>
+  <h2>NammaYatri: 403 Tasks Across 5 Waves</h2>
+  <p class="subtitle" style="margin-bottom:16px;">30 concurrent sessions (3 orchestrators &times; 10 parallel)</p>
+
+  <table style="margin-bottom:24px;">
+    <thead>
+      <tr><th>Wave</th><th>Tasks</th><th>Purpose</th><th>Output</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="priority priority-p0">1</span> Audit</td>
+        <td style="font-weight:700;">225</td>
+        <td>Analyze every service for error handling, logging, resilience</td>
+        <td>225 structured audit reports with severity-ranked findings</td>
+      </tr>
+      <tr>
+        <td><span class="priority priority-p1">2</span> Fix</td>
+        <td style="font-weight:700;">40</td>
+        <td>Implement fixes for critical findings from audit wave</td>
+        <td>40 PRs with code changes, each referencing its audit</td>
+      </tr>
+      <tr>
+        <td><span class="priority priority-p2">3</span> Verify</td>
+        <td style="font-weight:700;">41</td>
+        <td>Validate fixes, check for regressions, confirm patterns</td>
+        <td>41 verification reports with pass/fail status</td>
+      </tr>
+      <tr>
+        <td><span class="grade grade-c">4</span> Critical</td>
+        <td style="font-weight:700;">22</td>
+        <td>Deep-dive into highest-severity issues across services</td>
+        <td>22 detailed analyses with root cause and remediation</td>
+      </tr>
+      <tr>
+        <td><span class="grade grade-a">5</span> Observability</td>
+        <td style="font-weight:700;">13</td>
+        <td>Add structured logging, metrics, tracing across platform</td>
+        <td>13 PRs adding observability instrumentation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="grid-3" style="flex:0;">
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value" style="font-size:36px;">15</div>
+      <div class="stat-label">Repositories</div>
+    </div>
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value orange" style="font-size:36px;">48h</div>
+      <div class="stat-label">Total Wall Clock</div>
+    </div>
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value purple" style="font-size:36px;">3 &times; 10</div>
+      <div class="stat-label">Orchestrators &times; Parallel</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: The Overnight Pipeline -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">Pipeline</div>
+  <h2>The Overnight Pipeline</h2>
+  <p class="subtitle" style="margin-bottom:24px;">Friday evening &rarr; Saturday morning: read the reports</p>
+
+  <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:16px; align-items:center; margin-bottom:32px;">
+    <div class="pipeline-stage" style="border:2px solid var(--p0);">
+      <div style="font-size:32px; font-weight:800; color:var(--p0); margin-bottom:8px;">Audit</div>
+      <div class="text-sm text-muted">225 tasks</div>
+      <div class="text-sm text-muted">Analyze every service</div>
+      <div style="margin-top:8px; font-size:12px; color:var(--ny-green);">Output: structured reports</div>
+    </div>
+    <div class="pipeline-arrow">&rarr;</div>
+    <div class="pipeline-stage" style="border:2px solid var(--ny-orange);">
+      <div style="font-size:32px; font-weight:800; color:var(--ny-orange); margin-bottom:8px;">Fix</div>
+      <div class="text-sm text-muted">40 tasks</div>
+      <div class="text-sm text-muted">Implement changes</div>
+      <div style="margin-top:8px; font-size:12px; color:var(--ny-green);">Output: PRs with code</div>
+    </div>
+    <div class="pipeline-arrow">&rarr;</div>
+    <div class="pipeline-stage" style="border:2px solid var(--ny-green);">
+      <div style="font-size:32px; font-weight:800; color:var(--ny-green); margin-bottom:8px;">Verify</div>
+      <div class="text-sm text-muted">41 tasks</div>
+      <div class="text-sm text-muted">Validate &amp; check regressions</div>
+      <div style="margin-top:8px; font-size:12px; color:var(--ny-green);">Output: pass/fail reports</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="flex:0;">
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;">Multiple Orchestrators</h3>
+      <p class="text-sm text-muted">Run 3 fleet instances simultaneously, each managing 10 parallel sessions. One per repo group. They share nothing &mdash; each gets its own worktrees, its own branches, its own output directory.</p>
+    </div>
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;">Pipeline Chaining</h3>
+      <p class="text-sm text-muted">Each wave's output feeds the next wave's input. Audit reports become fix task context. Fix branches become verify targets. <code>fleet-convert</code> accepts previous results as context for the next wave.</p>
+    </div>
+  </div>
+
+  <div class="quote-green" style="margin-top:16px;">
+    Start the pipeline Friday evening. By Saturday morning, you have 225 audit reports, 40 PRs, and 41 verification results waiting for review.
+  </div>
+</div>
+
+<!-- SLIDE 7: Summary -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Summary</div>
+  <h2>Zero Infrastructure. Any Codebase. 200 Lines of Bash.</h2>
+
+  <div class="grid-3" style="margin-bottom:24px; flex:0;">
+    <div class="card card-accent" style="padding:20px;">
+      <h3 style="font-size:16px;">Zero Infrastructure</h3>
+      <p class="text-sm text-muted">No servers. No containers. No cloud accounts. Just bash scripts, git worktrees, and your existing Claude subscription.</p>
+    </div>
+    <div class="card card-accent" style="padding:20px;">
+      <h3 style="font-size:16px;">Any Codebase</h3>
+      <p class="text-sm text-muted">Works with any language, any repo size, any CI system. If Claude Code can work on it, fleet can parallelize it.</p>
+    </div>
+    <div class="card card-accent" style="padding:20px;">
+      <h3 style="font-size:16px;">Granular Control</h3>
+      <p class="text-sm text-muted">Per-task tool permissions. Read-only audits get no write tools. Fix tasks get Bash + Edit. You control exactly what each session can do.</p>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:24px; flex:0;">
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value" style="font-size:32px;">~200</div>
+      <div class="stat-label">Lines of Bash</div>
+    </div>
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value purple" style="font-size:32px;">7</div>
+      <div class="stat-label">CLI Commands</div>
+    </div>
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value orange" style="font-size:32px;">3</div>
+      <div class="stat-label">Slash Commands</div>
+    </div>
+    <div class="card stat" style="padding:16px;">
+      <div class="stat-value blue" style="font-size:32px;">0</div>
+      <div class="stat-label">Dependencies</div>
+    </div>
+  </div>
+
+  <div class="card highlight-card" style="padding:24px; text-align:center;">
+    <p style="font-size:20px; font-weight:600; color:#fff; margin-bottom:12px;">
+      <a href="https://github.com/nammayatri/claude-fleet" style="color:#fff; text-decoration:none;">github.com/nammayatri/claude-fleet</a>
+    </p>
+    <p class="text-sm text-muted" style="max-width:700px; margin:0 auto;">
+      "The gap between 'Claude Code can do this' and 'we actually did this across our entire platform' is just a task file and a fleet command."
+    </p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prev()">&#8592; Prev</button>
+  <button onclick="next()">Next &#8594;</button>
+</div>
+<div class="slide-counter"><span id="current">1</span> / <span id="total">7</span></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('current').textContent = current + 1;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+
+  // Touch support for mobile
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) { diff > 0 ? prev() : next(); }
+  });
+</script>
+</body>
+</html>

@@ -448,7 +448,7 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType, extensionVersion } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType, extensionVersion, email } = body;
   const name = body.name ? sanitizeString(body.name) : undefined;
   const source = sanitizeSource(body.source);
 
@@ -551,46 +551,64 @@ async function logUsage(body, env) {
 
   // --- Plan switch detection (numPlans > 1) ---
   if (numPlans > 1 && incomingWeekly !== undefined) {
-    const prevWeekly = activePlanData.weeklyPct || 0;
-    const prevExtra = activePlanData.extraUsageSpent || 0;
-    const prevWeeklyReset = activePlanData.weeklyResetsAt || '';
-    const inExtra = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : prevExtra;
-    const inWeeklyReset = weeklyResetsAt || prevWeeklyReset;
-
-    // Signals that this is a different plan:
-    // 1. Weekly dropped significantly (but timer not expired)
-    const weeklyDropped = incomingWeekly < prevWeekly - 5 && !weeklyExpired;
-    // 2. Extra usage changed significantly (different $ amount)
-    const extraChanged = Math.abs(inExtra - prevExtra) > 20;
-    // 3. Weekly reset timer is different (different plans have different schedules)
-    const resetDiffers = inWeeklyReset && prevWeeklyReset &&
-      inWeeklyReset !== prevWeeklyReset &&
-      Math.abs(new Date(inWeeklyReset).getTime() - new Date(prevWeeklyReset).getTime()) > 3600000;
-    // 4. Session fresh (0%) while weekly jumped up (switched to a more-used plan)
-    const sessionFreshWeeklyJumped = incomingSession <= 1 && incomingWeekly > prevWeekly + 20;
-
-    const isPlanSwitch = weeklyDropped || (extraChanged && resetDiffers) || sessionFreshWeeklyJumped;
-
-    if (isPlanSwitch) {
-      // Find best matching plan slot
-      let bestIdx = -1;
-      let bestDiff = Infinity;
-      for (let i = 0; i < plans.length; i++) {
-        if (i === activePlan) continue;
-        const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
-        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+    // Best method: use email to deterministically map to a plan slot
+    if (email) {
+      const cleanEmail = email.toLowerCase().trim();
+      // Find a plan slot already tagged with this email
+      let emailIdx = plans.findIndex(p => p.email === cleanEmail);
+      if (emailIdx >= 0) {
+        activePlan = emailIdx;
+      } else {
+        // Assign to first slot without an email, or LRU slot
+        let freeIdx = plans.findIndex(p => !p.email);
+        if (freeIdx < 0) {
+          // All slots have emails, use LRU
+          let lruIdx = 0, lruTime = Infinity;
+          for (let i = 0; i < plans.length; i++) {
+            const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
+            if (t < lruTime) { lruTime = t; lruIdx = i; }
+          }
+          freeIdx = lruIdx;
+        }
+        plans[freeIdx].email = cleanEmail;
+        activePlan = freeIdx;
       }
-      // If no close match (diff > 20), use LRU (oldest lastSyncAt)
-      if (bestIdx === -1 || bestDiff > 20) {
-        let lruIdx = -1, lruTime = Infinity;
+    } else {
+      // Fallback: heuristic-based plan switch detection (no email available)
+      const prevWeekly = activePlanData.weeklyPct || 0;
+      const prevExtra = activePlanData.extraUsageSpent || 0;
+      const prevWeeklyReset = activePlanData.weeklyResetsAt || '';
+      const inExtra = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : prevExtra;
+      const inWeeklyReset = weeklyResetsAt || prevWeeklyReset;
+
+      const weeklyDropped = incomingWeekly < prevWeekly - 5 && !weeklyExpired;
+      const extraChanged = Math.abs(inExtra - prevExtra) > 20;
+      const resetDiffers = inWeeklyReset && prevWeeklyReset &&
+        inWeeklyReset !== prevWeeklyReset &&
+        Math.abs(new Date(inWeeklyReset).getTime() - new Date(prevWeeklyReset).getTime()) > 3600000;
+      const sessionFreshWeeklyJumped = incomingSession <= 1 && incomingWeekly > prevWeekly + 20;
+
+      const isPlanSwitch = weeklyDropped || (extraChanged && resetDiffers) || sessionFreshWeeklyJumped;
+
+      if (isPlanSwitch) {
+        let bestIdx = -1;
+        let bestDiff = Infinity;
         for (let i = 0; i < plans.length; i++) {
           if (i === activePlan) continue;
-          const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
-          if (t < lruTime) { lruTime = t; lruIdx = i; }
+          const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
+          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
         }
-        if (lruIdx >= 0) bestIdx = lruIdx;
+        if (bestIdx === -1 || bestDiff > 20) {
+          let lruIdx = -1, lruTime = Infinity;
+          for (let i = 0; i < plans.length; i++) {
+            if (i === activePlan) continue;
+            const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
+            if (t < lruTime) { lruTime = t; lruIdx = i; }
+          }
+          if (lruIdx >= 0) bestIdx = lruIdx;
+        }
+        if (bestIdx >= 0) activePlan = bestIdx;
       }
-      if (bestIdx >= 0) activePlan = bestIdx;
     }
   }
 

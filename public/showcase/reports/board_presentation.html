@@ -342,6 +342,23 @@
     border-radius: 3px;
     transition: width 0.5s;
   }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
 </style>
 </head>
 <body>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Errors RCA & Critical Gaps — Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  .back-link {
+    position: fixed;
+    top: 20px;
+    left: 30px;
+    z-index: 100;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--ny-green); }
+
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 220px; font-size: 14px; text-align: right; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; min-width: 40px; transition: width 0.8s ease; }
+  .bar-fill.green { background: linear-gradient(90deg, var(--ny-green), #1fa845); }
+  .bar-fill.red { background: linear-gradient(90deg, var(--p0), #d63a5e); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--ny-orange), #e88c14); }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--ny-blue), #3451cc); }
+
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .quote-green {
+    background: rgba(45,198,83,0.08);
+    border-left: 3px solid var(--ny-green);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+
+  .slide-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+  .slide-title h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, #fff 0%, var(--ny-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .grade { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 14px; }
+  .grade-a { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .grade-b { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+  .grade-c { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .grade-f { background: rgba(239,71,111,0.2); color: var(--p0); }
+
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 14px; }
+  .text-muted { color: rgba(255,255,255,0.5); }
+  .fw-700 { font-weight: 700; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<a href="/showcase/mags.html" class="back-link">&larr; Back to Showcase</a>
+
+<div class="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title active">
+  <div class="tag tag-red mb-16">Platform Audit &middot; March 2026</div>
+  <h1>Live Errors RCA &amp;<br>Critical Gaps &mdash; Deep Dive</h1>
+  <p class="subtitle">55 task deep-dive across 3 waves. OpenSearch + codebase analysis of every live error pattern.</p>
+  <div class="grid-4" style="margin-top:48px; width:100%;">
+    <div class="stat">
+      <div class="stat-value red">55</div>
+      <div class="stat-label">Investigation Tasks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value orange">8</div>
+      <div class="stat-label">Critical Gaps (P0/P1)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value red">90.76%</div>
+      <div class="stat-label">Worst Availability</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">20</div>
+      <div class="stat-label">Services Investigated</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Live Error Landscape -->
+<div class="slide">
+  <div class="tag tag-red mb-16">Wave A: Live Errors</div>
+  <h2>Live Error Landscape</h2>
+  <p class="subtitle" style="margin-bottom:16px;">20 OpenSearch investigations across every error category</p>
+
+  <div class="bar-chart mb-24">
+    <div class="bar-row">
+      <div class="bar-label">5XX Errors (rider + driver) <span class="tag tag-red" style="font-size:10px;">A01-A02</span></div>
+      <div class="bar-track"><div class="bar-fill red" style="width:85%;">117 + 13 err/s &mdash; Top priority</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Timeout Errors <span class="tag tag-orange" style="font-size:10px;">A03</span></div>
+      <div class="bar-track"><div class="bar-fill orange" style="width:60%;">DB, Redis, External API timeouts</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">DB Connection / Pool <span class="tag tag-orange" style="font-size:10px;">A04</span></div>
+      <div class="bar-track"><div class="bar-fill orange" style="width:55%;">3,000+ potential PG connections</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Redis Cluster Issues <span class="tag tag-blue" style="font-size:10px;">A05</span></div>
+      <div class="bar-track"><div class="bar-fill blue" style="width:40%;">MOVED, HMGET bugs, decode failures</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">External API Failures <span class="tag tag-blue" style="font-size:10px;">A07</span></div>
+      <div class="bar-track"><div class="bar-fill blue" style="width:45%;">Maps, Juspay, FCM, Beckn, InfoBIP</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Notification Failures <span class="tag tag-red" style="font-size:10px;">A16</span></div>
+      <div class="bar-track"><div class="bar-fill red" style="width:35%;">4,766 FCM errors/day &mdash; lost rides</div></div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="flex:0;">
+    <div class="card" style="padding:16px 20px;">
+      <h3 style="font-size:16px;">Kafka Consumer Lag</h3>
+      <p class="text-sm text-muted">Rebalancing, deserialization errors, offset commit failures. Lag analysis across all topics (A06).</p>
+    </div>
+    <div class="card" style="padding:16px 20px;">
+      <h3 style="font-size:16px;">Runtime Exceptions</h3>
+      <p class="text-sm text-muted"><code>fromJust</code> failures, pattern match errors, null pointer exceptions in production (A08).</p>
+    </div>
+    <div class="card" style="padding:16px 20px;">
+      <h3 style="font-size:16px;">Race Conditions</h3>
+      <p class="text-sm text-muted">Constraint violations, deadlocks, ride state conflicts from concurrent actors (A18).</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Critical Gaps Analysis -->
+<div class="slide">
+  <div class="tag tag-red mb-16">Critical Gaps</div>
+  <h2>8 Critical Gaps Found</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Security, data integrity, and reliability gaps requiring immediate action</p>
+
+  <div class="grid-2">
+    <div class="card" style="border-left:4px solid var(--p0);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 1: Credential Leak in Logs</h3>
+        <span class="priority priority-p0">P0 SECURITY</span>
+      </div>
+      <p class="text-sm text-muted">Gupshup SMS API passwords and user phone numbers logged in plain text via OpenSearch. Full URLs with query params containing credentials exposed to anyone with log access.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--p0);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 2: Redis HMGET Bug</h3>
+        <span class="priority priority-p0">P0 BUG</span>
+      </div>
+      <p class="text-sm text-muted">Wrong argument count for HMGET breaks ALL multimodal/bus search. PayoutConfig decode failures: 10K+ errors/day &mdash; "expected Object, got null" across 7 city IDs.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--p0);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 3: No Booking Idempotency</h3>
+        <span class="priority priority-p0">P0 CRITICAL</span>
+      </div>
+      <p class="text-sm text-muted">Duplicate bookings possible on client retry. No idempotency key, no unique constraint on estimate_id. Payment retries can create duplicate payment intents via Juspay.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--ny-orange);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 4: No Distributed Tracing</h3>
+        <span class="priority priority-p1">HIGH</span>
+      </div>
+      <p class="text-sm text-muted">No OpenTelemetry. Request IDs may exist but not propagated across services, Kafka messages, or logs. Manual debugging across 20+ services.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--ny-orange);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 5: Zero Test Coverage in CI</h3>
+        <span class="priority priority-p1">HIGH</span>
+      </div>
+      <p class="text-sm text-muted">No tests running in CI. Critical path code (booking, payment, allocation, fare calc) has no automated test coverage. No regression safety net.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--ny-orange);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 6: Drainer Has No Resilience</h3>
+        <span class="priority priority-p1">HIGH</span>
+      </div>
+      <p class="text-sm text-muted">Redis-to-PostgreSQL drainer has no retry, no backpressure, no dead letter queue. If it fails, data is silently lost. No alerting on drainer lag or crashes.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--ny-blue);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 7: No PgBouncer</h3>
+        <span class="priority priority-p2">HIGH</span>
+      </div>
+      <p class="text-sm text-muted">10-25 PG connections per service, 79+66 pods = potential 3,000+ direct DB connections. No connection pooling layer. PostgreSQL max_connections at risk during scaling.</p>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--ny-blue);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">GAP 8: Cascading Failures</h3>
+        <span class="priority priority-p2">HIGH</span>
+      </div>
+      <p class="text-sm text-muted">BPP internal API errors cascade as E500 to riders (10K+/day). Nandi GTFS stop mapping breaks entire booking list. WhatsApp opt-in generates 10K+ spurious errors/day.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Root Cause Breakdown -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">Root Cause Analysis</div>
+  <h2>Root Cause Breakdown</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Errors traced from OpenSearch logs to exact code locations</p>
+
+  <table style="margin-bottom:24px;">
+    <thead>
+      <tr><th>Root Cause Category</th><th>Error Volume</th><th>Services</th><th>Severity</th><th>Tasks</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-weight:700;">Client-side stale tokens</td>
+        <td>56.7 err/s</td><td>rider-app</td>
+        <td><span class="priority priority-p0">P0</span></td>
+        <td>A01, B09</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">Unserviceable area requests</td>
+        <td>48.4 err/s</td><td>rider-app</td>
+        <td><span class="priority priority-p1">P1</span></td>
+        <td>A01, A11</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">DB connection exhaustion</td>
+        <td>10K failovers/6min</td><td>All Haskell</td>
+        <td><span class="priority priority-p0">P0</span></td>
+        <td>A04, A19</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">FCM notification failures</td>
+        <td>4,766/day</td><td>driver-app, allocator</td>
+        <td><span class="priority priority-p0">P0</span></td>
+        <td>A16, B08</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">Redis schema mismatches</td>
+        <td>10K+/day</td><td>driver-app</td>
+        <td><span class="priority priority-p0">P0</span></td>
+        <td>A05, B05</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">BPP internal API cascade</td>
+        <td>10K+/day</td><td>rider-app &rarr; BPP</td>
+        <td><span class="priority priority-p1">P1</span></td>
+        <td>A03, A20</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">Slow queries / missing indexes</td>
+        <td>&gt;100ms P99</td><td>All DB services</td>
+        <td><span class="priority priority-p1">P1</span></td>
+        <td>A09, B01</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;">Race conditions (booking)</td>
+        <td>6.7 err/s</td><td>driver-app</td>
+        <td><span class="tag tag-blue" style="font-size:11px;">Expected</span></td>
+        <td>A18, B02</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="grid-2" style="flex:0;">
+    <div class="quote">
+      Error correlation matrix (A20): Redis errors cascade to 4+ downstream services. Google Maps failures trigger search timeouts. DB slowness amplifies through drainer backlog.
+    </div>
+    <div class="quote-green">
+      Deployment correlation (A10): error spikes coincide with code deploys. All 19 Haskell services share one Docker image &mdash; any deploy can introduce regressions everywhere.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Reliability Audit Findings -->
+<div class="slide">
+  <div class="tag tag-blue mb-16">Wave 1: Reliability Audit</div>
+  <h2>Reliability Audit Findings</h2>
+  <p class="subtitle" style="margin-bottom:16px;">10-wave audit: service discovery, performance profiling, cross-cutting concerns</p>
+
+  <div class="grid-3" style="margin-bottom:24px;">
+    <div class="card card-accent">
+      <h3>Service Inventory</h3>
+      <div class="stat-value" style="font-size:36px;">57</div>
+      <div class="stat-label mb-16">Total Services</div>
+      <p class="text-sm text-muted">19 Haskell, 4 Rust, 7 frontends, 6 infra, 6 data/ML. 8 services handle live HTTP traffic. 7 have no CI/CD.</p>
+    </div>
+    <div class="card card-accent">
+      <h3>API Surface</h3>
+      <div class="stat-value" style="font-size:36px;">200+</div>
+      <div class="stat-label mb-16">Endpoints Mapped</div>
+      <p class="text-sm text-muted">Rider-app, driver-app, dashboards. Critical path: search, booking, payment, location. Rate limits audited per endpoint.</p>
+    </div>
+    <div class="card card-accent">
+      <h3>Dependencies</h3>
+      <div class="stat-value" style="font-size:36px;">10+</div>
+      <div class="stat-label mb-16">External APIs</div>
+      <p class="text-sm text-muted">Google Maps, Juspay, OSRM, InfoBIP, FCM, Beckn, Gupshup. Timeout/retry/circuit-breaker configs audited for each.</p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Service</th><th>Availability</th><th>Error RPS</th><th>Total RPS</th><th>Grade</th><th>Key Failure Mode</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>beckn-gateway</td><td style="color:var(--ny-green);">100.00%</td><td>0</td><td>0.7</td>
+        <td><span class="grade grade-a">A+</span></td><td class="text-muted text-sm">None</td>
+      </tr>
+      <tr>
+        <td>location-tracking (Rust)</td><td style="color:var(--ny-green);">99.16%</td><td>77</td><td>9,233</td>
+        <td><span class="grade grade-a">A</span></td><td class="text-muted text-sm">Rate limit 429s (expected)</td>
+      </tr>
+      <tr>
+        <td>driver-offer-bpp</td><td style="color:var(--ny-blue);">98.88%</td><td>13</td><td>1,173</td>
+        <td><span class="grade grade-b">B+</span></td><td class="text-muted text-sm">Race conditions in ride acceptance</td>
+      </tr>
+      <tr style="background:rgba(239,71,111,0.08);">
+        <td style="font-weight:700;">beckn-app-backend</td><td style="color:var(--p0);font-weight:700;">90.76%</td><td style="font-weight:700;">117</td><td style="font-weight:700;">1,268</td>
+        <td><span class="grade grade-f">F</span></td><td class="text-muted text-sm">INVALID_TOKEN + RIDE_NOT_SERVICEABLE</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="quote" style="margin-top:16px;">
+    Per Venkatesan's reliability tenets: critical path must be 100x strong. beckn-app-backend is the weakest link &mdash; but 90% of its "errors" are client-side, not true 5XX failures.
+  </div>
+</div>
+
+<!-- SLIDE 6: Remediation Plan & Priorities -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Remediation Plan</div>
+  <h2>Remediation Priorities</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Ordered by severity and impact. P0 items first.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--p0);">P0 &mdash; Fix This Week</h3>
+      <div class="card mb-16" style="padding:20px;">
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--p0); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">1</div>
+          <div>
+            <div class="fw-700">Credential Leak (GAP 1)</div>
+            <div class="text-sm text-muted">Sanitize URLs in error logs. Strip API keys from Gupshup, audit all external API credential handling. Security P0.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--p0); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">2</div>
+          <div>
+            <div class="fw-700">Redis HMGET + PayoutConfig (GAP 2)</div>
+            <div class="text-sm text-muted">Fix argument bug breaking bus search. Handle null in PayoutConfig deserialization. Create missing records for 7 cities.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--p0); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">3</div>
+          <div>
+            <div class="fw-700">Booking Idempotency (GAP 3)</div>
+            <div class="text-sm text-muted">Add UNIQUE constraint on booking(estimate_id). Idempotency keys for Juspay payment calls. Prevent duplicate allocations.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <div style="background:var(--p0); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">4</div>
+          <div>
+            <div class="fw-700">FCM Notification Failures (GAP 8-03)</div>
+            <div class="text-sm text-muted">4,766 drivers/day never receive ride offers. Add retry for transient errors, clean stale tokens, add SMS fallback.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:var(--ny-orange);">P1 &mdash; Fix This Sprint</h3>
+      <div class="card mb-16" style="padding:20px;">
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--ny-orange); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">5</div>
+          <div>
+            <div class="fw-700">BPP Cascade + Nandi Errors (GAP 8)</div>
+            <div class="text-sm text-muted">Wrap intercity check in try/catch. Skip bad stop codes instead of breaking booking list. Demote WhatsApp opt-in to warning.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--ny-orange); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">6</div>
+          <div>
+            <div class="fw-700">DB Failover Instability (GAP 8-04)</div>
+            <div class="text-sm text-muted">10K SECONDARY_CLUSTER failovers in 6 minutes. Investigate connection pool sizing, failover threshold sensitivity.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--ny-orange); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">7</div>
+          <div>
+            <div class="fw-700">Drainer Resilience (GAP 6)</div>
+            <div class="text-sm text-muted">Add retry with exponential backoff, dead letter queue, graceful shutdown, and Prometheus metrics for lag monitoring.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <div style="background:var(--ny-orange); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">8</div>
+          <div>
+            <div class="fw-700">PgBouncer Deployment (GAP 7)</div>
+            <div class="text-sm text-muted">Deploy connection pooling to cap 3,000+ direct PG connections. Transaction pooling mode. Sidecar or centralized cluster.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color:var(--ny-blue);">P2 &mdash; Next Quarter</h3>
+      <div class="card" style="padding:16px;">
+        <p class="text-sm text-muted" style="line-height:1.8;">
+          Distributed tracing / OpenTelemetry (GAP 4)<br>
+          Test coverage in CI for critical paths (GAP 5)<br>
+          Slow query optimization + missing indexes (A09)<br>
+          10x scaling playbook (C03)<br>
+          Observability maturity: Level 1 &rarr; Level 3 (C19)
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Summary -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Summary</div>
+  <h2>Key Takeaways</h2>
+
+  <div class="grid-4" style="margin-bottom:32px;">
+    <div class="card stat">
+      <div class="stat-value red">55</div>
+      <div class="stat-label">Deep-Dive Tasks</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value orange">3</div>
+      <div class="stat-label">P0 Gaps (Security + Data)</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value blue">5</div>
+      <div class="stat-label">P1 Gaps (Reliability)</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value">99.2%</div>
+      <div class="stat-label">Target Availability</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:24px;">
+    <div class="card" style="border-left:4px solid var(--p0);">
+      <h3 style="color:var(--p0);">What We Found</h3>
+      <p class="text-sm text-muted" style="line-height:2;">
+        Credentials leaking in logs (Gupshup API passwords in OpenSearch)<br>
+        Duplicate bookings possible on retry (no idempotency)<br>
+        4,766 drivers/day never receive ride offers (FCM failures)<br>
+        10K+ DB failovers in 6 minutes (primary instability)<br>
+        Redis bugs breaking all bus/multimodal search<br>
+        Drainer can silently lose data (no retry, no alerting)<br>
+        3,000+ direct PG connections with no pooling layer
+      </p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--ny-green);">
+      <h3>What We Recommend</h3>
+      <p class="text-sm text-muted" style="line-height:2;">
+        Week 1: Fix credential leak, Redis bugs, booking idempotency<br>
+        Week 2: FCM retry + fallback, cascade isolation, DB failover tuning<br>
+        Sprint: Drainer resilience, PgBouncer deployment<br>
+        Quarter: OpenTelemetry, CI test coverage, scaling playbook<br>
+        Ongoing: Venkatesan's 10 tenets scorecard &mdash; measure and improve
+      </p>
+    </div>
+  </div>
+
+  <div class="quote-green">
+    The platform's true 5XX rate is near-zero. Most "errors" are client-side (stale tokens, unserviceable areas). But the critical gaps &mdash; credential leaks, missing idempotency, drainer fragility &mdash; are real risks that need immediate attention before the next traffic spike.
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prev()">&#8592; Prev</button>
+  <button onclick="next()">Next &#8594;</button>
+</div>
+<div class="slide-counter"><span id="current">1</span> / <span id="total">7</span></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('current').textContent = current + 1;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+</script>
+</body>
+</html>

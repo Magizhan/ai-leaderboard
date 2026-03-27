@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chennai One (MOVE) - Technical Issues & Fix Plan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  /* Slide styles */
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  /* Cards */
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  /* Stat blocks */
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 180px; font-size: 14px; text-align: right; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; min-width: 40px; transition: width 0.8s ease; }
+  .bar-fill.green { background: linear-gradient(90deg, var(--ny-green), #1fa845); }
+  .bar-fill.red { background: linear-gradient(90deg, var(--p0), #d63a5e); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--ny-orange), #e88c14); }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--ny-blue), #3451cc); }
+
+  /* Quote */
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  /* Priority badge */
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+
+  /* Timeline */
+  .timeline { display: flex; gap: 0; flex: 1; align-items: stretch; }
+  .timeline-phase {
+    flex: 1;
+    padding: 24px;
+    border-radius: 12px;
+    position: relative;
+  }
+  .timeline-phase::after {
+    content: '\2192';
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: rgba(255,255,255,0.3);
+  }
+  .timeline-phase:last-child::after { display: none; }
+  .phase-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .phase-items { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.8; }
+
+  /* Highlight */
+  .highlight { color: var(--ny-green); font-weight: 700; }
+  .highlight-red { color: var(--p0); font-weight: 700; }
+  .highlight-orange { color: var(--ny-orange); font-weight: 700; }
+
+  /* List */
+  .clean-list { list-style: none; padding: 0; }
+  .clean-list li { padding: 8px 0; font-size: 16px; color: rgba(255,255,255,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px; }
+  .clean-list li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ny-green); flex-shrink: 0; }
+
+  .small-text { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide active" id="slide-1">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <span class="tag tag-red" style="margin-bottom:20px; width:fit-content;">Critical - Rating Below 4.0</span>
+      <h1>Chennai One (MOVE)</h1>
+      <h1 style="color: var(--p0);">Technical Deep Dive</h1>
+      <p class="subtitle">Rating crash 4.72 &rarr; 3.96 in 3 months &mdash; root causes, fix plans, and recovery timeline</p>
+      <div class="grid-4" style="margin-top:40px;">
+        <div class="stat">
+          <div class="stat-value red">3.96</div>
+          <div class="stat-label">Current Rating</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value red">19.1%</div>
+          <div class="stat-label">Complaint Rate</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value orange">~10%</div>
+          <div class="stat-label">Payment Success</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value blue">163</div>
+          <div class="stat-label">Complaints Catalogued</div>
+        </div>
+      </div>
+      <p class="small-text" style="margin-top:40px;">Synthesized from 28 reports | March 2026</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Rating Trajectory -->
+  <div class="slide" id="slide-2">
+    <h2>Rating Trajectory <span class="highlight-red">&mdash; Free Fall</span></h2>
+    <div class="grid-2">
+      <div>
+        <table>
+          <tr><th>Month</th><th>Rating</th><th>1-Star %</th><th>Complaint Rate</th></tr>
+          <tr><td>Sep 2025</td><td>4.55</td><td>&mdash;</td><td>15.9%</td></tr>
+          <tr><td>Oct 2025</td><td>4.66</td><td>&mdash;</td><td>6.6%</td></tr>
+          <tr><td>Nov 2025</td><td>4.68</td><td>2.6%</td><td>5.7%</td></tr>
+          <tr><td style="color:var(--ny-green); font-weight:700;">Dec 2025</td><td style="color:var(--ny-green); font-weight:700;">4.72</td><td>2.2%</td><td>3.1%</td></tr>
+          <tr><td>Jan 2026</td><td style="color:var(--ny-orange);">4.60</td><td>4.3%</td><td>5.1%</td></tr>
+          <tr><td>Feb 2026</td><td style="color:var(--p0);">4.22</td><td>9.5%</td><td>15.2%</td></tr>
+          <tr><td style="color:var(--p0); font-weight:700;">Mar 2026</td><td style="color:var(--p0); font-weight:700;">3.96</td><td style="color:var(--p0);">13.2%</td><td style="color:var(--p0);">19.1%</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:20px;">
+          <h3 style="color:var(--p0);">Key Numbers</h3>
+          <ul class="clean-list">
+            <li><span class="highlight-red">-0.76 rating points</span> in 3 months (Dec &rarr; Mar)</li>
+            <li>Decline rate: <span class="highlight-red">-0.25/month</span></li>
+            <li>Review volume collapsed <span class="highlight-red">96%</span> (1,867 &rarr; 68)</li>
+            <li>Complaint rate surged <span class="highlight-red">6x</span> (3.1% &rarr; 19.1%)</li>
+            <li>Conversion rate: 9% &rarr; <span class="highlight-red">4%</span> (historic low)</li>
+          </ul>
+        </div>
+        <div class="quote">
+          Without intervention, projected to hit ~3.5 by May 2026 &mdash; below which app store algorithms suppress discoverability.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Top Pain Points -->
+  <div class="slide" id="slide-3">
+    <h2>Top Pain Points <span style="color:rgba(255,255,255,0.4); font-size:20px;">163 complaints catalogued</span></h2>
+    <div class="bar-chart" style="margin-bottom:30px;">
+      <div class="bar-row">
+        <div class="bar-label">Route Accuracy</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:100%;">53 (32.5%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Payment Issues</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:83%;">44 (27.0%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Booking Failures</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:81%;">43 (26.4%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">GPS/Location</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:64%;">34 (20.9%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">UI/UX Issues</div>
+        <div class="bar-track"><div class="bar-fill blue" style="width:58%;">31 (19.0%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Performance/Speed</div>
+        <div class="bar-track"><div class="bar-fill blue" style="width:51%;">27 (16.6%)</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Pass/Wallet Issues</div>
+        <div class="bar-track"><div class="bar-fill blue" style="width:45%;">24 (14.7%)</div></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="quote">
+        Payment as % of all complaints rose from <strong>15.9% (Sep 2025)</strong> to <strong>69.2% (Mar 2026)</strong> &mdash; almost perfectly inversely correlated with the rating decline.
+      </div>
+      <div class="card">
+        <h3>"Money deducted, no ticket"</h3>
+        <p style="font-size:15px;">35% of all refund requests. Payment success at ~10% during peak. Payment page load success ~60%. P99 latency 11s+ (target: &lt;3s).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Root Causes - Payment Pipeline -->
+  <div class="slide" id="slide-4">
+    <h2>Root Cause #1: <span style="color:var(--p0);">Payment Pipeline</span></h2>
+    <p class="subtitle" style="margin-bottom:20px;">The #1 driver of rating decline &mdash; 10 critical issues, most unresolved for 7+ months</p>
+    <div class="grid-2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:var(--p0);">Critical Bugs</h3>
+          <ul class="clean-list">
+            <li><span class="priority priority-p0">P0</span> No <code>preFetch()</code> &mdash; DUI bundles download at runtime</li>
+            <li><span class="priority priority-p0">P0</span> <code>bundleTimeOut: 1000ms</code> &mdash; premature SDK timeout</li>
+            <li><span class="priority priority-p0">P0</span> Double <code>process()</code> call &mdash; duplicate charges</li>
+            <li><span class="priority priority-p0">P0</span> SDK terminate/re-init on every purchase</li>
+            <li><span class="priority priority-p0">P0</span> Infinite polling loop (no timeout)</li>
+            <li><span class="priority priority-p0">P0</span> No <code>hideLoader</code> timeout &mdash; user stuck forever</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="color:var(--ny-orange);">Architectural Gaps</h3>
+          <ul class="clean-list">
+            <li><span class="priority priority-p0">P0</span> Payment retry API: <code>error "Logic yet to be decided"</code></li>
+            <li><span class="priority priority-p0">P0</span> Payment-to-ticket non-atomic (no outbox/saga)</li>
+            <li><span class="priority priority-p1">P1</span> Multimodal gate blocks until ALL BPPs respond</li>
+            <li><span class="priority priority-p1">P1</span> Confirm TTL 60s &mdash; too short for slow flows</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Impact</h3>
+          <div class="grid-3" style="gap:12px;">
+            <div class="stat"><div class="stat-value red" style="font-size:32px;">~10%</div><div class="stat-label">Booking Success</div></div>
+            <div class="stat"><div class="stat-value red" style="font-size:32px;">~60%</div><div class="stat-label">Page Load Success</div></div>
+            <div class="stat"><div class="stat-value red" style="font-size:32px;">11s+</div><div class="stat-label">P99 Latency</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Root Causes - QR, GPS, iOS -->
+  <div class="slide" id="slide-5">
+    <h2>Root Causes: <span style="color:var(--ny-orange);">QR, GPS & iOS</span></h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3 style="color:var(--p0);">QR Code Scanning</h3>
+        <ul class="clean-list">
+          <li>Payload 315-355 chars (industry: 60-80) &rarr; ~40% scan failure</li>
+          <li>Dark mode inverts QR colors &rarr; 0% scan success</li>
+          <li>Wrong-direction tickets from inverted direction bit</li>
+          <li>Bus OTP route mismatch after MTC renumbering</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--ny-orange);">GPS / Location</h3>
+        <ul class="clean-list">
+          <li>Silent fallback to hardcoded Chennai Central coords</li>
+          <li>iOS stop proximity: 8m (industry min: 100m)</li>
+          <li>No age validation on cached locations</li>
+          <li>Bus tracking: 25m displacement filter &rarr; buses "disappear"</li>
+          <li>Chennai depot polygons not configured</li>
+          <li>Suburban booking requires physical station presence</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--ny-blue);">iOS-Specific</h3>
+        <ul class="clean-list">
+          <li>FCM push notifications broken since Jan 2026</li>
+          <li>Batch interval 30s (Android: 10s)</li>
+          <li>Max batch age 300s (Android: 10s)</li>
+          <li>App size 178.9 MB (Android: ~91.5 MB)</li>
+          <li>WKWebView termination not handled</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card">
+        <h3 style="color:var(--p0);">Accessibility (Legal Risk)</h3>
+        <p style="font-size:14px;">Screen reader non-functional. No low-floor bus filtering. Color contrast failures (2.88:1 vs 4.5:1 WCAG AA). <span class="highlight-red">RPwD Act 2016 non-compliant</span> &mdash; penalties up to Rs 5,00,000.</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--ny-orange);">Monitoring (Flying Blind)</h3>
+        <p style="font-size:14px;"><span class="highlight-red">71% of recommended alerts missing</span> (14/49). Zero payment page load monitoring. Zero QR scan tracking. Zero GPS accuracy metrics. No formal SLOs defined.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Fix Plans Summary -->
+  <div class="slide" id="slide-6">
+    <h2>Fix Plans <span style="color:rgba(255,255,255,0.4); font-size:20px;">148 fixes across 7 workstreams</span></h2>
+    <table style="margin-bottom:24px;">
+      <tr><th>Fix Plan</th><th>Fixes</th><th>P0 Fixes</th><th>Effort</th><th>Key Outcome</th></tr>
+      <tr>
+        <td style="font-weight:700; color:var(--p0);">Payment</td>
+        <td>9</td><td>6</td><td>~1 week</td>
+        <td>Payment page load &lt;2s (from 11s+), success &gt;90%</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--p0);">Booking Pipeline</td>
+        <td>26</td><td>7</td><td>~6 weeks</td>
+        <td>E2E booking success &gt;95% (from ~10%)</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--ny-orange);">QR Code</td>
+        <td>6</td><td>2</td><td>~4 weeks</td>
+        <td>Scan success &gt;98% (from ~60%)</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--ny-orange);">GPS/Location</td>
+        <td>15</td><td>3</td><td>~4-6 months</td>
+        <td>Eliminate hardcoded fallbacks</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--ny-blue);">iOS</td>
+        <td>38</td><td>12</td><td>~4 weeks</td>
+        <td>FCM working, GPS parity with Android</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--ny-blue);">Accessibility</td>
+        <td>19</td><td>6</td><td>~12+ weeks</td>
+        <td>RPwD Act compliance, screen reader functional</td>
+      </tr>
+      <tr>
+        <td style="font-weight:700; color:var(--ny-blue);">Monitoring</td>
+        <td>35</td><td>8</td><td>~8 weeks</td>
+        <td>49 alerts, 15 runbooks, 10 formal SLOs</td>
+      </tr>
+    </table>
+    <div class="card card-accent">
+      <p style="font-size:15px;"><strong>P0 covers payment (27%), QR (32.5%), and GPS (20.9%) = &gt;80% of dissatisfied users.</strong> Most P0 fixes are S-effort (&lt;1 week). Monitoring is foundational &mdash; it provides metrics to validate all other fixes.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Sprint Timeline -->
+  <div class="slide" id="slide-7">
+    <h2>Sprint Plan <span style="color:rgba(255,255,255,0.4); font-size:20px;">6-week recovery</span></h2>
+    <div class="timeline" style="margin-bottom:24px;">
+      <div class="timeline-phase" style="background:rgba(239,71,111,0.15);">
+        <div class="phase-title" style="color:var(--p0);">Sprint 1 (Wk 1-2)</div>
+        <div style="font-size:16px; font-weight:700; margin-bottom:8px;">"Stop the Bleeding"</div>
+        <div class="phase-items">
+          Payment preFetch + SDK init<br>
+          Polling timeout (30s)<br>
+          Double process() dedup<br>
+          bundleTimeOut 1s &rarr; 5s<br>
+          QR payload compression<br>
+          Dark mode QR fix<br>
+          GPS fallback removal<br>
+          Proximity 8m &rarr; 100m
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:var(--p0); font-weight:600;">Target: Payment &gt;80%, QR &gt;85%</div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(255,159,28,0.15);">
+        <div class="phase-title" style="color:var(--ny-orange);">Sprint 2 (Wk 2-3)</div>
+        <div style="font-size:16px; font-weight:700; margin-bottom:8px;">"Reliability Foundation"</div>
+        <div class="phase-items">
+          Payment-to-ticket atomicity<br>
+          Payment retry API<br>
+          Circuit breaker on APIs<br>
+          Multimodal partial-leg pay<br>
+          Fare calculation fix<br>
+          Payment journey monitoring<br>
+          CMRL v2 retry + backoff
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:var(--ny-orange); font-weight:600;">Target: Payment &gt;90%, Booking &gt;80%</div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(67,97,238,0.15);">
+        <div class="phase-title" style="color:var(--ny-blue);">Sprint 3 (Wk 4-5)</div>
+        <div style="font-size:16px; font-weight:700; margin-bottom:8px;">"User Trust"</div>
+        <div class="phase-items">
+          Bus pass cloud backup<br>
+          Screen reader accessibility<br>
+          Low-floor bus filtering<br>
+          iOS FCM fix<br>
+          Refund automation<br>
+          Wrong-direction prevention
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:var(--ny-blue); font-weight:600;">Target: Payment &gt;95%, Booking &gt;90%</div>
+      </div>
+      <div class="timeline-phase" style="background:rgba(45,198,83,0.15);">
+        <div class="phase-title" style="color:var(--ny-green);">Sprint 4 (Wk 5-6)</div>
+        <div style="font-size:16px; font-weight:700; margin-bottom:8px;">"Op Maturity"</div>
+        <div class="phase-items">
+          Offline ticket display<br>
+          Server auto-scaling<br>
+          10 missing runbooks<br>
+          Conductor QR training<br>
+          All SLO targets met
+        </div>
+        <div style="margin-top:12px; font-size:12px; color:var(--ny-green); font-weight:600;">Target: Payment &gt;98%, Rating 4.6+</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Team Requirement</h3>
+        <p style="font-size:14px;">3 Mobile, 2 Backend, 1-2 Multimodal, 2 SRE, 1 Data, 1 CX = <span class="highlight">10-11 engineers</span> total. Most senior mobile engineer owns SDK init lifecycle (highest risk).</p>
+      </div>
+      <div class="card">
+        <h3>Rollback Safety</h3>
+        <p style="font-size:14px;">Feature flag <code>PAYMENT_SDK_V2</code> for instant rollback. SRE monitoring must be live before Sprint 2 payment changes deploy. Circuit breaker tested before CMRL work.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Projected Recovery -->
+  <div class="slide" id="slide-8">
+    <h2>Projected Recovery <span style="color:rgba(255,255,255,0.4); font-size:20px;">Key metric targets</span></h2>
+    <table style="margin-bottom:24px;">
+      <tr><th>Metric</th><th>Current</th><th>Sprint 1</th><th>Sprint 2</th><th>Sprint 3</th><th style="color:var(--ny-green);">Sprint 4 Target</th></tr>
+      <tr>
+        <td style="font-weight:600;">Payment Latency (P95)</td>
+        <td style="color:var(--p0);">11s+</td><td>&lt; 3s</td><td>&lt; 2.5s</td><td>&lt; 2s</td>
+        <td style="color:var(--ny-green); font-weight:700;">&lt; 2s</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">Payment Success</td>
+        <td style="color:var(--p0);">~10%</td><td>&gt; 80%</td><td>&gt; 90%</td><td>&gt; 95%</td>
+        <td style="color:var(--ny-green); font-weight:700;">&gt; 98%</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">Booking E2E</td>
+        <td style="color:var(--p0);">~10%</td><td>&gt; 50%</td><td>&gt; 80%</td><td>&gt; 90%</td>
+        <td style="color:var(--ny-green); font-weight:700;">&gt; 95%</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">QR Scan Success</td>
+        <td style="color:var(--p0);">~60%</td><td>&gt; 85%</td><td>&gt; 90%</td><td>&gt; 95%</td>
+        <td style="color:var(--ny-green); font-weight:700;">&gt; 98%</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">App Rating</td>
+        <td style="color:var(--p0);">3.96</td><td>4.1-4.2</td><td>4.3-4.4</td><td>4.5-4.6</td>
+        <td style="color:var(--ny-green); font-weight:700;">4.6-4.7</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">Complaint Rate</td>
+        <td style="color:var(--p0);">19.1%</td><td>~10%</td><td>~6%</td><td>~4%</td>
+        <td style="color:var(--ny-green); font-weight:700;">&lt; 3%</td>
+      </tr>
+    </table>
+    <div class="grid-3">
+      <div class="card">
+        <h3>User Satisfaction</h3>
+        <ul class="clean-list">
+          <li>1-star reviews: 13.2% &rarr; &lt; 3%</li>
+          <li>5-star reviews: 55.9% &rarr; &gt; 80%</li>
+          <li>"No ticket" incidents &rarr; near zero</li>
+          <li>Refund volume down 80%+</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Operations</h3>
+        <ul class="clean-list">
+          <li>Alert coverage: 29% &rarr; &gt; 90%</li>
+          <li>Runbook coverage: 37% &rarr; &gt; 90%</li>
+          <li>MTTD: hours &rarr; &lt; 5 min</li>
+          <li>P0 incidents: ~3/qtr &rarr; &lt; 1/qtr</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Business</h3>
+        <ul class="clean-list">
+          <li>Conversion: 4% &rarr; 10-12%</li>
+          <li>Daily tickets: 2-3K &rarr; &gt; 10K</li>
+          <li>Refund time: 6+ days &rarr; &lt; 24h</li>
+          <li>Time to ticket: 2-15min &rarr; &lt; 5s</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Risks & Competitive Context -->
+  <div class="slide" id="slide-9">
+    <h2>Risks & Competitive Landscape</h2>
+    <div class="grid-2">
+      <div>
+        <h3 style="color:var(--p0);">Top Risks</h3>
+        <div class="card" style="margin-bottom:12px;">
+          <ul class="clean-list">
+            <li><span class="priority priority-p0">HIGH</span> Payment SDK fix regresses (has happened before: 2-3s &rarr; 11s+)</li>
+            <li><span class="priority priority-p1">MED</span> QR format change breaks AFC gates</li>
+            <li><span class="priority priority-p1">MED</span> Transactional Outbox introduces new failure mode</li>
+            <li><span class="priority priority-p0">HIGH</span> CMRL v2 API instability during Sprint 2</li>
+            <li><span class="priority priority-p1">MED</span> Insufficient mobile engineers for Sprint 1</li>
+          </ul>
+        </div>
+        <h3 style="color:var(--ny-orange); margin-top:16px;">Existential Threats</h3>
+        <div class="card">
+          <ul class="clean-list">
+            <li><span class="highlight-red">ONDC Mobility</span> &mdash; 56% of ONDC transactions; users buying metro tickets via Uber/NY</li>
+            <li><span class="highlight-red">Rating below 3.5</span> &mdash; app store algorithm suppression</li>
+            <li><span class="highlight-orange">RPwD Act legal action</span> &mdash; CCPD actively enforcing</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h3 style="color:var(--ny-blue);">Competitive Position</h3>
+        <table>
+          <tr><th>App</th><th>Rating</th><th>Key Advantage</th></tr>
+          <tr><td>Rapido</td><td style="color:var(--ny-green);">~4.8</td><td>Super-app, 74M MAU</td></tr>
+          <tr><td>RailOne</td><td style="color:var(--ny-green);">4.73</td><td>National railway consolidation</td></tr>
+          <tr><td>Tummoc</td><td style="color:var(--ny-green);">4.5</td><td>Multi-city transit</td></tr>
+          <tr><td>Chalo</td><td>4.0</td><td>Live tracking, 9 languages</td></tr>
+          <tr><td style="font-weight:700; color:var(--p0);">Chennai One</td><td style="color:var(--p0); font-weight:700;">3.96</td><td>Only unified metro+bus+suburban</td></tr>
+          <tr><td>DMRC Travel</td><td style="color:var(--ny-gray);">~3.5</td><td>Delhi metro only</td></tr>
+        </table>
+        <div class="card" style="margin-top:16px;">
+          <h3>Unique Advantage</h3>
+          <p style="font-size:14px;">India's first unified transit app (Aug 2025). Only app integrating metro + city bus + suburban train. Government-backed by CUMTA. <span class="highlight">This advantage erodes if reliability isn't fixed before ONDC adds bus ticketing.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Call to Action -->
+  <div class="slide" id="slide-10">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+      <span class="tag tag-red" style="margin-bottom:24px;">Urgent Action Required</span>
+      <h1 style="max-width:900px;">Sprint 1 must ship<br><span style="color:var(--p0);">within 1 week</span></h1>
+      <p class="subtitle" style="max-width:700px;">10 P0 fixes covering payment, QR, and GPS address &gt;80% of user complaints. Mostly S-effort (&lt;1 week each).</p>
+      <div class="grid-4" style="margin-top:40px; max-width:900px; width:100%;">
+        <div class="stat">
+          <div class="stat-value" style="font-size:36px;">10</div>
+          <div class="stat-label">P0 Fixes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="font-size:36px;">7</div>
+          <div class="stat-label">Engineers (Sprint 1)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="font-size:36px;">1 wk</div>
+          <div class="stat-label">Sprint 1 Duration</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="font-size:36px;">6 wk</div>
+          <div class="stat-label">Full Recovery</div>
+        </div>
+      </div>
+      <div style="margin-top:50px; display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+        <div class="card" style="text-align:left; max-width:400px;">
+          <h3>Immediate Next Steps</h3>
+          <ul class="clean-list">
+            <li>Assign senior mobile engineer to SDK init (#1, #3, #4)</li>
+            <li>Deploy feature flag <code>PAYMENT_SDK_V2</code></li>
+            <li>Start Outbox pattern design (#6) in parallel</li>
+            <li>SRE: ship payment monitoring (#22) before Sprint 2</li>
+          </ul>
+        </div>
+        <div class="card" style="text-align:left; max-width:400px;">
+          <h3>Success Criteria</h3>
+          <ul class="clean-list">
+            <li>Rating stabilized above 4.0 by end of Sprint 1</li>
+            <li>Payment success &gt;80% (from ~10%)</li>
+            <li>QR scan success &gt;85% (from ~60%)</li>
+            <li>Zero "money deducted, no ticket" by Sprint 2</li>
+          </ul>
+        </div>
+      </div>
+      <p class="small-text" style="margin-top:40px;">Chennai One Technical Deep Dive | March 2026 | 28 source reports</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="slide-counter"><span id="current">1</span> / <span id="total">10</span></div>
+<div class="nav">
+  <button onclick="go(-1)">&larr; Prev</button>
+  <button onclick="go(1)">Next &rarr;</button>
+</div>
+
+<script>
+  let cur = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total').textContent = total;
+
+  function show(n) {
+    slides.forEach(s => s.classList.remove('active'));
+    cur = ((n % total) + total) % total;
+    slides[cur].classList.add('active');
+    document.getElementById('current').textContent = cur + 1;
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  });
+
+  show(0);
+</script>
+
+</body>
+</html>

@@ -153,6 +153,17 @@
     <span class="author">— Vimal</span>
   </div>
 
+  <!-- Max Out Guide -->
+  <a href="/showcase/max-out-claude.html" class="person-card" style="border-color:rgba(249,115,22,0.4);background:linear-gradient(135deg, rgba(249,115,22,0.06), rgba(168,85,247,0.06));">
+    <div class="name" style="font-size:1.1rem;">How to Max Out Claude Max</div>
+    <div class="role">Complete guide: permissions, MCPs, fleet, remote access, pro tips</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-value" style="font-size:1rem;">4</div><div class="stat-label">Levels</div></div>
+      <div class="stat"><div class="stat-value" style="font-size:1rem;">8</div><div class="stat-label">Connectors</div></div>
+      <div class="stat"><div class="stat-value" style="font-size:1rem;">8</div><div class="stat-label">Anti-Patterns</div></div>
+    </div>
+  </a>
+
   <!-- People -->
   <div class="people-grid" id="people-grid">
 
@@ -160,7 +171,7 @@
       <div class="name">Mags <span class="badge-live">Live</span></div>
       <div class="role">Mac Mini M4 + claude-fleet + Claude Max</div>
       <div class="stats">
-        <div class="stat"><div class="stat-value" id="pr-count">76</div><div class="stat-label">PRs</div></div>
+        <div class="stat"><div class="stat-value" id="pr-count">89</div><div class="stat-label">PRs</div></div>
         <div class="stat"><div class="stat-value">268</div><div class="stat-label">Reports</div></div>
         <div class="stat"><div class="stat-value">16</div><div class="stat-label">Projects</div></div>
         <div class="stat"><div class="stat-value">9</div><div class="stat-label">Repos</div></div>
@@ -234,13 +245,15 @@ Save it as showcase.html in the current directory.</pre>
 </div>
 
 <script>
-// Update Mags PR count live from GitHub
+// Update Mags PR count live from GitHub (only if higher than static count)
 async function updatePRCount() {
   try {
     const res = await fetch('https://api.github.com/search/issues?q=author:Magizhan+org:nammayatri+is:pr&per_page=1');
     const data = await res.json();
-    if (data.total_count) {
-      document.getElementById('pr-count').textContent = data.total_count;
+    const el = document.getElementById('pr-count');
+    const current = parseInt(el.textContent) || 0;
+    if (data.total_count && data.total_count > current) {
+      el.textContent = data.total_count;
     }
   } catch(e) { /* silently fail, keep static count */ }
 }

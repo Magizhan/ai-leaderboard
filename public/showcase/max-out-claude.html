@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max Out Claude — The Complete Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-card-hover: #22223a;
+    --accent-orange: #f97316;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --accent-red: #ef4444;
+    --accent-yellow: #eab308;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+    --border-subtle: #161625;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-secondary); text-decoration: none; font-size: 0.8rem;
+    font-weight: 500; margin-bottom: 16px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent-purple); }
+
+  .hero { text-align: center; padding: 48px 0 32px; }
+  .hero h1 {
+    font-size: 2.4rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px; margin-bottom: 12px; line-height: 1.2;
+  }
+  .hero .subtitle { color: var(--text-secondary); font-size: 1rem; line-height: 1.7; max-width: 650px; margin: 0 auto; }
+
+  .toc {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px 28px; margin: 32px 0;
+  }
+  .toc h3 { font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .toc a { display: block; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; padding: 6px 0; transition: color 0.2s; }
+  .toc a:hover { color: var(--accent-purple); }
+  .toc a span { color: var(--text-dim); margin-right: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+  .section { margin-bottom: 48px; }
+  .section-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
+  .section-subtitle { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+
+  .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
+  .level-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px; position: relative; overflow: hidden;
+  }
+  .level-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .level-card.l1::before { background: var(--accent-green); }
+  .level-card.l2::before { background: var(--accent-blue); }
+  .level-card.l3::before { background: var(--accent-purple); }
+  .level-card.l4::before { background: var(--accent-orange); }
+  .level-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+  .level-card .usage-pct { font-size: 1.8rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+  .level-card.l1 .usage-pct { color: var(--accent-green); }
+  .level-card.l2 .usage-pct { color: var(--accent-blue); }
+  .level-card.l3 .usage-pct { color: var(--accent-purple); }
+  .level-card.l4 .usage-pct { color: var(--accent-orange); }
+  .level-card p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+  .level-card ul { list-style: none; padding: 0; margin-top: 10px; }
+  .level-card ul li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; padding-left: 14px; position: relative; }
+  .level-card ul li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-purple); }
+
+  .setup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .setup-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px;
+  }
+  .setup-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; color: var(--accent-cyan); }
+  .setup-card p, .setup-card li { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+  .setup-card ul { list-style: none; padding: 0; }
+  .setup-card ul li { padding-left: 14px; position: relative; margin-bottom: 4px; }
+  .setup-card ul li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-purple); }
+
+  .code-block {
+    background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 10px;
+    padding: 16px 20px; margin: 14px 0; position: relative; overflow-x: auto;
+  }
+  .code-block pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-cyan);
+    line-height: 1.8; white-space: pre-wrap; word-break: break-word;
+  }
+  .code-block .label {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 8px; display: block;
+  }
+  .copy-btn {
+    position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 6px;
+    background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3);
+    color: var(--accent-purple); font-size: 0.65rem; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(168, 85, 247, 0.25); }
+
+  .tip-card {
+    background: var(--bg-card); border: 1px solid rgba(249, 115, 22, 0.2); border-left: 3px solid var(--accent-orange);
+    border-radius: 12px; padding: 18px 22px; margin: 14px 0;
+  }
+  .tip-card h5 { font-size: 0.8rem; font-weight: 700; color: var(--accent-orange); margin-bottom: 6px; }
+  .tip-card p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.7; }
+
+  .inefficiency-card {
+    background: var(--bg-card); border: 1px solid rgba(239, 68, 68, 0.2); border-left: 3px solid var(--accent-red);
+    border-radius: 12px; padding: 18px 22px; margin: 14px 0;
+  }
+  .inefficiency-card h5 { font-size: 0.8rem; font-weight: 700; color: var(--accent-red); margin-bottom: 6px; }
+  .inefficiency-card p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.7; }
+  .inefficiency-card .fix { color: var(--accent-green); font-weight: 600; }
+
+  .connector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .connector-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; display: flex; align-items: flex-start; gap: 12px;
+  }
+  .connector-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 800;
+  }
+  .connector-card h5 { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
+  .connector-card p { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+  .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  .badge-orange { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); }
+  .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+  .badge-cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+
+  .quote-block {
+    background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent-purple);
+    border-radius: 12px; padding: 20px 24px; margin: 24px 0;
+    font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary); font-style: italic;
+  }
+  .quote-block .author { color: var(--accent-purple); font-style: normal; font-weight: 600; margin-top: 10px; display: block; font-size: 0.8rem; }
+
+  .comparison-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+  }
+  .comparison-table th {
+    text-align: left; font-size: 0.72rem; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table td {
+    font-size: 0.82rem; color: var(--text-secondary); padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .comparison-table tr:hover td { background: rgba(168, 85, 247, 0.03); }
+  .comparison-table .val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-primary); }
+
+  .cta-section {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px; text-align: center; margin-bottom: 48px;
+  }
+  .cta-section h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; }
+  .cta-section p { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+  .cta-btn {
+    display: inline-block; padding: 10px 24px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    color: white; text-decoration: none; font-size: 0.85rem; font-weight: 700;
+    transition: all 0.2s; margin: 4px;
+  }
+  .cta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3); }
+
+  .footer {
+    text-align: center; padding: 32px 0; border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 0.75rem;
+  }
+  .footer a { color: var(--accent-purple); text-decoration: none; }
+
+  .flow-steps {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0;
+  }
+  .flow-step {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: var(--text-primary);
+  }
+  .flow-arrow { color: var(--accent-purple); font-size: 1.2rem; }
+
+  @media (max-width: 700px) {
+    .hero h1 { font-size: 1.7rem; }
+    .level-grid, .setup-grid, .connector-grid { grid-template-columns: 1fr; }
+    .flow-steps { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/showcase" class="back-link">&larr; Back to Showcase</a>
+
+  <div class="hero">
+    <h1>How to Max Out Claude Max</h1>
+    <p class="subtitle">Most people barely scratch the surface of their $200/month Claude Max subscription. Here's the complete playbook for running at 100% usage &mdash; from basic settings to running 30 concurrent sessions overnight.</p>
+  </div>
+
+  <div class="toc">
+    <h3>Contents</h3>
+    <a href="#levels"><span>01</span> The 4 Usage Levels &mdash; Where Are You?</a>
+    <a href="#permissions"><span>02</span> Unlock Full Autonomy &mdash; Permissions Settings</a>
+    <a href="#connectors"><span>03</span> MCPs, Connectors & External Tools</a>
+    <a href="#claude-fleet"><span>04</span> claude-fleet &mdash; Parallel Task Orchestration</a>
+    <a href="#remote"><span>05</span> Remote Access &mdash; Run Tasks While You Sleep</a>
+    <a href="#inefficiencies"><span>06</span> Common Inefficiencies & How to Fix Them</a>
+    <a href="#tips"><span>07</span> Pro Tips for Maximum Throughput</a>
+    <a href="#case-study"><span>08</span> Case Study &mdash; 403 Tasks in 48 Hours</a>
+  </div>
+
+  <div class="quote-block">
+    "In evolution, there were animals which were way more efficient without utilizing a big brain.. but mammals, humans even being clumsy in many ways, were able to surpass because of brain and ability to handle complexity. We have new big digital brains now. Whoever utilizes the exponential compute is going to be the winner."
+    <span class="author">&mdash; Vimal</span>
+  </div>
+
+  <!-- ============ LEVEL 1: Usage Levels ============ -->
+  <div class="section" id="levels">
+    <h2 class="section-title">The 4 Usage Levels</h2>
+    <p class="section-subtitle">Most people are stuck at Level 1 or 2. The jump to Level 3/4 is where real value extraction happens.</p>
+
+    <div class="level-grid">
+      <div class="level-card l1">
+        <h4>Level 1 &mdash; Chat User</h4>
+        <div class="usage-pct">5-15%</div>
+        <p>Using claude.ai for questions, writing, and code snippets. One conversation at a time. Waiting for responses before asking the next thing.</p>
+        <ul>
+          <li>Single chat window</li>
+          <li>Manual copy-paste of code</li>
+          <li>No tool use or file access</li>
+          <li>~20 messages/hour</li>
+        </ul>
+      </div>
+
+      <div class="level-card l2">
+        <h4>Level 2 &mdash; Claude Code User</h4>
+        <div class="usage-pct">20-40%</div>
+        <p>Using Claude Code CLI in your project. Asking it to edit files, run tests, search code. Still one session at a time, waiting for each task.</p>
+        <ul>
+          <li>Single Claude Code session</li>
+          <li>Approving each tool use manually</li>
+          <li>Small, scoped tasks</li>
+          <li>~5-10 tasks/hour</li>
+        </ul>
+      </div>
+
+      <div class="level-card l3">
+        <h4>Level 3 &mdash; Autonomous Sessions</h4>
+        <div class="usage-pct">50-80%</div>
+        <p>Full tool permissions enabled. Large, complex prompts. Multiple parallel sessions using <code>claude --dangerously-skip-permissions</code> or proper allow-lists. Claude works while you review.</p>
+        <ul>
+          <li>3-5 concurrent sessions</li>
+          <li>Auto-approved tool use</li>
+          <li>Multi-file, multi-step tasks</li>
+          <li>~20-40 tasks/hour</li>
+        </ul>
+      </div>
+
+      <div class="level-card l4">
+        <h4>Level 4 &mdash; Fleet Orchestration</h4>
+        <div class="usage-pct">95-100%</div>
+        <p>Using claude-fleet to run 10-30 concurrent Claude sessions. Tasks queued overnight. Remote access via OpenClaw. Reviewing outputs, not writing prompts.</p>
+        <ul>
+          <li>10-30 concurrent sessions</li>
+          <li>Automated task pipelines</li>
+          <li>24/7 execution (overnight)</li>
+          <li>~100-400 tasks/day</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 2: Permissions ============ -->
+  <div class="section" id="permissions">
+    <h2 class="section-title">Unlock Full Autonomy</h2>
+    <p class="section-subtitle">The single biggest bottleneck for most people: Claude stops and asks for permission on every file read, edit, and command. Fix this first.</p>
+
+    <div class="code-block">
+      <span class="label">~/.claude/settings.json</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Web Fetch",
+      "Web Search"
+    ]
+  }
+}</pre>
+    </div>
+
+    <div class="tip-card">
+      <h5>What This Does</h5>
+      <p>Pre-approves all core tools so Claude can read files, edit code, run shell commands, search the web, and navigate your codebase without stopping to ask. This alone can <strong>3-5x your throughput</strong> because Claude chains actions without waiting.</p>
+    </div>
+
+    <div class="code-block">
+      <span class="label">For fully autonomous headless sessions (Level 4)</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>claude --dangerously-skip-permissions -p "your task prompt here"</pre>
+    </div>
+
+    <div class="tip-card">
+      <h5>Per-Project Permissions</h5>
+      <p>You can also set permissions per-project in <code>.claude/settings.json</code> within your repo. This lets you allow <code>npm test</code> and <code>npm run build</code> without giving blanket Bash access everywhere. Add specific commands to the allow list: <code>"Bash(npm test)", "Bash(npm run build)"</code></p>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 3: MCPs & Connectors ============ -->
+  <div class="section" id="connectors">
+    <h2 class="section-title">MCPs, Connectors & External Tools</h2>
+    <p class="section-subtitle">The more context and tools Claude can access, the bigger the tasks it can handle autonomously. These connectors turn Claude from a code assistant into a full-stack operator.</p>
+
+    <div class="connector-grid">
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(59,130,246,0.15);color:var(--accent-blue);">GH</div>
+        <div>
+          <h5>GitHub MCP</h5>
+          <p>Search issues, create PRs, read repo contents, manage branches. Essential for autonomous PR workflows.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(168,85,247,0.15);color:var(--accent-purple);">FS</div>
+        <div>
+          <h5>Filesystem MCP</h5>
+          <p>Read/write files across multiple repos. Critical for cross-repo audits and large-scale refactors.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(34,197,94,0.15);color:var(--accent-green);">WB</div>
+        <div>
+          <h5>Web Fetch / Web Search</h5>
+          <p>Research APIs, documentation, competitors. Claude can read docs and apply them in context without you copy-pasting.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(249,115,22,0.15);color:var(--accent-orange);">SL</div>
+        <div>
+          <h5>Slack MCP</h5>
+          <p>Post updates, read channels, notify on task completion. Useful for fleet status updates.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(236,72,153,0.15);color:var(--accent-pink);">DB</div>
+        <div>
+          <h5>Database MCPs (Postgres, ClickHouse)</h5>
+          <p>Query production data directly for analysis. Used in NammaYatri audit to analyze 50B+ ClickHouse rows.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(6,182,212,0.15);color:var(--accent-cyan);">LN</div>
+        <div>
+          <h5>Linear / Jira MCP</h5>
+          <p>Read tickets, create issues, link PRs to tasks. Makes Claude aware of project management context.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(234,179,8,0.15);color:var(--accent-yellow);">SH</div>
+        <div>
+          <h5>Bash (Shell Access)</h5>
+          <p>Run tests, build, deploy, git operations, package management. The most important tool for autonomy &mdash; Claude can verify its own work.</p>
+        </div>
+      </div>
+
+      <div class="connector-card">
+        <div class="connector-icon" style="background:rgba(239,68,68,0.15);color:var(--accent-red);">GF</div>
+        <div>
+          <h5>Grafana / Monitoring MCP</h5>
+          <p>Check dashboards, query metrics. Used for observability analysis in platform audits.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <span class="label">Example MCP config (~/.claude/settings.json)</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_TOKEN": "ghp_..." }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/repos"]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://..."]
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="tip-card">
+      <h5>The Connector Multiplier Effect</h5>
+      <p>Each connector you add expands Claude's autonomy radius. Without GitHub MCP, Claude writes code but you manually create PRs. With it, Claude goes from code &rarr; commit &rarr; PR &rarr; done. Without database access, Claude guesses at data patterns. With it, Claude queries real data, finds actual bugs, and writes targeted fixes.</p>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 4: claude-fleet ============ -->
+  <div class="section" id="claude-fleet">
+    <h2 class="section-title">claude-fleet &mdash; The 10x Multiplier</h2>
+    <p class="section-subtitle">The secret weapon for hitting 100% usage. Run 10-30 concurrent Claude Code sessions with a single command.</p>
+
+    <div class="flow-steps">
+      <div class="flow-step">Write task files</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">fleet-convert</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Run 10-30 sessions</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">TUI dashboard</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Review &amp; merge</div>
+    </div>
+
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h4>What It Is</h4>
+        <p>A parallel task orchestrator for Claude Code. You write task descriptions in markdown files, and claude-fleet converts them into concurrent Claude Code sessions, each working independently on its own task.</p>
+        <p style="margin-top:10px;"><a href="/showcase/reports/claude-fleet/presentation.html" style="color:var(--accent-blue);text-decoration:none;font-weight:600;">View claude-fleet Presentation &rarr;</a></p>
+      </div>
+
+      <div class="setup-card">
+        <h4>How It Works</h4>
+        <ul>
+          <li><strong>Task files</strong>: Write what you want done in .md files</li>
+          <li><strong>fleet-convert</strong>: Converts tasks to Claude Code prompts</li>
+          <li><strong>Parallel execution</strong>: 10-30 sessions run simultaneously</li>
+          <li><strong>TUI dashboard</strong>: Real-time status of all sessions</li>
+          <li><strong>Tool control</strong>: Configure which tools each session can use</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>Why It Maxes Usage</h4>
+        <p>Claude Max throttles per-session, not per-account (in practice). Running 10 sessions means 10x the token throughput. Running 30 sessions overnight means you wake up to 200+ completed tasks.</p>
+        <p style="margin-top:10px;font-size:0.78rem;color:var(--accent-orange);">This is how Mags ran 403 tasks across 15 repos in 48 hours.</p>
+      </div>
+
+      <div class="setup-card">
+        <h4>Getting Started</h4>
+        <ul>
+          <li>Clone: <code style="font-size:0.75rem;">github.com/nammayatri/claude-fleet</code></li>
+          <li>Write task files in a directory</li>
+          <li>Run <code style="font-size:0.75rem;">fleet-convert &amp;&amp; fleet-run</code></li>
+          <li>Monitor via TUI dashboard</li>
+          <li>Review outputs when done</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <span class="label">Example: Run an audit across 5 repos</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre># 1. Write task files
+cat > tasks/audit-backend.md << 'EOF'
+Audit the backend codebase for:
+- Security vulnerabilities (OWASP top 10)
+- Performance bottlenecks (N+1 queries, missing indices)
+- Error handling gaps (unhandled exceptions, missing retries)
+- Code quality (dead code, TODOs, deprecated APIs)
+
+Output a structured report with severity, location, and fix plan.
+EOF
+
+# 2. Create tasks for each repo
+for repo in backend frontend mobile infra shared; do
+  cp tasks/audit-backend.md "tasks/audit-${repo}.md"
+done
+
+# 3. Convert and run
+fleet-convert --tasks-dir tasks/ --output fleet-tasks/
+fleet-run --concurrency 10 --tasks-dir fleet-tasks/</pre>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 5: Remote ============ -->
+  <div class="section" id="remote">
+    <h2 class="section-title">Remote Access &mdash; Run Tasks While You Sleep</h2>
+    <p class="section-subtitle">The final piece: a machine that runs 24/7 so you can queue tasks at night and review results in the morning.</p>
+
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h4>Hardware</h4>
+        <ul>
+          <li><strong>Mac Mini M4 Pro</strong> &mdash; always-on, low power</li>
+          <li>Enough RAM for 30 concurrent Claude Code processes</li>
+          <li>Fast SSD for git operations</li>
+          <li>Stable internet connection</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>Remote Access</h4>
+        <ul>
+          <li><strong>OpenClaw</strong> &mdash; remote terminal access from any device</li>
+          <li>SSH into the machine from your phone/iPad</li>
+          <li>Start fleet tasks, check progress, review outputs</li>
+          <li>Screen/tmux sessions persist across disconnects</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>The Overnight Workflow</h4>
+        <p><strong>10 PM:</strong> Queue 50-100 tasks via fleet-convert<br>
+        <strong>10:05 PM:</strong> Start fleet-run with concurrency 20<br>
+        <strong>Sleep.</strong><br>
+        <strong>7 AM:</strong> SSH in, check TUI dashboard<br>
+        <strong>7:30 AM:</strong> Review outputs, raise PRs for the good ones</p>
+      </div>
+
+      <div class="setup-card">
+        <h4>Happy To Remotely Manage</h4>
+        <p>Want help setting up your own fleet? Mags is happy to remotely manage your Mac Mini or cloud VM to get claude-fleet running. SSH in, configure the environment, run a test batch, and hand it off to you.</p>
+        <p style="margin-top:10px;"><a href="https://wa.me/919620902139?text=Hey%20Mags,%20I%20want%20help%20setting%20up%20claude-fleet" style="color:var(--accent-green);text-decoration:none;font-weight:600;">Message on WhatsApp &rarr;</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 6: Inefficiencies ============ -->
+  <div class="section" id="inefficiencies">
+    <h2 class="section-title">Common Inefficiencies & How to Fix Them</h2>
+    <p class="section-subtitle">Where most people leak usage capacity without realizing it.</p>
+
+    <div class="inefficiency-card">
+      <h5>1. Waiting for Approval on Every Action</h5>
+      <p>If you're clicking "Yes" on every file read and edit, you're spending 60% of your time watching a spinner. <span class="fix">Fix: Set up the permissions allow-list above. Pre-approve Bash, Read, Edit, Write, Glob, Grep.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>2. One Session at a Time</h5>
+      <p>Claude Max supports multiple concurrent sessions. Running one session is like having 30 CPUs and using one. <span class="fix">Fix: Open 3-5 terminal tabs, each with its own Claude Code session on different tasks. Or use claude-fleet.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>3. Small, Micro-Scoped Tasks</h5>
+      <p>"Fix this typo", "add a semicolon", "rename this variable" &mdash; these burn a full message round-trip on work that takes 2 seconds manually. <span class="fix">Fix: Batch small tasks into bigger prompts. "Audit this file for all typos, naming issues, and style violations. Fix them all."</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>4. Not Using CLAUDE.md Files</h5>
+      <p>Without a CLAUDE.md, Claude re-discovers your project structure, conventions, and preferences every session. That's wasted tokens on context-building. <span class="fix">Fix: Write a CLAUDE.md in your repo root with architecture, commands, conventions, and key files. Claude reads it automatically.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>5. Idle Time Between Tasks</h5>
+      <p>Finishing one task, thinking about the next, typing it out. Every gap is wasted subscription time. <span class="fix">Fix: Pre-write task descriptions in a file. When one finishes, paste the next immediately. Or use fleet for zero-gap execution.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>6. Not Running Overnight</h5>
+      <p>Your subscription runs 24/7 but you only use it 8 hours. That's 67% waste. <span class="fix">Fix: Set up a Mac Mini / cloud VM. Queue tasks before bed. Review in the morning.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>7. Repeating Context in Every Conversation</h5>
+      <p>Explaining your project, tech stack, and goals every time you start a new session. <span class="fix">Fix: Use CLAUDE.md + auto-memory. Claude remembers across sessions. Also use <code>/compact</code> strategically to extend long conversations.</span></p>
+    </div>
+
+    <div class="inefficiency-card">
+      <h5>8. Not Using the Right Scale of Projects</h5>
+      <p>Simple projects with few files don't generate enough tool calls to burn through usage. <span class="fix">Fix: Target large codebases (10K+ lines), multi-repo work, platform audits, or cross-cutting refactors. Claude shines on tasks with high complexity and many files.</span></p>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 7: Pro Tips ============ -->
+  <div class="section" id="tips">
+    <h2 class="section-title">Pro Tips for Maximum Throughput</h2>
+    <p class="section-subtitle">Techniques that compound over time.</p>
+
+    <div class="setup-grid">
+      <div class="setup-card">
+        <h4>Prompt Engineering for Autonomy</h4>
+        <ul>
+          <li>Give Claude the full context upfront &mdash; don't drip-feed</li>
+          <li>End prompts with a clear deliverable: "Output a file at X"</li>
+          <li>Use "Do not ask me questions, make your best judgment" for headless sessions</li>
+          <li>Include success criteria: "The tests must pass"</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>Task Design for Parallelism</h4>
+        <ul>
+          <li>Break work into independent, non-conflicting tasks</li>
+          <li>Each task should work on different files/dirs</li>
+          <li>Use separate git branches per fleet task</li>
+          <li>Merge sequentially after review</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>Context Window Management</h4>
+        <ul>
+          <li>Use <code>/compact</code> to compress context mid-conversation</li>
+          <li>Start new sessions for unrelated tasks (don't overload one)</li>
+          <li>CLAUDE.md auto-loads context without wasting messages</li>
+          <li>Use <code>--print</code> flag for one-shot tasks (no conversation overhead)</li>
+        </ul>
+      </div>
+
+      <div class="setup-card">
+        <h4>Review Workflow</h4>
+        <ul>
+          <li>Let Claude generate, you review &mdash; not the other way around</li>
+          <li>Use <code>git diff</code> to review, not reading Claude's explanation</li>
+          <li>Reject and re-prompt is faster than guiding step-by-step</li>
+          <li>Trust Claude on boilerplate, scrutinize on business logic</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LEVEL 8: Case Study ============ -->
+  <div class="section" id="case-study">
+    <h2 class="section-title">Case Study: 403 Tasks, 48 Hours, 15 Repos</h2>
+    <p class="section-subtitle">How one person ran a full-platform audit of NammaYatri &mdash; India's largest open-source ride-hailing platform.</p>
+
+    <table class="comparison-table">
+      <tr><th>Metric</th><th>Before Claude Max</th><th>With Claude Max + Fleet</th></tr>
+      <tr><td>PRs per day</td><td class="val">0.4</td><td class="val" style="color:var(--accent-green);">12+ (30x)</td></tr>
+      <tr><td>Repos covered</td><td class="val">1-2</td><td class="val" style="color:var(--accent-green);">15</td></tr>
+      <tr><td>Reports generated</td><td class="val">~5/week</td><td class="val" style="color:var(--accent-green);">268 total</td></tr>
+      <tr><td>Concurrent sessions</td><td class="val">1</td><td class="val" style="color:var(--accent-green);">10-30</td></tr>
+      <tr><td>Hours active per day</td><td class="val">8-10</td><td class="val" style="color:var(--accent-green);">24 (overnight fleet)</td></tr>
+      <tr><td>Scope of work</td><td>Single feature/bugfix</td><td style="color:var(--accent-green);">Platform-wide audit + fixes</td></tr>
+    </table>
+
+    <div class="tip-card">
+      <h5>The Key Insight</h5>
+      <p>It's not about typing faster or being a better programmer. It's about <strong>task decomposition + parallel execution + 24/7 runtime</strong>. Break the work into 400 independent tasks, let 30 Claude instances chew through them overnight, and review in the morning. The bottleneck shifts from "writing code" to "reviewing code" &mdash; and review is faster.</p>
+    </div>
+
+    <p style="text-align:center;margin-top:20px;">
+      <a href="/showcase/mags.html" class="cta-btn">See Full Showcase &rarr;</a>
+      <a href="/showcase/reports/service-analysis/platform-audit.html" class="cta-btn" style="background:linear-gradient(135deg, var(--accent-orange), var(--accent-pink));">View Platform Audit &rarr;</a>
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h3>Ready to Max Out?</h3>
+    <p>Start with Step 1: set up your permissions. Then try 3 concurrent sessions. Then try fleet.</p>
+    <a href="/showcase/reports/claude-fleet/presentation.html" class="cta-btn">claude-fleet Presentation &rarr;</a>
+    <a href="https://wa.me/919620902139?text=Hey%20Mags,%20I%20want%20help%20maxing%20out%20Claude" class="cta-btn" style="background:linear-gradient(135deg, var(--accent-green), var(--accent-cyan));">Get Setup Help &rarr;</a>
+  </div>
+
+  <div class="footer">
+    Built with Claude Code &nbsp;&middot;&nbsp; <a href="/">Leaderboard</a> &nbsp;&middot;&nbsp; <a href="/showcase">Showcase</a>
+  </div>
+</div>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+
+</body>
+</html>

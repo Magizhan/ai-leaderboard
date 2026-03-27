@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenSearch & Log Analysis — Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ny-green: #2DC653;
+    --ny-dark: #1a1a2e;
+    --ny-blue: #4361ee;
+    --ny-red: #ef476f;
+    --ny-orange: #ff9f1c;
+    --ny-yellow: #ffd166;
+    --ny-light: #f8f9fa;
+    --ny-gray: #6c757d;
+    --p0: #ef476f;
+    --p1: #ff9f1c;
+    --p2: #4361ee;
+    --p3: #6c757d;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--ny-dark);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none !important;
+    padding: 60px 80px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 35px;
+    left: 40px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 24px; line-height: 1.2; }
+  h3 { font-size: 22px; font-weight: 600; margin-bottom: 12px; color: var(--ny-green); }
+  p { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.8); }
+  .subtitle { font-size: 22px; color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 40px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-green { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .tag-red { background: rgba(239,71,111,0.2); color: var(--p0); }
+  .tag-orange { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .tag-blue { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card-accent { border-left: 4px solid var(--ny-green); }
+
+  .stat { text-align: center; padding: 20px; }
+  .stat-value { font-size: 48px; font-weight: 800; color: var(--ny-green); }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value.red { color: var(--p0); }
+  .stat-value.orange { color: var(--ny-orange); }
+  .stat-value.blue { color: var(--ny-blue); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; padding: 10px 14px; font-weight: 600; color: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(255,255,255,0.15); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 220px; font-size: 14px; text-align: right; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 28px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; min-width: 40px; transition: width 0.8s ease; }
+  .bar-fill.green { background: linear-gradient(90deg, var(--ny-green), #1fa845); }
+  .bar-fill.red { background: linear-gradient(90deg, var(--p0), #d63a5e); }
+  .bar-fill.orange { background: linear-gradient(90deg, var(--ny-orange), #e88c14); }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--ny-blue), #3451cc); }
+
+  .quote {
+    background: rgba(239,71,111,0.08);
+    border-left: 3px solid var(--p0);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .quote-green {
+    background: rgba(45,198,83,0.08);
+    border-left: 3px solid var(--ny-green);
+    padding: 16px 24px;
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    margin: 8px 0;
+  }
+
+  .priority {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority-p0 { background: var(--p0); color: #fff; }
+  .priority-p1 { background: var(--ny-orange); color: #000; }
+  .priority-p2 { background: var(--ny-blue); color: #fff; }
+
+  .slide-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  }
+  .slide-title h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, #fff 0%, var(--ny-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .grade { display: inline-block; padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 14px; }
+  .grade-a { background: rgba(45,198,83,0.2); color: var(--ny-green); }
+  .grade-b { background: rgba(67,97,238,0.2); color: var(--ny-blue); }
+  .grade-c { background: rgba(255,159,28,0.2); color: var(--ny-orange); }
+  .grade-f { background: rgba(239,71,111,0.2); color: var(--p0); }
+
+  .flex-1 { flex: 1; }
+  .text-sm { font-size: 14px; }
+  .text-muted { color: rgba(255,255,255,0.5); }
+  .fw-700 { font-weight: 700; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  .back-link {
+    position: fixed;
+    top: 20px;
+    left: 24px;
+    z-index: 100;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: #fff; }
+
+  @media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .slide { padding: 30px 20px; }
+    .nav { bottom: 16px; right: 16px; gap: 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide-counter { bottom: 20px; left: 20px; font-size: 12px; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    .grid, .metrics-grid, .stats-grid, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+<a href="/showcase/mags.html" class="back-link">&larr; Back to Showcase</a>
+<div class="deck">
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title active">
+  <div class="tag tag-blue mb-16">OpenSearch Deep Dive &middot; March 2026</div>
+  <h1>OpenSearch &amp; Log<br>Analysis Deep Dive</h1>
+  <p class="subtitle">Cluster <code>beckn-els</code> &mdash; 12 nodes, 282 indices, 1.65 billion documents, 1 TB storage.</p>
+  <div class="grid-4" style="margin-top:48px; width:100%;">
+    <div class="stat">
+      <div class="stat-value">1.65B</div>
+      <div class="stat-label">Total Documents</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value blue">282</div>
+      <div class="stat-label">Indices</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value orange">93%</div>
+      <div class="stat-label">Storage: Istio Logs</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value red">2 days</div>
+      <div class="stat-label">App Log Retention</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Architecture Overview -->
+<div class="slide">
+  <div class="tag tag-blue mb-16">Architecture</div>
+  <h2>OpenSearch Cluster Architecture</h2>
+  <p class="subtitle" style="margin-bottom:24px;">AWS OpenSearch cluster <code>beckn-els</code> &mdash; primarily an operational logs cluster</p>
+
+  <div class="grid-3">
+    <div class="card card-accent">
+      <h3>Cluster Health</h3>
+      <div class="stat-value" style="font-size:36px;">GREEN</div>
+      <div class="stat-label mb-16">All Shards Assigned</div>
+      <p class="text-sm text-muted">12 nodes (9 data + 3 dedicated masters). 2,760 active shards (1,380 primary + 1,380 replica). Zero unassigned shards, zero pending tasks.</p>
+    </div>
+    <div class="card card-accent">
+      <h3>Role in Platform</h3>
+      <div class="stat-value" style="font-size:36px;">Logs</div>
+      <div class="stat-label mb-16">Operational Infrastructure</div>
+      <p class="text-sm text-muted">Unlike ClickHouse (business data: rides, bookings, estimates), OpenSearch stores operational/infrastructure logs. Istio mesh logs, app logs, GPS metrics, payment logs.</p>
+    </div>
+    <div class="card card-accent">
+      <h3>Key Concern</h3>
+      <div class="stat-value red" style="font-size:36px;">Unparsed</div>
+      <div class="stat-label mb-16">Schema Not Optimized</div>
+      <p class="text-sm text-muted">All index families use minimal schemas (3-5 text fields). Rich structured data inside message/log fields is never parsed into indexed fields, making search extremely slow.</p>
+    </div>
+  </div>
+
+  <div class="quote" style="margin-top:24px;">
+    93% of storage (894 GB) is consumed by Istio service mesh access logs stored as raw text. Application logs get only 6.5% of storage with just 2-day retention.
+  </div>
+</div>
+
+<!-- SLIDE 3: Index Families & Storage -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">Storage</div>
+  <h2>Index Families &amp; Storage Distribution</h2>
+  <p class="subtitle" style="margin-bottom:16px;">10 index families, dominated by Istio proxy logs at 660 GB</p>
+
+  <div class="bar-chart mb-24">
+    <div class="bar-row">
+      <div class="bar-label">istio-proxy <span class="tag tag-red" style="font-size:10px;">660 GB</span></div>
+      <div class="bar-track"><div class="bar-fill red" style="width:64%;">1.07B docs &mdash; 2 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">istio (ingress) <span class="tag tag-orange" style="font-size:10px;">234 GB</span></div>
+      <div class="bar-track"><div class="bar-fill orange" style="width:23%;">323M docs &mdash; 2 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">beckn-lp-logs <span class="tag tag-blue" style="font-size:10px;">107 GB</span></div>
+      <div class="bar-track"><div class="bar-fill blue" style="width:10%;">95M docs &mdash; 2 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">gps-server <span class="tag tag-green" style="font-size:10px;">19.6 GB</span></div>
+      <div class="bar-track"><div class="bar-fill green" style="width:2%;">133M docs &mdash; 30 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">mettle <span class="tag tag-green" style="font-size:10px;">6.1 GB</span></div>
+      <div class="bar-track"><div class="bar-fill green" style="width:1%;">12.8M docs &mdash; 34 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">gps-processor <span class="tag tag-green" style="font-size:10px;">6.1 GB</span></div>
+      <div class="bar-track"><div class="bar-fill green" style="width:1%;">5.4M docs &mdash; 10 days</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">atlas-sdk-logs <span class="tag tag-green" style="font-size:10px;">3.8 GB</span></div>
+      <div class="bar-track"><div class="bar-fill green" style="width:0.5%;">4.5M docs &mdash; 2 days</div></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="flex:0;">
+    <div class="card" style="padding:16px 24px;">
+      <h3 style="font-size:16px;">Daily Ingestion Rate</h3>
+      <p class="text-sm">~690M docs/day from Istio alone (~450 GB/day). beckn-lp-logs adds ~48M docs/day (~53 GB). Total cluster write throughput exceeds 500 GB/day.</p>
+    </div>
+    <div class="card" style="padding:16px 24px;">
+      <h3 style="font-size:16px;">Anomalies Detected</h3>
+      <p class="text-sm">5 istio indices with far-future dates (2029, 2060, 2066, 2084) containing 1 doc each &mdash; likely caused by malformed timestamps from a misconfigured client.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Error Pattern Analysis -->
+<div class="slide">
+  <div class="tag tag-red mb-16">Error Patterns</div>
+  <h2>Log Analysis: Critical Error Patterns</h2>
+  <p class="subtitle" style="margin-bottom:16px;">DriverTier null error spans 3 services &mdash; likely millions of errors per day</p>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--p0);">Driver Backend (BPP) Errors</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Error Pattern</th><th>Frequency</th></tr></thead>
+        <tbody>
+          <tr><td><code>Null; tag: DriverTier</code></td><td style="color:var(--p0); font-weight:700;">Very High</td></tr>
+          <tr><td><code>String "None"</code> stored as value</td><td style="color:var(--ny-orange);">Medium</td></tr>
+          <tr><td><code>E401 INVALID_TOKEN</code></td><td>Low</td></tr>
+          <tr><td><code>E400 DUPLICATE_WEBHOOK</code></td><td>Low</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="color:var(--ny-orange); margin-top:20px;">Rider Backend (BAP) Errors</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Error Pattern</th><th>Frequency</th></tr></thead>
+        <tbody>
+          <tr><td><code>No geometry found for latLong</code></td><td style="color:var(--p0); font-weight:700;">High</td></tr>
+          <tr><td><code>Decode Failure: PayoutConfig</code></td><td style="color:var(--p0);">High</td></tr>
+          <tr><td><code>Null; tag: DriverTier</code></td><td style="color:var(--p0);">High</td></tr>
+          <tr><td><code>E401 INVALID_TOKEN</code></td><td>Low</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="color:var(--p0);">The DriverTier Null Crisis</h3>
+      <div class="card" style="border-left:4px solid var(--p0); padding:20px;">
+        <p class="text-sm text-muted mb-8">This error appears across <strong>three services</strong> (BPP, allocator, app-backend) at very high frequency. The allocator logs it per-driver-per-allocation-cycle.</p>
+        <p class="text-sm" style="color:var(--p0); font-weight:700; margin-bottom:12px;">Estimated: millions of errors per day</p>
+        <p class="text-sm text-muted mb-8"><strong>Impact on riders:</strong> Incorrect ride offer prioritization, drivers not receiving tier-appropriate pricing.</p>
+        <p class="text-sm text-muted"><strong>Impact on drivers:</strong> Coin/incentive miscalculation, wrong tier benefits applied.</p>
+      </div>
+
+      <h3 style="color:var(--ny-orange); margin-top:20px;">Juspay Recon Timeouts</h3>
+      <div class="card" style="border-left:4px solid var(--ny-orange); padding:20px;">
+        <p class="text-sm text-muted">All sampled <code>/on_receiver_recon</code> requests show <code>0 DC</code> &mdash; downstream connection terminated after 60s with 0 bytes. This appears to be a <strong>systematic failure</strong>, not transient.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Search & Query Patterns -->
+<div class="slide">
+  <div class="tag tag-blue mb-16">Search & Queries</div>
+  <h2>Search &amp; Query Patterns</h2>
+  <p class="subtitle" style="margin-bottom:24px;">Unstructured schemas make every query a full-text scan of millions of documents</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>beckn-lp-logs: The Most Valuable Index</h3>
+      <div class="card mb-16" style="padding:20px;">
+        <p class="text-sm text-muted mb-8"><strong>Schema:</strong> Only 3 fields &mdash; <code>@timestamp</code>, <code>message</code> (JSON blob), <code>tag</code></p>
+        <p class="text-sm text-muted mb-8"><strong>Volume:</strong> ~50M docs/day, all Haskell services in a single daily index</p>
+        <p class="text-sm text-muted mb-8"><strong>Query times:</strong> 5+ second <code>took</code> times observed for simple searches</p>
+        <p class="text-sm" style="color:var(--p0);">No <code>service_name</code>, <code>log_level</code>, <code>request_id</code>, or <code>error_code</code> as separate indexed fields. Every query parses every document.</p>
+      </div>
+
+      <h3>Istio Proxy: 690M Docs/Day Unsearchable</h3>
+      <div class="card" style="padding:20px;">
+        <p class="text-sm text-muted mb-8">Envoy access logs stored as a single <code>log</code> text field. Cannot efficiently query:</p>
+        <p class="text-sm text-muted">&bull; All 5xx errors to a service<br>&bull; p95 latency by endpoint<br>&bull; Traffic flow between services<br>&bull; Client version error rates</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>What Fields Should Be Indexed</h3>
+      <div class="card card-accent mb-16" style="padding:20px;">
+        <p class="fw-700 text-sm mb-8" style="color:var(--ny-green);">beckn-lp-logs parsing target:</p>
+        <p class="text-sm text-muted"><code>message</code> JSON &rarr; <code>service_name</code>, <code>log_level</code>, <code>request_id</code>, <code>session_id</code>, <code>error_code</code>, <code>cluster</code></p>
+      </div>
+      <div class="card card-accent mb-16" style="padding:20px;">
+        <p class="fw-700 text-sm mb-8" style="color:var(--ny-green);">istio-proxy parsing target:</p>
+        <p class="text-sm text-muted"><code>log</code> text &rarr; <code>http_method</code>, <code>request_path</code>, <code>http_status</code>, <code>duration_ms</code>, <code>response_flags</code>, <code>upstream_service</code>, <code>client_ip</code></p>
+      </div>
+      <div class="card card-accent" style="padding:20px;">
+        <p class="fw-700 text-sm mb-8" style="color:var(--ny-green);">atlas-sdk-logs parsing target:</p>
+        <p class="text-sm text-muted"><code>message</code> JSON &rarr; <code>session_id</code>, <code>event_type</code>, <code>app_name</code>, <code>app_version</code>, <code>city_name</code>, <code>api_url</code>, <code>api_status</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote" style="margin-top:16px;">
+    A single Fluentd/FluentBit parsing pipeline extracting structured fields at ingestion would unlock all 6 missing dashboards and reduce query times from 5+ seconds to sub-second.
+  </div>
+</div>
+
+<!-- SLIDE 6: Performance & Capacity -->
+<div class="slide">
+  <div class="tag tag-orange mb-16">Performance & Capacity</div>
+  <h2>Retention &amp; Capacity Analysis</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Critical logs expire in 48 hours while low-value Istio logs consume 93% of storage</p>
+
+  <table style="margin-bottom:24px;">
+    <thead>
+      <tr><th>Index Family</th><th>Retention</th><th>Storage/Day</th><th>Docs/Day</th><th>Assessment</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>istio-proxy</td><td>2 days</td><td style="color:var(--p0); font-weight:700;">~330 GB</td><td>~530M</td>
+        <td><span class="grade grade-c">Over-stored</span></td>
+      </tr>
+      <tr>
+        <td>istio (ingress)</td><td>2 days</td><td style="color:var(--p0);">~117 GB</td><td>~160M</td>
+        <td><span class="grade grade-c">Over-stored</span></td>
+      </tr>
+      <tr>
+        <td>beckn-lp-logs</td><td style="color:var(--p0); font-weight:700;">2 days</td><td>~53 GB</td><td>~48M</td>
+        <td><span class="grade grade-f">Under-retained</span></td>
+      </tr>
+      <tr>
+        <td>atlas-sdk-logs</td><td style="color:var(--p0); font-weight:700;">2 days</td><td>~1.9 GB</td><td>~2.25M</td>
+        <td><span class="grade grade-f">Under-retained</span></td>
+      </tr>
+      <tr>
+        <td>settlement cron</td><td style="color:var(--p0); font-weight:700;">2 days</td><td>~263 MB</td><td>~884K</td>
+        <td><span class="grade grade-f">Under-retained</span></td>
+      </tr>
+      <tr>
+        <td>mettle</td><td>34 days</td><td>~180 MB</td><td>~376K</td>
+        <td><span class="grade grade-a">Good</span></td>
+      </tr>
+      <tr>
+        <td>gps-server</td><td>30 days</td><td>~650 MB</td><td>~4.4M</td>
+        <td><span class="grade grade-c">Low-value logs</span></td>
+      </tr>
+      <tr>
+        <td>juspay-recon</td><td style="color:var(--ny-green);">6 months</td><td>~12 MB</td><td>~11K</td>
+        <td><span class="grade grade-a">Good</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="grid-2" style="flex:0;">
+    <div class="quote">
+      Settlement cron logs (financial operations) expire in 48 hours. If a payout fails or is disputed, logs are gone. Regulators typically require 90+ day audit trails.
+    </div>
+    <div class="quote-green">
+      Reducing istio-proxy to 1 day or sampling at 10% would free ~300 GB &mdash; enough to extend beckn-lp-logs to 14 days, sdk-logs to 7 days, and settlement to 90 days.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Recommendations -->
+<div class="slide">
+  <div class="tag tag-green mb-16">Recommendations</div>
+  <h2>Key Recommendations</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--p0);">Priority 1: Parse Logs at Ingestion</h3>
+      <div class="card mb-16" style="padding:20px; border-left:4px solid var(--p0);">
+        <p class="text-sm text-muted mb-8"><span class="priority priority-p0">High Impact</span> &mdash; Medium Effort</p>
+        <p class="text-sm text-muted mb-8">Add Fluentd/FluentBit parsing pipeline to extract structured fields from <code>beckn-lp-logs</code>, <code>istio-proxy</code>, and <code>atlas-sdk-logs</code>.</p>
+        <p class="text-sm" style="color:var(--ny-green);">Unlocks all 6 missing dashboards: Service Errors, API Latency, Client SDK Health, Payment Recon, GPS Health, Geofence Gaps.</p>
+      </div>
+
+      <h3 style="color:var(--ny-orange);">Priority 2: Extend Critical Retention</h3>
+      <div class="card mb-16" style="padding:20px; border-left:4px solid var(--ny-orange);">
+        <p class="text-sm text-muted mb-8"><span class="priority priority-p1">Medium Impact</span></p>
+        <table style="font-size:12px;">
+          <thead><tr><th>Index</th><th>Current</th><th>Target</th></tr></thead>
+          <tbody>
+            <tr><td>beckn-lp-logs</td><td style="color:var(--p0);">2 days</td><td style="color:var(--ny-green);">14 days</td></tr>
+            <tr><td>atlas-sdk-logs</td><td style="color:var(--p0);">2 days</td><td style="color:var(--ny-green);">7 days</td></tr>
+            <tr><td>settlement cron</td><td style="color:var(--p0);">2 days</td><td style="color:var(--ny-green);">90 days</td></tr>
+            <tr><td>gps-processor</td><td>10 days</td><td style="color:var(--ny-green);">14 days</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:var(--ny-blue);">Priority 3-4: Fix Broken Pipelines</h3>
+      <div class="card mb-16" style="padding:20px; border-left:4px solid var(--ny-blue);">
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--ny-blue); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">3</div>
+          <div>
+            <div class="fw-700">Fix GPS Processor Log Shipping</div>
+            <div class="text-sm text-muted">No data since Feb 12. Public transport ETA debugging has zero visibility for over a month. Check FluentBit daemonset targeting.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <div style="background:var(--ny-blue); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">4</div>
+          <div>
+            <div class="fw-700">Fix Juspay Recon Timeouts</div>
+            <div class="text-sm text-muted">All <code>/on_receiver_recon</code> calls show 0 DC (60s timeout, 0 bytes). Systematic failure &mdash; investigate upstream service health and Istio timeout config.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color:var(--ny-green);">Priority 5-6: Alerting & Cleanup</h3>
+      <div class="card" style="padding:20px; border-left:4px solid var(--ny-green);">
+        <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+          <div style="background:var(--ny-green); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">5</div>
+          <div>
+            <div class="fw-700">Implement Log-Based Alerts</div>
+            <div class="text-sm text-muted">DriverTier null rate, geofence miss rate, recon timeout rate, error rate per service, GPS processor silence detection.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <div style="background:var(--ny-green); color:#000; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">6</div>
+          <div>
+            <div class="fw-700">Drop Health Check Logs</div>
+            <div class="text-sm text-muted">Filter <code>/swagger</code>, <code>/api/heartbeat</code>, <code>kube-probe</code>, <code>ELB-HealthChecker</code> at ingestion. Estimated 20-30% storage reduction.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Summary -->
+<div class="slide slide-title">
+  <div class="tag tag-green mb-16">Summary</div>
+  <h1>OpenSearch: Massive Scale,<br>Minimal Visibility</h1>
+  <p class="subtitle">1.65B docs across 12 nodes &mdash; but unstructured schemas and short retention make it nearly unsearchable.</p>
+
+  <div class="grid-4" style="margin-top:32px; width:100%;">
+    <div class="card stat">
+      <div class="stat-value">1 TB</div>
+      <div class="stat-label">Cluster Storage</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value red">93%</div>
+      <div class="stat-label">Istio (Low Value)</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value orange">8</div>
+      <div class="stat-label">Observability Gaps</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Missing Dashboards</div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-top:32px; width:100%;">
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;">Quick Win</h3>
+      <p class="text-sm text-muted">Parse logs at ingestion with FluentBit. Single change unlocks all 6 missing dashboards and cuts query times from 5s to &lt;1s.</p>
+    </div>
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;">Storage Rebalance</h3>
+      <p class="text-sm text-muted">Sample Istio at 10% to free ~300 GB. Extend app logs to 14 days, SDK logs to 7 days, settlement to 90 days.</p>
+    </div>
+    <div class="card" style="padding:20px;">
+      <h3 style="font-size:16px;">Fix Now</h3>
+      <p class="text-sm text-muted">DriverTier null error (millions/day), GPS processor log gap (1+ month), Juspay recon systematic timeouts.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prev()">&#8592; Prev</button>
+  <button onclick="next()">Next &#8594;</button>
+</div>
+<div class="slide-counter"><span id="current">1</span> / <span id="total">8</span></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('current').textContent = current + 1;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+</script>
+</body>
+</html>

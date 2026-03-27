@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Leaderboard — Comprehensive Audit Report</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #8888a0;
+    --accent: #6c5ce7;
+    --accent-light: #a29bfe;
+    --critical: #ff4757;
+    --high: #ff6b35;
+    --medium: #ffa502;
+    --low: #2ed573;
+    --info: #45aaf2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+  .hero .subtitle { color: var(--text-dim); font-size: 1rem; }
+  .hero .date { color: var(--accent-light); font-size: 0.85rem; margin-top: 12px; }
+
+  .stats-bar {
+    display: flex; justify-content: center; gap: 40px; padding: 24px 40px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat-box { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 700; }
+  .stat-num.critical { color: var(--critical); }
+  .stat-num.high { color: var(--high); }
+  .stat-num.medium { color: var(--medium); }
+  .stat-num.low { color: var(--low); }
+  .stat-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  .toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px 32px; margin-bottom: 48px;
+  }
+  .toc h2 { font-size: 1.1rem; margin-bottom: 16px; color: var(--accent-light); }
+  .toc ul { list-style: none; columns: 2; gap: 32px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--text); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+  .toc a:hover { color: var(--accent-light); }
+  .toc .section-num { color: var(--text-dim); margin-right: 6px; font-size: 0.8rem; }
+
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid var(--border);
+  }
+  .section-icon { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    background: var(--surface2); border-radius: 10px; }
+  .section-header h2 { font-size: 1.4rem; font-weight: 600; }
+  .section-header .badge-count { font-size: 0.75rem; background: var(--surface2); padding: 2px 10px; border-radius: 12px; color: var(--text-dim); }
+
+  .issue {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 16px; transition: border-color 0.2s;
+    border-left: 3px solid var(--border);
+  }
+  .issue:hover { border-color: var(--accent); }
+  .issue.sev-critical { border-left-color: var(--critical); }
+  .issue.sev-high { border-left-color: var(--high); }
+  .issue.sev-medium { border-left-color: var(--medium); }
+  .issue.sev-low { border-left-color: var(--low); }
+
+  .issue-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .issue-title { font-weight: 600; font-size: 1rem; flex: 1; min-width: 200px; }
+  .sev-tag {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .sev-tag.critical { background: rgba(255,71,87,0.15); color: var(--critical); }
+  .sev-tag.high { background: rgba(255,107,53,0.15); color: var(--high); }
+  .sev-tag.medium { background: rgba(255,165,2,0.15); color: var(--medium); }
+  .sev-tag.low { background: rgba(46,213,115,0.15); color: var(--low); }
+  .area-tag {
+    font-size: 0.65rem; padding: 2px 8px; border-radius: 4px;
+    background: rgba(108,92,231,0.15); color: var(--accent-light); white-space: nowrap;
+  }
+
+  .issue-body { font-size: 0.88rem; color: var(--text-dim); margin-bottom: 10px; }
+  .issue-body code { background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 0.82rem; color: var(--text); }
+
+  .issue-fix { font-size: 0.82rem; padding: 10px 14px; background: var(--surface2); border-radius: 6px; border-left: 2px solid var(--accent); }
+  .issue-fix strong { color: var(--accent-light); }
+
+  .key-question {
+    background: linear-gradient(135deg, rgba(108,92,231,0.1), rgba(69,170,242,0.1));
+    border: 1px solid rgba(108,92,231,0.3); border-radius: 12px;
+    padding: 28px 32px; margin-bottom: 48px;
+  }
+  .key-question h3 { color: var(--accent-light); margin-bottom: 12px; font-size: 1.1rem; }
+  .key-question p { font-size: 0.92rem; color: var(--text-dim); margin-bottom: 8px; }
+  .key-question .answer { color: var(--text); font-weight: 500; }
+
+  .priority-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .priority-table th { text-align: left; padding: 10px 14px; background: var(--surface2); color: var(--text-dim);
+    text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
+  .priority-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .priority-table tr:hover td { background: var(--surface); }
+
+  @media (max-width: 768px) {
+    .hero { padding: 40px 20px 30px; }
+    .hero h1 { font-size: 1.5rem; }
+    .toc ul { columns: 1; }
+    .stats-bar { gap: 20px; }
+    .container { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Claude Leaderboard Audit</h1>
+  <div class="subtitle">Data integrity, UX gaps, and gamification effectiveness</div>
+  <div class="date">March 27, 2026 &middot; 3 parallel analyses</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-box"><div class="stat-num critical">5</div><div class="stat-label">Critical</div></div>
+  <div class="stat-box"><div class="stat-num high">14</div><div class="stat-label">High</div></div>
+  <div class="stat-box"><div class="stat-num medium">22</div><div class="stat-label">Medium</div></div>
+  <div class="stat-box"><div class="stat-num low">15</div><div class="stat-label">Low</div></div>
+</div>
+
+<div class="container">
+
+<!-- Key Questions -->
+<div class="key-question">
+  <h3>Is this leaderboard nudging everyone to max out every Claude session?</h3>
+  <p><span class="answer">No.</span> The leaderboard shows usage data but lacks the core gamification loops to drive behavior change. There's no personal identity card (users must scan to find themselves), no rank-up progress bars, no streak tracking, no "falling behind" alerts, and no celebration of milestones. The team battle is hidden behind a tab. It's a scoreboard, not a nudge engine.</p>
+</div>
+
+<div class="key-question">
+  <h3>Can people go beyond 1x of their monthly subscription?</h3>
+  <p><span class="answer">Partially.</span> Multi-plan support exists (users can add 2+ Claude subscriptions), and extra usage spending is tracked. But the UX actively hides this: the "Beyond 100%?" call-to-action is 0.72rem italic dim text. There's no ROI framing ("you got $320 of value from a $200 plan"), and Max 5x users can never reach Legendary rank due to normalization — structurally demotivating for cheaper plans.</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Contents</h2>
+  <ul>
+    <li><a href="#s1"><span class="section-num">1</span> Data Integrity & Race Conditions</a></li>
+    <li><a href="#s2"><span class="section-num">2</span> Schema & Tracking Gaps</a></li>
+    <li><a href="#s3"><span class="section-num">3</span> API Design Flaws</a></li>
+    <li><a href="#s4"><span class="section-num">4</span> Extension Scraping Accuracy</a></li>
+    <li><a href="#s5"><span class="section-num">5</span> Extension Sync Reliability</a></li>
+    <li><a href="#s6"><span class="section-num">6</span> Multi-Plan & Plan Detection</a></li>
+    <li><a href="#s7"><span class="section-num">7</span> UX — Visibility & Personal Identity</a></li>
+    <li><a href="#s8"><span class="section-num">8</span> UX — Gamification & Nudging</a></li>
+    <li><a href="#s9"><span class="section-num">9</span> UX — Beyond 1x & Value Framing</a></li>
+    <li><a href="#s10"><span class="section-num">10</span> Freshness & Staleness</a></li>
+    <li><a href="#s11"><span class="section-num">11</span> Team Dynamics</a></li>
+    <li><a href="#s12"><span class="section-num">12</span> Security & Privacy</a></li>
+    <li><a href="#s13"><span class="section-num">13</span> Priority Matrix</a></li>
+  </ul>
+</div>
+
+<!-- Section 1: Data Integrity -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon">1</div>
+    <h2>Data Integrity & Race Conditions</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-critical">
+    <div class="issue-header">
+      <span class="issue-title">Read-modify-write races on the <code>users</code> array</span>
+      <span class="sev-tag critical">Critical</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Every mutation follows a <code>kvGet &rarr; mutate &rarr; kvPut</code> pattern with no locking. Two concurrent <code>POST /api/usage</code> calls that auto-create a user will each read the same array, append, and write — the second write silently overwrites the first, losing a user. The shrink guard at <code>worker.js:1186-1196</code> doesn't catch this because both writes produce <code>length = original + 1</code>.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Use Durable Objects for the <code>users</code> key to serialize writes, or implement optimistic concurrency with a version counter.</div>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Concurrent per-user usage writes overwrite each other</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body"><code>logUsage</code> reads <code>usage:{id}</code>, <code>history:{id}</code>, and <code>weekly:{id}</code>, mutates all three, then writes via <code>Promise.all</code>. Two concurrent syncs for the same user lose one data point entirely. <code>worker.js:447-754</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Gate per-user writes through a Durable Object or use KV metadata as a version stamp with conflict retry.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title"><code>deleteUser</code> doesn't pass <code>allowShrink</code> flag</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">The shrink guard could re-merge a deleted user if the array was concurrently modified. <code>worker.js:431</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Pass <code>{ allowShrink: true }</code> in the <code>deleteUser</code> call.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Session auto-reset displayed but not stored</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body"><code>getLeaderboardData</code> shows <code>rawSessionPct = 0</code> when the session timer expires, but the stored <code>usage:{id}</code> record keeps the old value. Next sync may reject legitimate updates via monotonic enforcement. <code>worker.js:875-877</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Write-through the zeroed <code>sessionPct</code> when the timer expires.</div>
+  </div>
+</div>
+
+<!-- Section 2: Schema Gaps -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon">2</div>
+    <h2>Schema & Tracking Gaps</h2>
+    <span class="badge-count">5 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">History entries mix raw and combined values</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">History stores <code>combinedSessionPct</code> / <code>combinedWeeklyPct</code> (sum of all plans), but the comment says "store active plan's raw values." Multi-plan users' history contains inflated values, corrupting weekly aggregation and monthly calculations. <code>worker.js:683-710</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Store per-plan values in history entries. Add <code>planType</code> and <code>activePlan</code> fields.</div>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Monotonic enforcement uses time slots, not session identity</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Monotonic increase uses arbitrary 5-hour slots (<code>getSessionSlot</code>), not actual session boundaries. A real session reset mid-slot gets rejected; a session spanning two slots allows false decreases. <code>worker.js:615-636</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Use <code>sessionResetsAt</code> as the primary session identity instead of time-based slots.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No <code>createdAt</code> or <code>lastSeen</code> on user records</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Users only have <code>id</code>, <code>name</code>, <code>team</code>, <code>numPlans</code>. No way to know when a user joined. <code>worker.js:392-393</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add <code>createdAt</code> timestamp on user creation.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Weekly aggregation can't track plan type</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body"><code>updateWeeklyAggregation</code> reads <code>planType</code> from history entries which don't store it &mdash; always <code>null</code>. <code>worker.js:758-801</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add <code>planType</code> to history entries, or look it up from the usage record.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Uncapped <code>extraUsageSpent</code> in display percentage</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Extra usage adds <code>(extraSpent / (planCost * 4)) * 100</code> to <code>displayWeeklyPct</code> with no upper bound. A single user with $2000 extra spend dominates the leaderboard at 250%+. <code>worker.js:958-961</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Cap extra usage contribution or apply diminishing returns.</div>
+  </div>
+</div>
+
+<!-- Section 3: API Design -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon">3</div>
+    <h2>API Design Flaws</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title"><code>POST /api/usage</code> is completely unauthenticated</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Security</span>
+    </div>
+    <div class="issue-body">The endpoint bypasses JWT verification entirely. Anyone can submit arbitrary usage data for any user by name, create fake users, and pollute the leaderboard. <code>worker.js:167-174</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add lightweight auth &mdash; shared secret, HMAC signature, or per-user token.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No duplicate name check on user creation</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Multiple <code>POST /api/users</code> calls with the same name create duplicates. <code>logUsage</code> only matches the first via <code>Array.find</code>, orphaning the rest. <code>worker.js:385-397</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Case-insensitive uniqueness check before creation.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Import accepts unsanitized usage data</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Security</span>
+    </div>
+    <div class="issue-body">Import sanitizes user names/teams but writes <code>usageLogs</code>, <code>historyLogs</code>, and <code>weeklyLogs</code> directly to KV without validation. Malformed <code>userId</code> keys could write to arbitrary KV keys. <code>worker.js:1117-1148</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Validate imported <code>userId</code> values exist in the merged user list.</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">Inconsistent <code>numPlans</code> max values</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Config endpoint caps at 10, <code>addPlans</code> caps at 999, <code>addUser</code> caps at 100. <code>worker.js:362-371, 812-813, 388</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Centralize <code>numPlans</code> validation to a single max value.</div>
+  </div>
+</div>
+
+<!-- Section 4: Extension Scraping -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon">4</div>
+    <h2>Extension Scraping Accuracy</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Percentage scraping relies on positional ordering</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Uses <code>/(\d{1,3})%\s*used/g</code> on <code>document.body.innerText</code> and assigns by position: first match = session, second = weekly. If Anthropic reorders sections, adds a new meter, or removes the session meter for Free users, values silently swap or misassign. No structural validation. <code>content.js:48-55</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Anchor each percentage to its section heading ("Current session", "Weekly limits") rather than relying on global match order.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Plan detection only recognizes "Max" plans</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Regex <code>/(Max)\s*(?:\((\d+)\s*[&times;x]\s*usage\))?/i</code> returns <code>null</code> for Pro, Team, and Free plans. Also triggers on any page text containing "Max" (e.g., usernames). <code>content.js:112-113</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Detect all plan types from the billing/usage page structure. Use more specific selectors.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Dual plan detection paths can conflict</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Content script detects plan on usage page; background script detects on billing page (once, at install). The billing detection result is stored but <strong>never read or sent</strong> &mdash; effectively dead code. <code>content.js:112</code> vs <code>background.js:237-277</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Consolidate to one detection path; remove dead code.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Scraped reset times drift, may trigger false plan switches</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Each scrape computes <code>Date.now() + parsed_minutes * 60000</code>, producing slightly different <code>sessionResetsAt</code> values. The server's plan-switch detector checks for timer differences &gt;1 hour, but accumulated drift or parsing granularity could approach that threshold. <code>content.js:62-74</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Round reset times to the nearest 5 or 15 minutes to reduce drift noise.</div>
+  </div>
+</div>
+
+<!-- Section 5: Extension Sync -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon">5</div>
+    <h2>Extension Sync Reliability</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Silent failure with no retry</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">If a sync fails (network error, API down, service worker inactive), data is permanently lost. No retry queue, no offline storage. <code>content.js:176-179</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Save failed payloads to <code>chrome.storage.local</code>; retry on next alarm or connectivity return.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Dedup cache hides real updates</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Cache key is <code>name_sessionPct_weeklyPct</code>. If percentages stay the same but reset timers, extra usage, or plan type change, sync is suppressed for 60s. <code>content.js:120-125</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Include timer and extra-usage values in the cache key.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Auto-sync background tabs may not close</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Background tab closed after fixed 20s <code>setTimeout</code>. If service worker goes inactive, tab stays open forever. If page takes &gt;20s to load, content script never scrapes. <code>background.js:219-226</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Use <code>chrome.tabs.onUpdated</code> to detect page load completion; clean up on service worker wake.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Multiple tabs create duplicate syncs</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Content script runs on every tab matching <code>claude.ai/settings/usage*</code>. Each tab sets its own 5-minute interval. The 60s dedup mitigates but has a race window. <code>manifest.json:12-17</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Coordinate syncing through the background service worker rather than per-tab intervals.</div>
+  </div>
+</div>
+
+<!-- Section 6: Multi-Plan -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon">6</div>
+    <h2>Multi-Plan & Plan Detection</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Plan switch detection heuristics are fragile</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">Server uses heuristics (weekly drop &gt;5%, extra usage change &gt;$20, timer diff &gt;1hr, fresh session + weekly jump &gt;20%) to detect plan switches. A legitimate large session within the same plan can trigger <code>sessionFreshWeeklyJumped</code>. Two similar plans may never trigger a switch. <code>worker.js:549-592</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Have the extension report a plan identifier explicitly (e.g., account email or billing ID).</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">LRU fallback can overwrite active plan data</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">When no close plan-slot match is found (diff &gt;20), the least-recently-used slot is picked. That slot may contain valid data from a plan that just hasn't been used recently. <code>worker.js:581-589</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Require explicit plan identification before overwriting a slot. Consider a "pending" slot that requires confirmation.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Weekly reset zeroes all plan slots indiscriminately</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">When the active plan's weekly timer expires, ALL plan slots are zeroed. Different plans may have different billing cycles. <code>worker.js:543-547</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Only zero plans whose own <code>weeklyResetsAt</code> has expired.</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">Plans array grows beyond <code>numPlans</code> and never shrinks</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">If <code>numPlans</code> decreases, the array stays at the old length. Combined totals still sum all slots. <code>worker.js:514-522</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Trim the plans array when <code>numPlans</code> is reduced.</div>
+  </div>
+</div>
+
+<!-- Section 7: UX — Visibility -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon">7</div>
+    <h2>UX &mdash; Visibility & Personal Identity</h2>
+    <span class="badge-count">3 issues</span>
+  </div>
+
+  <div class="issue sev-critical">
+    <div class="issue-header">
+      <span class="issue-title">No "My Status" card &mdash; users can't instantly find themselves</span>
+      <span class="sev-tag critical">Critical</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">There's no concept of "the current viewer's identity." Everyone sees the same leaderboard and must scan to find their own row. No pinned/highlighted personal card at top. With 30+ participants, this kills the "at a glance" motivation.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Store user's ID in localStorage. Pin their row at top with a "YOU" badge. Show rank, percentage, and next rank threshold in a hero card above the leaderboard.</div>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Multiplier format (0.25x) is confusing</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Users on Max 5x plans show "0.25x" at 100% usage due to plan normalization. This is mathematically correct but "0.25x" doesn't feel like maxing out. Users need to understand the normalization model to interpret their score. <code>index.html:1244-1250</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Show raw percentage prominently (e.g., "100% of YOUR plan") with normalized multiplier as secondary.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Utilisation gauge is aggregate, not personal</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Shows total team budget utilisation in INR. Useful for a manager, but doesn't tell an individual how they're contributing. "The org is at 47%" doesn't motivate individual action. <code>index.html:711-736</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add a personal gauge: "You: 0.65x &mdash; Top 40%" or a "your contribution" marker on the aggregate gauge.</div>
+  </div>
+</div>
+
+<!-- Section 8: Gamification -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon">8</div>
+    <h2>UX &mdash; Gamification & Nudging</h2>
+    <span class="badge-count">6 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">No rank-up progress indicator</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">The rank system (Bronze &rarr; Mythic at <code>index.html:1102-1110</code>) assigns a badge but shows no progress toward the next rank. A user at 55% (Platinum) has no visual cue that Diamond is 25% away.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Show a thin progress bar: "Platinum &rarr; Diamond: 55%/80% (31% to go)".</div>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">No rank change deltas (&uarr;&darr; arrows)</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">No indication of whether a user moved up or down since the last refresh. No "you gained 3 positions" messaging. Static rankings feel stale and don't create urgency.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Store previous positions in localStorage. Show &uarr;3 / &darr;2 / &mdash; next to rank position.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Confetti only fires on user creation, never on milestones</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body"><code>confetti()</code> is called on add-user and import &mdash; never when someone reaches 100%, hits Legendary, or achieves a personal best. The biggest moments get no fanfare. <code>index.html:1484, 1625</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Trigger confetti + toast on rank threshold crossings or 100% achievement. Track previous rank in localStorage.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No streaks</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">No tracking of consecutive days/weeks with high usage. Streaks are one of the most powerful engagement mechanics (see Duolingo) &mdash; "don't break the chain" keeps users syncing daily.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Server-side, track consecutive high-usage periods. Display streak counter + flame icon in leaderboard rows.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No "falling behind" / peer comparison nudge</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">No messaging like "5 users overtook you this week" or "You're in the bottom 30%." Social comparison &mdash; a core leaderboard driver &mdash; is entirely passive.</div>
+    <div class="issue-fix"><strong>Fix:</strong> In the personal card, show relative position: "Top 15%" or "3 users passed you since Monday."</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No achievement badges beyond rank</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">No one-time achievements ("First Sync", "100% Club", "7-Day Streak", "Team MVP"). These provide collectible motivation and recognition of specific behaviors.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Define achievement criteria server-side; award and display badges alongside rank.</div>
+  </div>
+</div>
+
+<!-- Section 9: Beyond 1x -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon">9</div>
+    <h2>UX &mdash; Beyond 1x & Value Framing</h2>
+    <span class="badge-count">3 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">No ROI or "money's worth" framing</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Users pay $200/mo but there's no "you've extracted $X of value" messaging. "You've used $320 worth of Claude on a $200 plan &mdash; 1.6x ROI" is enormously motivating. Currently this concept is entirely absent.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Add "Value Extracted" stat: <code>(weeklyPct / 100) * planCost</code>. Show as "$X used / $200 plan = 1.6x".</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">"Beyond 100%?" CTA is nearly invisible</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">The call-to-action for adding more plans is styled as 0.72rem italic dim text at <code>index.html:732</code>. This is the mechanism for users to unlock overachievement, and it's a footnote.</div>
+    <div class="issue-fix"><strong>Fix:</strong> When a user is near 100%, show a prominent banner: "You're at 95%! Add another plan to unlock Mythic rank."</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Max 5x users can never reach Legendary</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Plan normalization makes Max 5x users always appear at 1/4 the multiplier. They'd need 400% raw usage to hit Legendary, which is structurally impossible. <code>index.html:1232-1234</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Rank users based on % within their own plan capacity, or have separate leaderboards by plan type.</div>
+  </div>
+</div>
+
+<!-- Section 10: Freshness -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon">10</div>
+    <h2>Freshness & Staleness</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">No staleness warning for individual users</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Per-user "ago" timestamps are tiny (0.62rem, dim color). A user who hasn't synced in 3 days looks the same as one who synced 5 minutes ago. Stale data reduces trust. <code>index.html:1280</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add stale indicator (faded row, "STALE" badge) for users who haven't synced in &gt;24h.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">"Last Updated" shows client fetch time, not data freshness</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body"><code>new Date().toLocaleString()</code> at line 1458 is when the browser polled the API, not when any user last synced. "Last updated: just now" creates false confidence.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Show the most recent <code>lastUpdated</code> from any user in the dataset.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">No staleness indicator in leaderboard API response</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Backend</span>
+    </div>
+    <div class="issue-body">The leaderboard shows <code>lastUpdated</code> per user but doesn't flag stale users. Stale users skew team averages and rankings. <code>worker.js:963-982</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Add <code>isStale</code> flag (e.g., &gt;24h) to leaderboard output. Optionally exclude from rankings.</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">LIVE badge is decorative</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">Pulsing "LIVE" dot is always visible regardless of API connectivity or data freshness. Misleading when the API fails or data is hours old. <code>index.html:76-86</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Change to "OFFLINE" when API fetch fails.</div>
+  </div>
+</div>
+
+<!-- Section 11: Team Dynamics -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon">11</div>
+    <h2>Team Dynamics</h2>
+    <span class="badge-count">3 issues</span>
+  </div>
+
+  <div class="issue sev-high">
+    <div class="issue-header">
+      <span class="issue-title">Team battle hidden behind tab</span>
+      <span class="sev-tag high">High</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">The team mini-battle bar exists but is only rendered inside the Team tab. The Individual tab (default view) has no team context. Team competition only works if constantly visible.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Bring the compact team bar to the Individual tab, between utilisation gauge and leaderboard.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">Team averages are gameable</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Design</span>
+    </div>
+    <div class="issue-body">Team scores use <code>avgWeeklyPct</code>. One user at 200% + four at 0% = 40% average, beating a team where all five are at 35%. Rewards extreme individual usage over broad participation.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Use median, or % of members above a threshold, or <code>sum(min(pct, 100))</code> to reward breadth.</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">No time-boxed team challenges</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">UX</span>
+    </div>
+    <div class="issue-body">No weekly/monthly challenges like "First team to average 50% wins." Ongoing leaderboards become wallpaper; time-boxed competitions create urgency.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Add a "This Week's Challenge" banner with a specific team goal and countdown.</div>
+  </div>
+</div>
+
+<!-- Section 12: Security -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-icon">12</div>
+    <h2>Security & Privacy</h2>
+    <span class="badge-count">4 issues</span>
+  </div>
+
+  <div class="issue sev-critical">
+    <div class="issue-header">
+      <span class="issue-title">Unauthenticated usage endpoint allows data spoofing</span>
+      <span class="sev-tag critical">Critical</span>
+      <span class="area-tag">Security</span>
+    </div>
+    <div class="issue-body">Combined impact of unauthenticated <code>POST /api/usage</code> + CORS allowing any <code>chrome-extension://</code> origin + user lookup by name. Anyone can spoof anyone's usage, create fake users, and flood the leaderboard.</div>
+    <div class="issue-fix"><strong>Fix:</strong> Add authentication (shared secret, HMAC, or per-user token). Restrict CORS to the known extension ID.</div>
+  </div>
+
+  <div class="issue sev-medium">
+    <div class="issue-header">
+      <span class="issue-title">JWT not cryptographically verified by the worker</span>
+      <span class="sev-tag medium">Medium</span>
+      <span class="area-tag">Security</span>
+    </div>
+    <div class="issue-body">JWT is decoded with <code>atob</code> but never signature-verified. Relies on Cloudflare Access at the edge, but if the Access policy is misconfigured or the worker URL is accessed directly, any well-formed JWT is accepted. <code>worker.js:57-64</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Verify the JWT signature against CF Access's public key.</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">Extension has broad cookies permission</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">Privacy</span>
+    </div>
+    <div class="issue-body"><code>cookies</code> permission + <code>host_permissions</code> for <code>claude.ai/*</code> grants access to all cookies for both domains, including session cookies. <code>manifest.json:6</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Restrict to only the specific cookie needed (<code>CF_Authorization</code>).</div>
+  </div>
+
+  <div class="issue sev-low">
+    <div class="issue-header">
+      <span class="issue-title">Scrape logic duplicated across content.js and popup.js</span>
+      <span class="sev-tag low">Low</span>
+      <span class="area-tag">Extension</span>
+    </div>
+    <div class="issue-body">Scraping logic is fully duplicated. Any bug fix in one must be manually applied to the other. <code>content.js:26-113</code> vs <code>popup.js:216-298</code></div>
+    <div class="issue-fix"><strong>Fix:</strong> Extract to a shared module imported by both, or have the popup invoke the content script via messaging.</div>
+  </div>
+</div>
+
+<!-- Priority Matrix -->
+<div class="section" id="s13">
+  <div class="section-header">
+    <div class="section-icon">&star;</div>
+    <h2>Priority Matrix &mdash; Top Actions</h2>
+  </div>
+
+  <table class="priority-table">
+    <thead>
+      <tr><th>#</th><th>Issue</th><th>Severity</th><th>Area</th><th>Impact</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Add "My Status" personal identity card</td><td><span class="sev-tag critical">Critical</span></td><td>UX</td><td>Users can find themselves instantly &mdash; #1 engagement driver</td></tr>
+      <tr><td>2</td><td>Authenticate <code>/api/usage</code> endpoint</td><td><span class="sev-tag critical">Critical</span></td><td>Security</td><td>Prevents data spoofing and leaderboard poisoning</td></tr>
+      <tr><td>3</td><td>Fix race conditions on <code>users</code> array writes</td><td><span class="sev-tag critical">Critical</span></td><td>Data</td><td>Prevents silent user loss during concurrent syncs</td></tr>
+      <tr><td>4</td><td>Add rank-up progress bars</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Missing the #1 gamification pattern</td></tr>
+      <tr><td>5</td><td>Add ROI / "money's worth" framing</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Core motivation narrative for maximizing usage</td></tr>
+      <tr><td>6</td><td>Show team battle on Individual tab</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Team competition invisible by default</td></tr>
+      <tr><td>7</td><td>Anchor extension scraping to section headings</td><td><span class="sev-tag high">High</span></td><td>Data</td><td>Prevents values silently swapping on UI changes</td></tr>
+      <tr><td>8</td><td>Add failed sync retry queue</td><td><span class="sev-tag high">High</span></td><td>Data</td><td>Prevents permanent data loss on network failures</td></tr>
+      <tr><td>9</td><td>Fix multiplier display for Max 5x users</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Users can't interpret their score intuitively</td></tr>
+      <tr><td>10</td><td>Add staleness indicators per user</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Stale data erodes trust and skews rankings</td></tr>
+      <tr><td>11</td><td>Fix history entries mixing raw/combined values</td><td><span class="sev-tag high">High</span></td><td>Data</td><td>Corrupts weekly and monthly calculations</td></tr>
+      <tr><td>12</td><td>Add rank change deltas (&uarr;&darr;)</td><td><span class="sev-tag high">High</span></td><td>UX</td><td>Creates urgency and celebration on movement</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center; padding: 40px 0; color: var(--text-dim); font-size: 0.8rem;">
+  Generated March 27, 2026 &middot; 3 parallel Claude Opus analyses &middot; 56 issues identified
+</div>
+
+</div>
+</body>
+</html>
