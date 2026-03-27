@@ -859,8 +859,6 @@ async function getLeaderboardData(env) {
     }
 
     // Plan-type multiplier: max5 = 0.25x per 100%, max20/null = 1.0x per 100%
-    const planScale = (pt) => (pt === 'max5' ? 0.25 : 1.0);
-
     // Budget: for multi-plan, sum per-plan costs; otherwise use activePlanType
     let budget = 0;
     if (usage && usage.plans && usage.plans.length > 0) {
@@ -879,10 +877,11 @@ async function getLeaderboardData(env) {
       rawSessionPct = 0;
     }
 
-    // Display session = raw combined session value
+    // Display = combined values directly from usage record
+    // Known-good approach from commit f6534c0 — no /4, no scale, no cycle detection
+    // Frontend handles plan normalization (max5 /4) and multiplier formatting
+    // Extra usage shown as a separate tag, not baked into percentage
     let displaySessionPct = rawSessionPct;
-
-    // Display weekly (monthly) = combined weekly / 4 (4 weeks per month, same for all users)
     let displayWeeklyPct = usage
       ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
       : 0;
@@ -890,15 +889,6 @@ async function getLeaderboardData(env) {
     // Auto-reset: if weekly timer expired, show 0
     if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
       displayWeeklyPct = 0;
-    }
-
-    displayWeeklyPct = displayWeeklyPct / 4;
-
-    // Extra usage: cap at factor of 4 (no rate limits, exhausts fast)
-    // e.g., $549 spent with $200 plan cost = $549 / ($200 * 4) = 0.686x contribution
-    if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
-      const extraSpent = usage.totalExtraUsageSpent || usage.extraUsageSpent || 0;
-      displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
     }
 
     return {
@@ -920,14 +910,23 @@ async function getLeaderboardData(env) {
       planType: activePlanType,
       extensionVersion: usage ? (usage.extensionVersion || null) : null,
       plans: usage ? (usage.plans || null) : null,
+      streak: usage ? (usage.streak || { count: 0 }).count : 0,
+      isStale: usage && usage.timestamp && (nowMs - new Date(usage.timestamp).getTime()) > 24 * 3600000,
+      isInactive: usage && usage.timestamp && (nowMs - new Date(usage.timestamp).getTime()) > 72 * 3600000,
+      valueExtracted: Math.round((displayWeeklyPct / 100) * budget),
+      planCost: budget,
+      roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
     };
   }));
 
   function teamStats(teamUsers) {
+    const active = teamUsers.filter(u => !u.isInactive);
+    const avgDiv = active.length || 1;
     return {
       members: teamUsers.length,
-      avgSessionPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.sessionPct, 0) / teamUsers.length : 0,
-      avgWeeklyPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.weeklyPct, 0) / teamUsers.length : 0,
+      activeMembers: active.length,
+      avgSessionPct: active.reduce((s, u) => s + u.sessionPct, 0) / avgDiv,
+      avgWeeklyPct: active.reduce((s, u) => s + u.weeklyPct, 0) / avgDiv,
     };
   }
 
