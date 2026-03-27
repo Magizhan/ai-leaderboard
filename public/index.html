@@ -979,7 +979,7 @@
     <div class="form-group"><label>Session Usage (%)</label>
       <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="200" step="1">
     </div>
-    <div class="form-group"><label>Monthly Usage (%, All Models)</label>
+    <div class="form-group"><label>Weekly Usage (%, All Models)</label>
       <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="200" step="1">
     </div>
     <div class="form-group"><label>Extra Usage $ Spent</label>
@@ -1095,7 +1095,7 @@
       "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
       "var ep=(esm&&all.length>=4)?all[3]:null;" +
       // Confirm
-      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Monthly: '+(wp||'--')+'%';" +
+      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
       "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
       "if(!confirm(msg))return;" +
       // Detect plan type — look for 20x or 5x on page
@@ -1105,7 +1105,7 @@
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
-      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Monthly: '+(wp||'--')+'%');" +
+      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
       "else alert('Sync failed. Please try again.')" +
       "})()";
   }
@@ -2018,6 +2018,7 @@
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(user.sessionPct)}%</div><div class="detail-stat-label">Session</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(user.currentWeeklyPct || 0)}%</div><div class="detail-stat-label">This Week</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Monthly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
         ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
@@ -2046,9 +2047,9 @@
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${totalSessions}</div><div class="detail-stat-label">Total Sessions</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Monthly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Monthly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Months Tracked</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Weeks Tracked</div></div>
       </div>
     </div>`;
 
@@ -2057,7 +2058,7 @@
       <div class="detail-section-title">Session History</div>
       <div class="detail-chart-container">${renderLineChart(history, 'sessionPct', 'sessionSlot', {
         color: '#f97316', color2: '#a855f7', valueKey2: 'weeklyPct',
-        label: 'Session', label2: 'Monthly'
+        label: 'Session', label2: 'Weekly'
       })}</div>
     </div>`;
 
@@ -2067,19 +2068,19 @@
       ${renderSessionHistoryTable(history, 20, user)}
     </div>`;
 
-    // Monthly history chart
+    // Weekly history chart
     if (weekly.length > 0) {
       html += `<div class="detail-section">
-        <div class="detail-section-title">Monthly History</div>
+        <div class="detail-section-title">Weekly History</div>
         <div class="detail-chart-container">${renderLineChart(weekly, 'avgSessionPct', 'weekKey', {
           color: '#3b82f6', color2: '#22c55e', valueKey2: 'avgWeeklyPct',
-          label: 'Avg Session', label2: 'Avg Monthly'
+          label: 'Avg Session', label2: 'Avg Weekly'
         })}</div>
       </div>`;
 
-      // Monthly history table
+      // Weekly history table
       html += `<div class="detail-section">
-        <div class="detail-section-title">Monthly History Log</div>
+        <div class="detail-section-title">Weekly History Log</div>
         ${renderWeeklyHistoryTable(weekly)}
       </div>`;
     }
@@ -2201,7 +2202,7 @@
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Monthly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${teamMembers.length}</div><div class="detail-stat-label">Members</div></div>
       </div>
     </div>`;
@@ -2221,17 +2222,17 @@
       <div class="detail-section-title">Session History</div>
       <div class="detail-chart-container">${renderLineChart(history, 'sessionPct', 'sessionSlot', {
         color: '#f97316', color2: '#a855f7', valueKey2: 'weeklyPct',
-        label: 'Avg Session', label2: 'Avg Monthly'
+        label: 'Avg Session', label2: 'Avg Weekly'
       })}</div>
     </div>`;
 
-    // Team monthly chart
+    // Team weekly chart
     if (weekly.length > 0) {
       html += `<div class="detail-section">
-        <div class="detail-section-title">Monthly History</div>
+        <div class="detail-section-title">Weekly History</div>
         <div class="detail-chart-container">${renderLineChart(weekly, 'avgSessionPct', 'weekKey', {
           color: '#3b82f6', color2: '#22c55e', valueKey2: 'avgWeeklyPct',
-          label: 'Avg Session', label2: 'Avg Monthly'
+          label: 'Avg Session', label2: 'Avg Weekly'
         })}</div>
       </div>`;
     }
@@ -2322,7 +2323,7 @@
     const planCost = (user && user.budget && user.numPlans) ? user.budget / user.numPlans : 200;
     const extraSpent = user ? (user.extraUsageSpent || 0) : 0;
     let html = `<div class="detail-table-wrap"><table class="detail-table">
-      <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Monthly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
+      <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Weekly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
     rows.forEach((h, i) => {
       const ts = h.timestamp ? new Date(h.timestamp).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '--';
       let sessionDisplay = Math.round(h.sessionPct || 0);
@@ -2346,7 +2347,7 @@
     if (!weekly || weekly.length === 0) return '<p style="color:var(--text-dim);font-size:0.75rem;">No data yet</p>';
     const rows = weekly.slice(-maxRows).reverse();
     let html = `<div class="detail-table-wrap"><table class="detail-table">
-      <thead><tr><th>Week</th><th>Avg Session</th><th>Peak Session</th><th>Avg Monthly</th><th>Peak Monthly</th><th>Points</th></tr></thead><tbody>`;
+      <thead><tr><th>Week</th><th>Avg Session</th><th>Peak Session</th><th>Avg Weekly</th><th>Peak Weekly</th><th>Points</th></tr></thead><tbody>`;
     rows.forEach(w => {
       html += `<tr>
         <td>${w.weekKey || '--'}</td>
@@ -2406,7 +2407,7 @@
         <div class="countdown-sub">${sessionSub}</div>
       </div>
       <div class="countdown-card">
-        <div class="countdown-label">Monthly Resets In ${weeklyEst ? estHint : ''}</div>
+        <div class="countdown-label">Weekly Resets In ${weeklyEst ? estHint : ''}</div>
         <div class="countdown-value" data-countdown-weekly="${escAttr(user.id)}">${weeklyLabel}</div>
         <div class="countdown-sub">${weeklySub}</div>
       </div>

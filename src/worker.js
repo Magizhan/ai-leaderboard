@@ -950,6 +950,9 @@ async function getLeaderboardData(env) {
       budget,
       sessionPct: displaySessionPct,
       weeklyPct: displayWeeklyPct,
+      currentWeeklyPct: usage
+        ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
+        : 0,
       lastUpdated: usage ? usage.timestamp : null,
       source: usage ? usage.source : null,
       sessionSparkline,
