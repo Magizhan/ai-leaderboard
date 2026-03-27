@@ -1426,16 +1426,42 @@
     });
   }
 
+  // Try to auto-detect user from CF Access JWT cookie
+  function getEmailFromJWT() {
+    try {
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('CF_Authorization='));
+      if (!cookie) return null;
+      const token = cookie.split('=')[1];
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.email || null;
+    } catch (e) { return null; }
+  }
+
   function renderMyStatus(data) {
     const container = document.getElementById('myStatusCard');
     if (!container) return;
-    const myName = localStorage.getItem('claude_lb_name');
-    if (!myName) {
+
+    // Auto-detect: try localStorage name, then CF JWT email match
+    let myName = localStorage.getItem('claude_lb_name');
+    let me = myName ? data.users.find(u => u.name.toLowerCase() === myName.toLowerCase()) : null;
+
+    if (!me) {
+      const email = getEmailFromJWT();
+      if (email) {
+        // Match by first name from email (e.g., "magizhan@..." → find user "Mags" or "Magizhan")
+        const emailName = email.split('@')[0].toLowerCase();
+        me = data.users.find(u => u.name.toLowerCase().includes(emailName) || emailName.includes(u.name.toLowerCase()));
+        if (me) {
+          localStorage.setItem('claude_lb_name', me.name);
+          myName = me.name;
+        }
+      }
+    }
+
+    if (!me) {
       container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;cursor:pointer;" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Click here to set your name and see your personal status card</div>`;
       return;
     }
-    const me = data.users.find(u => u.name.toLowerCase() === myName.toLowerCase());
-    if (!me) { container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;">"${escHtml(myName)}" not found. <span style="text-decoration:underline;cursor:pointer;" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Change name</span></div>`; return; }
 
     const sorted = [...data.users].sort((a, b) => effectivePct(b, 'weeklyPct') - effectivePct(a, 'weeklyPct'));
     const myPos = sorted.findIndex(u => u.id === me.id) + 1;
@@ -1452,16 +1478,14 @@
       </div>`;
     }
 
-    // Financial summary
-    const utilized = me.amountUtilized || 0;
-    const spent = me.amountSpent || 0;
-    const remaining = me.amountRemaining || 0;
+    // Financial summary — base usage separate from extra
+    const budget = me.amountSpent || me.budget || 0;
+    const extraSpent = me.extraUsageSpent || 0;
+    const basePct = me.baseWeeklyPct || me.weeklyPct || 0;
+    const baseUtilized = Math.round((basePct / 100) * budget);
     const hoursLeft = me.weeklyResetHoursLeft;
     const daysLeft = hoursLeft !== null ? Math.floor(hoursLeft / 24) : null;
     const hrsLeft = hoursLeft !== null ? hoursLeft % 24 : null;
-    const roiVal = me.roi || 0;
-    const roiColor = roiVal >= 1 ? 'var(--accent-green)' : roiVal >= 0.5 ? 'var(--accent-orange)' : 'var(--text-dim)';
-    const roiLabel = roiVal >= 1 ? 'Getting your money\'s worth!' : roiVal >= 0.5 ? 'Good progress' : 'Room to grow';
 
     let timeHtml = '';
     if (daysLeft !== null) {
@@ -1469,10 +1493,9 @@
     }
 
     const financialHtml = `<div class="my-status-financial">
-      <span class="spent">$${utilized} / $${spent}</span>
-      <span class="remaining">$${remaining} remaining</span>
+      <span class="spent">$${baseUtilized} / $${budget} plan</span>
+      ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+$${Math.round(extraSpent)} extra</span>` : ''}
       ${timeHtml}
-      <span style="color:${roiColor}">${roiLabel}</span>
     </div>`;
 
     container.innerHTML = `<div class="my-status-card">

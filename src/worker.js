@@ -937,6 +937,9 @@ async function getLeaderboardData(env) {
       displayWeeklyPct = (weeklyExpired ? 0 : liveWeekly) / 4;
     }
 
+    // Base monthly (without extra usage) — for financial display
+    const baseWeeklyPct = displayWeeklyPct;
+
     // Extra usage contribution: (extraSpent / (planCost * 4)) * 100
     // e.g., $549 spent with $200 plan = $549 / $800 * 100 = 68.6%
     if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
@@ -950,6 +953,7 @@ async function getLeaderboardData(env) {
       budget,
       sessionPct: displaySessionPct,
       weeklyPct: displayWeeklyPct,
+      baseWeeklyPct: baseWeeklyPct,
       currentWeeklyPct: usage
         ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
         : 0,
