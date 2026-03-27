@@ -929,88 +929,16 @@ async function getLeaderboardData(env) {
     // Normalize session by plan type: 100% on max20 = 100 (displays as 1.0x), on max5 = 25 (displays as 0.25x)
     let displaySessionPct = rawSessionPct * planScale(activePlanType);
 
-    // Monthly = reset-detection approach, averaged over 4 weeks
-    // 1.0x monthly = maxed out every week for 4 weeks (single plan, max20)
-    // Detect billing cycle resets in history (weekly% drops from >20% to <5%)
-    // Sum pre-reset peaks + current cycle value, divide by max(4, numCycles)
-    // For multi-plan: infer per-plan split (excess above 100% = plan 2)
+    // Weekly = current week's combined usage, normalized by plan type
+    // 1.0x = 100% of a max20 plan used this week. No averaging over multiple weeks.
+    const scale = planScale(activePlanType);
     let displayWeeklyPct = 0;
 
-    const scale = planScale(activePlanType);
-    const cutoffMs = nowMs - 28 * 86400000; // 28 days ago
-
-    if (history.length >= 2) {
-      const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
-
-      if (recent.length >= 2) {
-        // Detect resets: weekly drops from >20% to <5%
-        const cyclePreResetValues = [];
-        for (let i = 1; i < recent.length; i++) {
-          const prevW = recent[i - 1].weeklyPct || 0;
-          const curW = recent[i].weeklyPct || 0;
-          if (prevW > 20 && curW < prevW * 0.3) {
-            cyclePreResetValues.push(prevW);
-          }
-        }
-        const currentVal = recent[recent.length - 1].weeklyPct || 0;
-
-        if (u.numPlans > 1) {
-          // Multi-plan: infer per-plan split
-          // Excess above 100% assumed to be plan 2
-          let p1Total = 0, p2Total = 0;
-
-          // Find when multi-plan started (first time weekly > 105%)
-          const multiStart = recent.find(e => (e.weeklyPct || 0) > 105);
-          const multiStartTs = multiStart ? multiStart.timestamp : null;
-
-          for (const preReset of cyclePreResetValues) {
-            if (multiStartTs) {
-              p1Total += Math.min(preReset, 100);
-              p2Total += Math.max(preReset - 100, 0);
-            } else {
-              p1Total += preReset;
-            }
-          }
-          // Current: use actual per-plan data if available
-          const plans = (usage && usage.plans) || [];
-          if (plans.length >= 2) {
-            p1Total += plans[0].weeklyPct || 0;
-            p2Total += plans[1].weeklyPct || 0;
-          } else {
-            p1Total += Math.min(currentVal, 100);
-            p2Total += Math.max(currentVal - 100, 0);
-          }
-
-          const numCycles = cyclePreResetValues.length + 1;
-          const denom = Math.max(4, numCycles);
-          displayWeeklyPct = ((p1Total / denom) + (p2Total / denom)) * scale;
-        } else {
-          // Single plan
-          const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentVal;
-          const numCycles = cyclePreResetValues.length + 1;
-          // Use actual weeks elapsed (from oldest recent entry to now), min 1, max 4
-          const oldestRecentTs = new Date(recent[0].timestamp).getTime();
-          const weeksElapsed = Math.max(1, Math.min(4, Math.ceil((nowMs - oldestRecentTs) / (7 * 86400000))));
-          const denom = Math.max(weeksElapsed, numCycles);
-          displayWeeklyPct = (totalRaw / denom) * scale;
-        }
-      } else if (recent.length === 1) {
-        // Single recent entry — use weeks elapsed, not hardcoded /4
-        const entryAge = nowMs - new Date(recent[0].timestamp).getTime();
-        const weeksElapsed = Math.max(1, Math.min(4, Math.ceil(entryAge / (7 * 86400000))));
-        displayWeeklyPct = ((recent[0].weeklyPct || 0) / weeksElapsed) * scale;
-      }
-    }
-
-    // Also handle: history exists but all entries are older than 28 days
-    // (unreachable code path fix — moved outside history.length >= 2 check)
-    if (displayWeeklyPct === 0 && usage) {
+    // Use combined weekly from usage record (most current)
+    if (usage) {
       const rawWeekly = usage.combinedWeeklyPct !== undefined
         ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0);
-      // Use weeks since last sync, not hardcoded /4
-      const lastSyncAge = usage.timestamp ? (nowMs - new Date(usage.timestamp).getTime()) : 28 * 86400000;
-      const weeksElapsed = Math.max(1, Math.min(4, Math.ceil(lastSyncAge / (7 * 86400000))));
-      displayWeeklyPct = (rawWeekly / weeksElapsed) * scale;
+      displayWeeklyPct = rawWeekly * scale;
     }
 
     // Extra usage: cap at factor of 4 (no rate limits, exhausts fast)
