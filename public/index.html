@@ -763,6 +763,10 @@
       <span class="gauge-dot">·</span>
       <span>Max possible: <span id="gaugeMaxPossible">0%</span></span>
     </div>
+    <div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:0.7rem;">
+      <span id="gaugeLost" style="color:#ef4444;display:none;"></span>
+      <span id="gaugeOpportunity" style="color:#22c55e;display:none;"></span>
+    </div>
   </div>
 
   <!-- Leaderboard Section -->
@@ -1493,12 +1497,18 @@
     }
 
     const inrRate = 85;
+    const lostPct = me.lostPct || 0;
+    const oppPct = me.opportunityPct || 0;
+    const lostDollars = Math.round((lostPct / 100) * budget);
+    const oppDollars = Math.round((oppPct / 100) * budget);
     const financialHtml = `<div class="my-status-financial">
       <span class="spent">\u20B9${(baseUtilized * inrRate).toLocaleString('en-IN')} / \u20B9${(budget * inrRate).toLocaleString('en-IN')}</span>
       <span style="color:var(--text-dim);font-size:0.65rem">($${baseUtilized}/$${budget})</span>
       ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+\u20B9${Math.round(extraSpent * inrRate).toLocaleString('en-IN')} extra</span>` : ''}
+      ${lostPct > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
       ${timeHtml}
-    </div>`;
+    </div>
+    ${oppPct > 0 ? `<div style="font-size:0.65rem;color:var(--accent-green);margin-top:2px;">\u20B9${(oppDollars * inrRate).toLocaleString('en-IN')} still achievable this month</div>` : ''}`;
 
     container.innerHTML = `<div class="my-status-card">
       <div class="my-status-card-inner">
@@ -1587,6 +1597,28 @@
     const maxPossiblePct = budgetUSD > 0 ? Math.round(((utilisedUSD + remainingPotentialUSD) / budgetUSD) * 100) : 0;
     document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 150) + '%';
     document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
+
+    // Lost & opportunity (overall)
+    const totalLostUSD = data.users.reduce((s, u) => s + ((u.lostPct || 0) / 100) * (u.budget || 0), 0);
+    const totalOppUSD = data.users.reduce((s, u) => s + ((u.opportunityPct || 0) / 100) * (u.budget || 0), 0);
+    const lostEl = document.getElementById('gaugeLost');
+    if (lostEl) {
+      if (totalLostUSD > 0) {
+        lostEl.textContent = fmtINR(totalLostUSD * INR_RATE) + ' lost forever';
+        lostEl.style.display = '';
+      } else {
+        lostEl.style.display = 'none';
+      }
+    }
+    const oppEl = document.getElementById('gaugeOpportunity');
+    if (oppEl) {
+      if (totalOppUSD > 0) {
+        oppEl.textContent = fmtINR(totalOppUSD * INR_RATE) + ' still achievable';
+        oppEl.style.display = '';
+      } else {
+        oppEl.style.display = 'none';
+      }
+    }
 
     // Teams - use weekly for team battle (or could use session)
     const teamNames = ['NY', 'NC', 'Xyne', 'HS', 'JP'];

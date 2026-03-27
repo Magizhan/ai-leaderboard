@@ -891,51 +891,60 @@ async function getLeaderboardData(env) {
 
     const cutoffMs = nowMs - 28 * 86400000;
 
+    // Max capacity per week: 100% per plan (e.g., 2 plans = 200% combined max)
+    const maxWeeklyCapacity = u.numPlans * 100;
+
+    // Track completed week peaks and current week for lost/opportunity calc
+    const completedWeekPeaks = [];
+    let currentWeekValue = 0;
+
     if (history.length >= 2) {
       const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
 
       if (recent.length >= 2) {
-        // Detect weekly resets and capture pre-reset peaks
-        const cyclePreResetValues = [];
         let runningPeak = recent[0].weeklyPct || 0;
-
         for (let i = 1; i < recent.length; i++) {
           const curW = recent[i].weeklyPct || 0;
           if (runningPeak > 20 && curW < runningPeak * 0.3) {
-            // Reset detected — save the peak before reset
-            cyclePreResetValues.push(runningPeak);
+            completedWeekPeaks.push(runningPeak);
             runningPeak = curW;
           } else {
             runningPeak = Math.max(runningPeak, curW);
           }
         }
-
-        // Current week = running peak (highest value since last reset)
-        // But also check live usage in case it's higher than last history entry
         const liveWeekly = usage
           ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
           : 0;
-        // Auto-reset check: if weekly timer expired, current week is 0
         const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
-        const currentWeekValue = weeklyExpired ? 0 : Math.max(runningPeak, liveWeekly);
+        currentWeekValue = weeklyExpired ? 0 : Math.max(runningPeak, liveWeekly);
 
-        const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentWeekValue;
+        const totalRaw = completedWeekPeaks.reduce((s, v) => s + v, 0) + currentWeekValue;
         displayWeeklyPct = totalRaw / 4;
       } else if (recent.length === 1) {
         const liveWeekly = usage
           ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
           : 0;
         const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
-        displayWeeklyPct = (weeklyExpired ? 0 : Math.max(recent[0].weeklyPct || 0, liveWeekly)) / 4;
+        currentWeekValue = weeklyExpired ? 0 : Math.max(recent[0].weeklyPct || 0, liveWeekly);
+        displayWeeklyPct = currentWeekValue / 4;
       }
     } else {
-      // No history or only 1 entry — use live combined value / 4
       const liveWeekly = usage
         ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
         : 0;
       const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
-      displayWeeklyPct = (weeklyExpired ? 0 : liveWeekly) / 4;
+      currentWeekValue = weeklyExpired ? 0 : liveWeekly;
+      displayWeeklyPct = currentWeekValue / 4;
     }
+
+    // Lost = capacity from completed weeks that can never be recovered
+    // e.g., week peaked at 94% of 100% capacity → lost 6% that week
+    const completedWeeks = completedWeekPeaks.length;
+    const lostPct = completedWeekPeaks.reduce((s, peak) => s + Math.max(0, maxWeeklyCapacity - peak), 0) / 4;
+    // Opportunity = capacity still achievable (current week remainder + future weeks)
+    const futureWeeks = Math.max(0, 4 - completedWeeks - 1); // -1 for current week
+    const currentWeekRemaining = Math.max(0, maxWeeklyCapacity - currentWeekValue);
+    const opportunityPct = (currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 4;
 
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
@@ -979,6 +988,12 @@ async function getLeaderboardData(env) {
       amountUtilized: Math.round((displayWeeklyPct / 100) * budget),
       amountRemaining: Math.max(0, budget - Math.round((displayWeeklyPct / 100) * budget)),
       roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
+      // Lost & opportunity
+      lostPct: Math.round(lostPct * 10) / 10,
+      opportunityPct: Math.round(opportunityPct * 10) / 10,
+      completedWeeks,
+      currentWeekPct: currentWeekValue,
+      maxWeeklyCapacity,
       // Time left: hours until weekly reset (creates urgency)
       weeklyResetHoursLeft: usage && usage.weeklyResetsAt
         ? Math.max(0, Math.round((new Date(usage.weeklyResetsAt).getTime() - nowMs) / 3600000))
