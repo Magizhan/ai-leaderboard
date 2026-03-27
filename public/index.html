@@ -1493,6 +1493,16 @@
     });
   }
 
+  function showMilestoneToast(msg) {
+    const el = document.createElement('div');
+    el.className = 'milestone-toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  const RANK_ORDER = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'LEGENDARY', 'MYTHIC'];
+
   function renderMyStatus(data) {
     const container = document.getElementById('myStatusCard');
     if (!container) return;
@@ -1508,12 +1518,40 @@
     const rank = getRank(pct);
     const nextRank = getNextRank(pct);
 
+    // Milestone: rank up detection
+    const prevRankTitle = localStorage.getItem('lb_prev_rank');
+    if (prevRankTitle && prevRankTitle !== rank.title) {
+      const prevIdx = RANK_ORDER.indexOf(prevRankTitle);
+      const curIdx = RANK_ORDER.indexOf(rank.title);
+      if (curIdx > prevIdx) {
+        confetti();
+        showMilestoneToast(`Rank up! ${rank.title} ${rank.icon}`);
+      }
+    }
+    localStorage.setItem('lb_prev_rank', rank.title);
+
+    // Milestone: first time crossing 100% this session
+    if (pct >= 100 && !sessionStorage.getItem('lb_celebrated_100')) {
+      sessionStorage.setItem('lb_celebrated_100', '1');
+      confetti();
+      showMilestoneToast('You crossed 100%! \u{1f389}');
+    }
+
     let nextRankHtml = '';
     if (nextRank) {
       nextRankHtml = `<div class="my-status-next">
         <span>\u2192 ${nextRank.nextTitle}: ${Math.round(nextRank.remaining)}% to go</span>
         <div class="my-status-next-bar"><div class="my-status-next-fill" style="width:${Math.round(nextRank.progress * 100)}%"></div></div>
       </div>`;
+    }
+
+    // ROI display
+    let roiHtml = '';
+    if (me.valueExtracted != null && me.planCost != null) {
+      const roiVal = me.roi || 0;
+      const color = roiVal >= 1.0 ? '#22c55e' : roiVal < 0.5 ? '#f97316' : 'var(--text-dim)';
+      const label = roiVal >= 1.0 ? '\u{1f3af} Getting your money\'s worth!' : roiVal < 0.5 ? 'Room to grow' : '';
+      roiHtml = `<div style="font-size:0.75rem;color:${color};margin-top:2px;">$${Math.round(me.valueExtracted)} / $${Math.round(me.planCost)} plan${label ? ' \u2014 ' + label : ''}</div>`;
     }
 
     container.innerHTML = `<div class="my-status-card" id="my-status-card">
@@ -1526,6 +1564,7 @@
           <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
           <span class="my-status-pct" style="color:${pctColor(pct)}">${fmtMultiplier(pct)}</span>
         </div>
+        ${roiHtml}
         ${nextRankHtml}
         <span class="my-status-change" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Not you? Change</span>
       </div>

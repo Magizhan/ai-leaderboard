@@ -731,7 +731,7 @@ async function logUsage(body, env) {
   }
 
   // --- Streak tracking ---
-  const streakData = usage.streak || { count: 0, lastActiveDate: null };
+  const streakData = existing.streak || { count: 0, lastActiveDate: null };
   const today = new Date(nowMs).toISOString().slice(0, 10); // YYYY-MM-DD
   if (combinedWeeklyPct >= 20 && today !== streakData.lastActiveDate) {
     const yesterday = new Date(nowMs - 86400000).toISOString().slice(0, 10);
