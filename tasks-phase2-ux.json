@@ -1,0 +1,34 @@
+{
+  "tasks": [
+    {
+      "id": "2a-personal-identity-card-rank-progress-staleness-team-battle",
+      "name": "2a. Personal identity card, rank progress, staleness, team battle",
+      "prompt": "You are adding UX improvements to `public/index.html`. Read the full file first to understand the existing structure. Make ONLY the changes described below. Do NOT refactor existing code.\n\n### Change 1: \"My Status\" personal identity card\n\nAdd a pinned card above the leaderboard that shows the current user's stats. The user's name is stored in `localStorage.getItem('claude_lb_name')`.\n\n- When rendering the leaderboard (in the existing render function), check if `localStorage.getItem('claude_lb_name')` matches a user in the data\n- If found, render a hero card above the leaderboard table with:\n  - Their name, rank badge, and current multiplier/percentage prominently\n  - \"Rank #X of Y\"\n  - Next rank threshold: \"→ Diamond: 25% to go\" with a thin progress bar\n  - If no match found, show nothing (don't break the page)\n- Style it with a subtle gradient border to distinguish from the leaderboard rows\n- Add a small \"Not you? Change\" link that opens the settings/user picker\n\n### Change 2: Rank-up progress bar in leaderboard rows\n\nIn each leaderboard row, after the rank badge, add a tiny inline progress bar (40px wide, 4px tall) showing progress toward the next rank. Use the existing rank thresholds from the `getRank` function.\n\n### Change 3: Rank change deltas\n\n- On each leaderboard render, store current positions in `localStorage` as `lb_prev_positions` (JSON map of userId → position)\n- On next render, compare and show ↑N / ↓N / — next to the rank number\n- Use green for up, red for down, dim for no change\n- First render (no previous data) shows nothing\n\n### Change 4: Staleness indicators\n\n- For users whose `lastUpdated` is older than 24 hours, add a dim opacity (0.5) to the row\n- Add a small \"STALE\" tag (similar to existing tag styles) next to the \"ago\" timestamp\n- For users older than 72 hours, show \"INACTIVE\" instead\n\n### Change 5: Team battle mini-bar on Individual tab\n\nThe team mini-battle bar currently only shows in the Team tab. Move/copy it so it also appears on the Individual tab, positioned between the utilisation gauge and the leaderboard table. Keep it compact (single row, ~40px tall).\n\n### Acceptance criteria\nAfter changes, verify:\n```bash\ngrep -n 'claude_lb_name\\|my-status\\|MY.STATUS' public/index.html | head -5  # Personal card\ngrep -n 'rank-progress\\|progress-bar' public/index.html | head -3  # Progress bar\ngrep -n 'lb_prev_positions' public/index.html | head -3  # Rank deltas\ngrep -n 'STALE\\|INACTIVE\\|isStale' public/index.html | head -3  # Staleness\ngrep -n 'team-mini.*individual\\|mini-battle' public/index.html | head -3  # Team bar\n```\n\nCreate a git commit: \"feat: add personal status card, rank progress, deltas, staleness, team bar on individual tab\"\n\nDO NOT modify src/worker.js. DO NOT add new files. DO NOT add external dependencies.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Edit Bash"
+    },
+    {
+      "id": "2b-add-roi-data-and-staleness-flag-to-leaderboard-api",
+      "name": "2b. Add ROI data and staleness flag to leaderboard API",
+      "prompt": "You are adding two fields to the leaderboard API response in `src/worker.js`. Read the file first, find the `getLeaderboardData` function (around line 850-1000), and make ONLY these changes.\n\n### Change 1: Add `isStale` flag\n\nIn the leaderboard user object (where `lastUpdated` is set), add:\n```js\nisStale: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 24 * 60 * 60 * 1000,\nisInactive: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 72 * 60 * 60 * 1000,\n```\n\n### Change 2: Add ROI / value extraction data\n\nIn the same leaderboard user object, add:\n```js\nvalueExtracted: Math.round((displayWeeklyPct / 100) * planCost),\nplanCost: planCost,\nroi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,\n```\n\nWhere `planCost` is already calculated in the function (look for the existing plan cost calculation). `roi` is the multiplier (1.0 = breaking even, 1.6 = getting 60% more value).\n\n### Acceptance criteria\n```bash\ngrep -n 'isStale\\|isInactive' src/worker.js | head -3\ngrep -n 'valueExtracted\\|roi:' src/worker.js | head -3\nnpm test 2>&1 | tail -5  # All tests must pass\n```\n\nCreate a git commit: \"feat: add isStale, isInactive, valueExtracted, roi to leaderboard API\"\n\nDO NOT touch public/index.html. DO NOT modify any other function besides `getLeaderboardData`.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Edit Bash"
+    },
+    {
+      "id": "2c-verify-phase-2",
+      "name": "2c. Verify Phase 2",
+      "prompt": "You are a VERIFICATION agent. Check that Phase 2 fixes were applied correctly. Do NOT make changes.\n\n### Checks\n\n1. **Personal identity card**: Read `public/index.html`, verify there's code that reads `claude_lb_name` from localStorage and renders a personal status card above the leaderboard.\n\n2. **Rank progress bar**: Verify leaderboard rows include a progress indicator toward the next rank.\n\n3. **Rank deltas**: Verify `lb_prev_positions` is stored/read from localStorage and ↑/↓ indicators are rendered.\n\n4. **Staleness**: Verify rows get dimmed/tagged for stale (>24h) and inactive (>72h) users.\n\n5. **Team battle on Individual tab**: Verify the team mini-battle bar renders on the Individual tab, not just Team tab.\n\n6. **API changes**: Verify `src/worker.js` `getLeaderboardData` returns `isStale`, `isInactive`, `valueExtracted`, `roi` fields.\n\n7. **Tests**: Run `npm test` and report results.\n\n8. **No regressions**: Check git diff scope — only `public/index.html` and `src/worker.js` should be modified.\n\n### Output format\n\n| Check | Status | Details |\n|-------|--------|---------|\n| Personal identity card | PASS/FAIL | line X |\n| Rank progress bar | PASS/FAIL | line X |\n| Rank deltas | PASS/FAIL | line X |\n| Staleness indicators | PASS/FAIL | line X |\n| Team battle on Individual tab | PASS/FAIL | line X |\n| API: isStale/isInactive | PASS/FAIL | line X |\n| API: valueExtracted/roi | PASS/FAIL | line X |\n| Tests pass | PASS/FAIL | output |\n| No unintended changes | PASS/FAIL | diff scope |",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "sonnet",
+      "effort": "medium",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Bash"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Usage Sync",
+  "version": "1.8",
+  "description": "Auto-syncs your Claude usage to the team leaderboard on a schedule",
+  "permissions": ["activeTab", "scripting", "storage", "alarms", "tabs", "cookies"],
+  "host_permissions": ["https://leaderboard.magizhan.work/*", "https://claude.ai/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Sync Claude Usage"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/settings/usage*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

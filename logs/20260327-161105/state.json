@@ -1,0 +1,34 @@
+{
+  "log_dir": "/Users/ilamara/Documents/code/ai-leaderboard/logs/20260327-161105",
+  "started_at": 1774608065,
+  "tasks": [
+    {
+      "id": "3a-confetti-on-milestones-and-roi-display",
+      "name": "3a. Confetti on milestones and ROI display",
+      "status": "running",
+      "model": "opus",
+      "score": null
+    },
+    {
+      "id": "3b-streak-tracking-in-worker",
+      "name": "3b. Streak tracking in worker",
+      "status": "running",
+      "model": "opus",
+      "score": null
+    },
+    {
+      "id": "3c-streak-display-and-billing-countdown-in-frontend",
+      "name": "3c. Streak display and billing countdown in frontend",
+      "status": "running",
+      "model": "opus",
+      "score": null
+    },
+    {
+      "id": "3d-verify-phase-3",
+      "name": "3d. Verify Phase 3",
+      "status": "running",
+      "model": "sonnet",
+      "score": null
+    }
+  ]
+}

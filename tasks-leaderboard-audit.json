@@ -1,0 +1,34 @@
+{
+  "tasks": [
+    {
+      "id": "backend-data-model-api-issues",
+      "name": "Backend Data Model & API Issues",
+      "prompt": "Thoroughly audit the backend data model, API endpoints, and KV storage logic in `src/worker.js`. Focus on:\n\n1. **Data integrity issues**: Are there race conditions, data loss scenarios, or inconsistencies possible in KV read/write patterns? Can usage submissions overwrite each other?\n2. **Schema gaps**: Look at the KV schema (`users` array, `usage:{id}` per-user data). Is it missing fields that would be needed for a proper leaderboard (e.g., historical tracking, plan type, reset cycles)?\n3. **API design flaws**: Are there missing validations, missing error handling, or endpoints that expose too much/too little data?\n4. **Usage tracking accuracy**: How is sessionPct and weeklyPct calculated and stored? Can values exceed 100%? What happens at plan boundaries/resets? Is there any deduplication?\n5. **Multi-plan support**: The schema mentions `numPlans`. How does tracking work across plan switches? Are there edge cases where data gets corrupted?\n6. **Data freshness**: How stale can data get? Is there any TTL, expiration, or staleness indicator?\n\nAlso read `test/e2e.test.mjs` to see what's tested and what's NOT tested.\n\nWrite a detailed report organized by category. For each issue found, include:\n- File path and line number\n- Description of the issue\n- Severity (critical/high/medium/low)\n- Suggested fix approach (do NOT implement fixes)",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Agent"
+    },
+    {
+      "id": "frontend-ux-gamification-design-gaps",
+      "name": "Frontend UX & Gamification Design Gaps",
+      "prompt": "Thoroughly audit `public/index.html` for UX and gamification design issues. The core question: **Is this leaderboard effectively showing current status and nudging everyone to max out their Claude usage?**\n\nAnalyze:\n\n1. **Visibility of current status**: Can users immediately see where they stand? Is the data presented in a way that creates urgency/motivation?\n2. **Nudging effectiveness**: What gamification elements exist (rankings, badges, progress bars, streaks, team battles)? What's MISSING that could drive engagement?\n3. **Going beyond 1x**: Can users see if they're getting more than 1x their monthly subscription value? Is there any tracking of \"value extracted\" vs \"subscription cost\"? Should there be a concept of \"overachievement\" beyond 100%?\n4. **Plan awareness**: Does the UI account for different plan types (Pro, Team, etc.) with different limits? Is comparison fair across plans?\n5. **Freshness indicators**: Can users tell when data was last updated? Is there staleness that reduces trust?\n6. **Team dynamics**: How effective is the team battle feature? Does it create healthy competition or is it gameable?\n7. **Missing motivational features**: Consider what's missing — e.g., daily/weekly goals, streaks, \"you're falling behind\" alerts, celebration moments, historical trends showing improvement, peer comparison nudges.\n8. **Mobile responsiveness and accessibility**: Quick check on whether the dashboard works well on mobile.\n\nWrite a detailed report organized by category. For each gap found, include:\n- What's missing or broken (with file path and line numbers where relevant)\n- Why it matters for the goal of maximizing usage\n- Severity (critical/high/medium/low)\n- Suggested approach (do NOT implement)",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Agent"
+    },
+    {
+      "id": "extension-data-collection-sync-issues",
+      "name": "Extension Data Collection & Sync Issues",
+      "prompt": "Thoroughly audit the Chrome extension in `extension/` directory. This is the primary data collection mechanism — it scrapes usage from claude.ai/settings/usage.\n\nAnalyze:\n\n1. **Data accuracy**: What exactly does the extension scrape? Does it capture session %, weekly %, or something else? How does it map to what claude.ai actually shows?\n2. **Sync reliability**: How often does it sync? Can syncs fail silently? Is there retry logic? What happens if the user isn't on the usage page?\n3. **Plan detection**: Does it detect the user's plan type (Pro, Team, Free)? How does it handle plan switches mid-cycle?\n4. **Edge cases**: What happens with multiple tabs, multiple accounts, incognito mode, extension updates?\n5. **Version tracking**: The recent commit mentions version tracking and outdated nudge config — is this working correctly?\n6. **Data transformation**: Between what the extension scrapes and what gets sent to the API — is any data lost or misinterpreted?\n7. **Privacy concerns**: What data is being sent? Is there anything sensitive being transmitted?\n\nWrite a detailed report. For each issue, include file path, line number, severity, and suggested fix approach.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "done",
+      "allowedTools": "Read Grep Glob Agent"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "tasks": [
+    {
+      "id": "3a-confetti-on-milestones-and-roi-display",
+      "name": "3a. Confetti on milestones and ROI display",
+      "prompt": "You are adding two features to `public/index.html`. Read the file first, find the existing confetti function and the renderData/renderLeaderboard functions.\n\n### Change 1: Confetti on milestones\n\nCurrently `confetti()` only fires on user creation (search for existing confetti calls). Add milestone celebrations:\n\n- In `renderData` or `renderMyStatus`, after rendering the personal status card, check if the user crossed a rank threshold since last render\n- Store previous rank in `localStorage` as `lb_prev_rank`\n- If rank changed upward (e.g., Platinum → Diamond), fire confetti and show a brief toast notification: \"Rank up! Diamond 💎\"\n- Also fire confetti if user crosses 100% (1.0x) for the first time in a session — store `lb_celebrated_100` in sessionStorage\n\nThe toast should be a simple fixed-position div at top center, auto-dismiss after 3 seconds. Add minimal CSS for it.\n\n### Change 2: ROI / Value display in personal status card\n\nThe API now returns `valueExtracted`, `planCost`, and `roi` per user. In the `renderMyStatus` function (search for `my-status-card`), add after the percentage display:\n\n- Show ROI as: \"$X / $Y plan\" (e.g., \"$320 / $200 plan\")\n- If roi >= 1.0, show in green with \"🎯 Getting your money's worth!\"\n- If roi < 0.5, show in orange with \"Room to grow\"\n- Keep it compact — one line, small font (0.75rem)\n\n### Acceptance criteria\n```bash\ngrep -n 'lb_prev_rank\\|rank.*up\\|milestone' public/index.html | head -5\ngrep -n 'valueExtracted\\|roi\\|money.*worth' public/index.html | head -5\n```\n\nCreate a git commit: \"feat: confetti on rank milestones, ROI display in personal card\"\n\nDO NOT modify src/worker.js. Keep changes minimal and focused.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "running",
+      "allowedTools": "Read Grep Glob Edit Bash"
+    },
+    {
+      "id": "3b-streak-tracking-in-worker",
+      "name": "3b. Streak tracking in worker",
+      "prompt": "You are adding streak tracking to `src/worker.js`. Read the file first.\n\n### What is a streak?\nA streak counts consecutive days where a user has synced AND their weekly usage is above 20%. This incentivizes daily engagement.\n\n### Changes to `logUsage` function\n\nAfter the history update section (after the history push), add streak calculation:\n\n```js\n// --- Streak tracking ---\nconst streakData = usage.streak || { count: 0, lastActiveDate: null };\nconst today = new Date(nowMs).toISOString().slice(0, 10); // YYYY-MM-DD\nif (combinedWeeklyPct >= 20 && today !== streakData.lastActiveDate) {\n  const yesterday = new Date(nowMs - 86400000).toISOString().slice(0, 10);\n  if (streakData.lastActiveDate === yesterday) {\n    streakData.count += 1;\n  } else if (!streakData.lastActiveDate) {\n    streakData.count = 1;\n  } else {\n    streakData.count = 1; // streak broken, restart\n  }\n  streakData.lastActiveDate = today;\n}\n```\n\nStore `streak` in the usage data object (alongside `plans`, `activePlan`, etc.).\n\n### Changes to `getLeaderboardData`\n\nIn the board map where user objects are built, add:\n```js\nstreak: usage ? (usage.streak || { count: 0 }).count : 0,\n```\n\n### Acceptance criteria\n```bash\ngrep -n 'streak' src/worker.js | head -10\nnpm test 2>&1 | tail -5\n```\n\nCreate a git commit: \"feat: add streak tracking (consecutive active days)\"\n\nDO NOT touch public/index.html. Only modify src/worker.js.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "running",
+      "allowedTools": "Read Grep Glob Edit Bash"
+    },
+    {
+      "id": "3c-streak-display-and-billing-countdown-in-frontend",
+      "name": "3c. Streak display and billing countdown in frontend",
+      "prompt": "You are adding streak display and billing countdown to `public/index.html`. Read the file first.\n\n### Change 1: Streak display in leaderboard rows\n\nIn the `buildRowHTML` function, after the rank badge, if `u.streak > 0`, add a streak badge:\n```html\n<span class=\"lb-streak\" title=\"N-day streak\">🔥N</span>\n```\n\nAdd CSS for `.lb-streak`:\n```css\n.lb-streak { font-size: 0.65rem; color: #ff6b35; font-weight: 700; margin-left: 4px; }\n```\n\n### Change 2: Billing cycle countdown on main view\n\nIn the `renderData` function, after the utilisation gauge section, add a compact billing countdown:\n- Find the user with the soonest `weeklyResetsAt` timestamp\n- Display: \"Weekly reset in X days Y hours\" as a small line below the gauge\n- Style: 0.72rem, dim color, centered\n\n### Acceptance criteria\n```bash\ngrep -n 'lb-streak\\|streak' public/index.html | head -5\ngrep -n 'countdown\\|reset in\\|billing' public/index.html | head -5\n```\n\nCreate a git commit: \"feat: streak badges in leaderboard, billing countdown on main view\"\n\nDO NOT modify src/worker.js.",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "opus",
+      "effort": "high",
+      "status": "running",
+      "allowedTools": "Read Grep Glob Edit Bash"
+    },
+    {
+      "id": "3d-verify-phase-3",
+      "name": "3d. Verify Phase 3",
+      "prompt": "Verification agent. Do NOT make changes. Wait 30 seconds before starting checks (to let fix tasks finish).\n\n### Checks\n\n1. **Confetti on milestones**: Verify `public/index.html` has `lb_prev_rank` in localStorage and confetti fires on rank change\n2. **ROI display**: Verify personal status card shows `valueExtracted` / `planCost`\n3. **Streak tracking in worker**: Verify `src/worker.js` has streak calculation in `logUsage` and streak field in leaderboard output\n4. **Streak display**: Verify `public/index.html` shows streak badges (🔥) in leaderboard rows\n5. **Billing countdown**: Verify countdown display in main view\n6. **Tests pass**: Run `npm test`\n\n| Check | Status | Details |\n|-------|--------|---------|\n| Confetti milestones | PASS/FAIL | line X |\n| ROI display | PASS/FAIL | line X |\n| Streak in worker | PASS/FAIL | line X |\n| Streak in UI | PASS/FAIL | line X |\n| Billing countdown | PASS/FAIL | line X |\n| Tests pass | PASS/FAIL | output |",
+      "workdir": "/Users/ilamara/Documents/code/ai-leaderboard",
+      "model": "sonnet",
+      "effort": "medium",
+      "status": "running",
+      "allowedTools": "Read Grep Glob Bash"
+    }
+  ]
+}
