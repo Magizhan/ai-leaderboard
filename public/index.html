@@ -85,7 +85,28 @@
   }
   @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
 
-  /* Stats */
+  /* Utilisation Gauge */
+  .utilisation-gauge {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 28px 16px; margin: 16px 0 20px; text-align: center;
+  }
+  .gauge-amounts { font-size: 1.4rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .gauge-utilised { color: #2DC653; }
+  .gauge-sep { color: rgba(255,255,255,0.3); margin: 0 4px; }
+  .gauge-budget { color: var(--accent-orange); }
+  .gauge-label { font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; margin-left: 10px; vertical-align: middle; }
+  .gauge-amounts-usd { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .gauge-bar-wrap { display: flex; align-items: center; gap: 12px; margin: 12px 0 8px; }
+  .gauge-bar-track { flex: 1; height: 18px; background: rgba(255,255,255,0.06); border-radius: 9px; overflow: visible; position: relative; }
+  .gauge-bar-fill { height: 100%; border-radius: 9px; transition: width 0.8s ease, background 0.5s ease; min-width: 2px; position: relative; z-index: 1; }
+  .gauge-bar-possible { position:absolute; top:0; left:0; height:100%; border-radius:9px; background:rgba(255,255,255,0.06); z-index:0; transition: width 0.8s; }
+  .gauge-bar-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,0.3); border-radius: 1px; }
+  .gauge-pct { font-size: 1.1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; min-width: 48px; }
+  .gauge-sub { font-size: 0.72rem; color: rgba(255,255,255,0.45); display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .gauge-dot { opacity: 0.3; }
+  .gauge-beyond { color: rgba(168,85,247,0.6); cursor: help; font-style: italic; }
+
+  /* Stats (legacy) */
   .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
   .stat-card {
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
@@ -273,6 +294,19 @@
   .tab:hover { color: var(--text-secondary); }
   .tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 
+  /* Main Tabs */
+  .main-tabs {
+    display: flex; gap: 2px; margin: 0 0 20px; background: var(--bg-secondary);
+    padding: 3px; border-radius: 12px; border: 1px solid var(--border);
+  }
+  .main-tab {
+    flex: 1; padding: 10px 18px; border: none; background: transparent; color: var(--text-dim);
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    border-radius: 9px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .main-tab:hover { color: var(--text-secondary); }
+  .main-tab.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; box-shadow: 0 2px 12px rgba(168, 85, 247, 0.3); }
+
   /* Leaderboard */
   .leaderboard { display: flex; flex-direction: column; gap: 6px; }
   .lb-row {
@@ -329,6 +363,34 @@
   .rank-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.3); }
   .rank-silver { background: rgba(148, 163, 184, 0.15); color: var(--silver); border: 1px solid rgba(148, 163, 184, 0.2); }
   .rank-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze-color); border: 1px solid rgba(205, 127, 50, 0.2); }
+
+  /* My Status Card */
+  .my-status-card { position: relative; padding: 2px; border-radius: 14px; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue)); }
+  .my-status-card-inner { background: var(--bg-card); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .my-status-name { font-size: 1.1rem; font-weight: 800; }
+  .my-status-pct { font-size: 1.3rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+  .my-status-rank-info { font-size: 0.75rem; color: var(--text-secondary); }
+  .my-status-next { font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+  .my-status-next-bar { width: 80px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+  .my-status-next-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); }
+  .my-status-change { font-size: 0.65rem; color: var(--text-dim); text-decoration: underline; cursor: pointer; margin-left: auto; }
+  .my-status-change:hover { color: var(--text-secondary); }
+
+  /* Rank Progress Bar (inline in leaderboard rows) */
+  .rank-progress { display: inline-block; width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; vertical-align: middle; margin-left: 4px; }
+  .rank-progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+  /* Rank Delta */
+  .rank-delta { font-size: 0.55rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-left: 2px; }
+  .rank-delta.up { color: var(--accent-green); }
+  .rank-delta.down { color: #ef4444; }
+  .rank-delta.same { color: var(--text-dim); }
+
+  /* Staleness */
+  .lb-row.stale { opacity: 0.5; }
+  .lb-stale-tag { font-size: 0.5rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lb-stale-tag.stale-24h { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+  .lb-stale-tag.stale-72h { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
 
   .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
   .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
@@ -604,6 +666,9 @@
     }
     .fab-menu-item:hover { border-color: var(--accent-purple); }
 
+    .main-tabs { margin: 0 0 12px; }
+    .main-tab { padding: 8px 12px; font-size: 0.72rem; }
+
     /* Tighter tabs */
     .board-tabs { margin: 8px 0 4px; }
     .board-tab { padding: 7px 12px; font-size: 0.68rem; }
@@ -628,6 +693,10 @@
     .lb-position { font-size: 0.85rem; }
     .lb-meta { gap: 4px; }
     .lb-updated { font-size: 0.55rem; }
+    .my-status-card-inner { padding: 12px 14px; gap: 10px; }
+    .my-status-pct { font-size: 1rem; }
+    .my-status-name { font-size: 0.9rem; }
+    .rank-progress { width: 30px; }
 
     /* Modals */
     .modal { width: 95%; padding: 20px; }
@@ -663,30 +732,64 @@
     <div id="lastUpdatedTop" style="color:var(--text-dim);font-size:0.7rem;margin-top:8px;">Last updated: --</div>
   </div>
 
-  <!-- Leaderboard Section - Moved to Top -->
-  <div class="leaderboard-section" id="leaderboardSection">
-    <h2 style="text-align:center;font-size:0.8rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;">Leaderboard</h2>
+  <!-- Main Tabs -->
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="setMainTab('individual',this)">Individual</button>
+    <button class="main-tab" onclick="setMainTab('team',this)">Team</button>
+    <button class="main-tab" onclick="setMainTab('settings',this)">Settings &amp; Updates</button>
+  </div>
 
-    <!-- Team Battle Mini -->
-    <div class="team-battle-mini">
-      <div class="team-mini-row">
-        <div class="team-mini-ny"><span class="team-mini-name">NY</span><span class="team-mini-pct" id="nyMiniPct">0%</span></div>
-        <div class="team-mini-nc"><span class="team-mini-name">NC</span><span class="team-mini-pct" id="ncMiniPct">0%</span></div>
-        <div class="team-mini-xyne"><span class="team-mini-name">XYNE</span><span class="team-mini-pct" id="xyneMiniPct">0%</span></div>
-        <div class="team-mini-hs"><span class="team-mini-name">HS</span><span class="team-mini-pct" id="hsMiniPct">0%</span></div>
-        <div class="team-mini-jp"><span class="team-mini-name">JP</span><span class="team-mini-pct" id="jpMiniPct">0%</span></div>
-      </div>
+  <!-- Individual Tab Content -->
+  <div id="mainTabIndividual">
+
+  <div class="utilisation-gauge" id="utilisationGauge">
+    <div class="gauge-amounts">
+      <span class="gauge-utilised" id="gaugeUtilised">₹0</span>
+      <span class="gauge-sep">/</span>
+      <span class="gauge-budget" id="gaugeBudget">₹0</span>
+      <span class="gauge-label">UTILISED</span>
     </div>
+    <div class="gauge-amounts-usd" id="gaugeUSD">[$0 / $0]</div>
+    <div class="gauge-bar-wrap">
+      <div class="gauge-bar-track">
+        <div class="gauge-bar-possible" id="gaugeBarPossible" style="width:0%"></div>
+        <div class="gauge-bar-fill" id="gaugeBarFill" style="width:0%"></div>
+        <div class="gauge-bar-marker" id="gaugeBar100" style="left:100%" title="100% = Budget fully utilised"></div>
+      </div>
+      <div class="gauge-pct" id="gaugePct">0%</div>
+    </div>
+    <div class="gauge-sub">
+      <span id="gaugeUsers">0 active / 0 users</span>
+      <span class="gauge-dot">·</span>
+      <span>Avg <span id="gaugeAvg">0x</span> per user</span>
+      <span class="gauge-dot">·</span>
+      <span class="gauge-beyond" title="Multi-plan users can push past 100%. Add plans to go beyond.">Beyond 100%? Add more plans →</span>
+      <span class="gauge-dot">·</span>
+      <span>Max possible: <span id="gaugeMaxPossible">0%</span></span>
+    </div>
+  </div>
+
+  <!-- My Status Card -->
+  <div id="myStatusCard"></div>
+
+  <!-- Team Mini Battle (Individual tab) -->
+  <div class="team-battle-mini" id="teamMiniIndividual">
+    <div class="team-mini-row">
+      <div class="team-mini-ny"><div class="team-mini-name">NY</div><div class="team-mini-pct" id="nyMiniPct">0x</div></div>
+      <div class="team-mini-nc"><div class="team-mini-name">NC</div><div class="team-mini-pct" id="ncMiniPct">0x</div></div>
+      <div class="team-mini-xyne"><div class="team-mini-name">XYNE</div><div class="team-mini-pct" id="xyneMiniPct">0x</div></div>
+      <div class="team-mini-hs"><div class="team-mini-name">HS</div><div class="team-mini-pct" id="hsMiniPct">0x</div></div>
+      <div class="team-mini-jp"><div class="team-mini-name">JP</div><div class="team-mini-pct" id="jpMiniPct">0x</div></div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Section -->
+  <div class="leaderboard-section" id="leaderboardSection">
 
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="setTab('all',this)">All</button>
-      <button class="tab" onclick="setTab('ny',this)">NY</button>
-      <button class="tab" onclick="setTab('nc',this)">NC</button>
-      <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
-      <button class="tab" onclick="setTab('hs',this)">HS</button>
-      <button class="tab" onclick="setTab('jp',this)">JP</button>
-      <button class="tab" onclick="setTab('top5',this)">Top 5</button>
+      <button class="tab" onclick="setTab('top10',this)">Top 10</button>
     </div>
 
     <!-- Side-by-side leaderboards -->
@@ -696,38 +799,17 @@
         <div class="leaderboard" id="leaderboardSession"></div>
       </div>
       <div class="lb-section">
-        <h3 class="lb-section-title">Weekly</h3>
+        <h3 class="lb-section-title">Monthly</h3>
         <div class="leaderboard" id="leaderboardWeekly"></div>
       </div>
     </div>
 
     <div class="last-updated" id="lastUpdated">Last updated: --</div>
-    <div style="text-align:center;margin-top:12px;padding-bottom:8px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="/extension/claude-usage-sync.zip" download style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#7c3aed,#3b82f6);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Download Extension v1.8</a>
-      <a href="/projects.html" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Projects &amp; Strategies</a>
-    </div>
-    <div style="font-size:0.65rem;color:#475569;margin-top:4px;text-align:center;">Extension: Unzip &rarr; chrome://extensions &rarr; Developer mode &rarr; Load unpacked</div>
   </div>
+  </div><!-- end mainTabIndividual -->
 
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-value orange" id="statAvgUsage">0</div>
-      <div class="stat-label" id="statAvgLabel">Avg Session (plans)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value purple" id="statAvgWeekly">0</div>
-      <div class="stat-label">Avg Weekly (plans)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value blue" id="statTotalBudget">$0</div>
-      <div class="stat-label">Total Budget</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value green" id="statUsers">0</div>
-      <div class="stat-label">Active Users</div>
-    </div>
-  </div>
-
+  <!-- Team Tab Content -->
+  <div id="mainTabTeam" style="display:none;">
   <div class="team-battle">
     <h2>Team Battle</h2>
     <div class="team-vs">
@@ -786,6 +868,38 @@
     </div>
   </div>
 
+  <div class="team-metrics" id="teamMetrics" style="margin:16px 0;">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div class="stat-card"><div class="stat-value green" id="teamMetricUtil">0x</div><div class="stat-label">Team Avg</div></div>
+      <div class="stat-card"><div class="stat-value blue" id="teamMetricMembers">0</div><div class="stat-label">Members</div></div>
+      <div class="stat-card"><div class="stat-value orange" id="teamMetricBudget">$0</div><div class="stat-label">Team Budget</div></div>
+    </div>
+  </div>
+
+  <!-- Team-filtered leaderboard -->
+  <div style="margin-top:24px;">
+    <div class="tabs" id="teamTabs">
+      <button class="tab active" onclick="setTab('ny',this)">NY</button>
+      <button class="tab" onclick="setTab('nc',this)">NC</button>
+      <button class="tab" onclick="setTab('xyne',this)">Xyne</button>
+      <button class="tab" onclick="setTab('hs',this)">HS</button>
+      <button class="tab" onclick="setTab('jp',this)">JP</button>
+    </div>
+    <div class="lb-dual">
+      <div class="lb-section">
+        <h3 class="lb-section-title">Current Session</h3>
+        <div class="leaderboard" id="teamLeaderboardSession"></div>
+      </div>
+      <div class="lb-section">
+        <h3 class="lb-section-title">Monthly</h3>
+        <div class="leaderboard" id="teamLeaderboardWeekly"></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- end mainTabTeam -->
+
+  <!-- Settings Tab Content -->
+  <div id="mainTabSettings" style="display:none;">
   <!-- Setup Section - Collapsible -->
   <div class="setup-section" id="setupSection">
     <div class="setup-header" onclick="toggleSetup()">
@@ -798,14 +912,11 @@
           <h4>Chrome Extension <span class="tag">Recommended</span></h4>
           <p>Install once, then click the extension icon on your usage page. It reads your identity automatically.</p>
           <ol>
-            <li>Download &amp; unzip the extension</li>
-            <li>Go to <code>chrome://extensions</code></li>
-            <li>Enable <strong>Developer mode</strong> (top right toggle)</li>
-            <li>Click <strong>Load unpacked</strong> &amp; select the unzipped folder</li>
+            <li><a href="https://chromewebstore.google.com/detail/claude-usage-sync/dogmppmgbinbjlaclffhfkmfhglokmeh" target="_blank" style="color:var(--accent-blue);">Install from Chrome Web Store</a> (Juspay whitelisted)</li>
             <li>Navigate to <code>claude.ai/settings/usage</code></li>
             <li>Click the extension icon &mdash; done!</li>
           </ol>
-          <a class="download-btn" href="/extension/extension.zip" download>Download Extension</a>
+          <a class="download-btn" href="https://chromewebstore.google.com/detail/claude-usage-sync/dogmppmgbinbjlaclffhfkmfhglokmeh" target="_blank">Install Extension</a>
         </div>
         <div class="setup-method">
           <h4>Console Paste <span class="tag">No Extension Needed</span></h4>
@@ -835,8 +946,20 @@
     <button class="btn secondary mobile-hide" onclick="exportData()">Export</button>
     <button class="btn secondary mobile-hide" onclick="document.getElementById('importFile').click()">Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
-    <button class="btn danger mobile-hide" onclick="openModal('removeUser')">Remove</button>
+    <button class="btn secondary mobile-hide" onclick="openModal('manageUser')">Manage User</button>
   </div>
+
+  <div style="margin-top:24px;">
+    <h3 style="font-size:0.9rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Updates &amp; Resources</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a href="https://chromewebstore.google.com/detail/claude-usage-sync/dogmppmgbinbjlaclffhfkmfhglokmeh" target="_blank" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#7c3aed,#3b82f6);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Install Extension v1.8</a>
+      <a href="/projects.html" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Projects &amp; Strategies</a>
+      <a href="/showcase/" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#a855f7,#ec4899);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Showcase</a>
+      <a href="/showcase/reports/claude-fleet/monthly-report.html" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#06b6d4,#3b82f6);color:white;border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:Inter,sans-serif;">Monthly Report</a>
+    </div>
+    <div style="font-size:0.65rem;color:#475569;margin-top:8px;">Install from Chrome Web Store (Juspay whitelisted)</div>
+  </div>
+  </div><!-- end mainTabSettings -->
 
 </div>
 
@@ -887,7 +1010,7 @@
     <div class="form-group"><label>Session Usage (%)</label>
       <input type="number" id="logSessionPct" placeholder="e.g. 7" min="0" max="200" step="1">
     </div>
-    <div class="form-group"><label>Weekly Usage (%, All Models)</label>
+    <div class="form-group"><label>Monthly Usage (%, All Models)</label>
       <input type="number" id="logWeeklyPct" placeholder="e.g. 26" min="0" max="200" step="1">
     </div>
     <div class="form-group"><label>Extra Usage $ Spent</label>
@@ -916,17 +1039,27 @@
   </div>
 </div>
 
-<!-- Remove User Modal -->
-<div class="modal-overlay" id="modal-removeUser">
+<!-- Manage User Modal -->
+<div class="modal-overlay" id="modal-manageUser">
   <div class="modal">
-    <h3>Remove User</h3>
-    <div class="form-group"><label>User</label><select id="removeUserSelect"></select></div>
-    <div class="form-group" style="color:rgba(239,68,68,0.8);font-size:0.78rem;line-height:1.5;">
-      This will permanently remove the user and all their data. This cannot be undone.
+    <h3>Manage User</h3>
+    <div class="form-group"><label>User</label><select id="manageUserSelect" onchange="onManageUserChange()"></select></div>
+    <div class="form-group"><label>Team</label>
+      <select id="manageUserTeam">
+        <option value="NY">NY</option>
+        <option value="NC">NC</option>
+        <option value="Xyne">Xyne</option>
+        <option value="HS">HS</option>
+        <option value="JP">JP</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Name</label>
+      <input type="text" id="manageUserName" placeholder="User name">
     </div>
     <div class="modal-actions">
-      <button class="btn" onclick="closeModal('removeUser')">Cancel</button>
-      <button class="btn danger" onclick="removeUser()">Confirm Remove</button>
+      <button class="btn" onclick="closeModal('manageUser')">Cancel</button>
+      <button class="btn primary" onclick="updateUser()">Save Changes</button>
+      <button class="btn danger" onclick="removeUser()">Remove User</button>
     </div>
   </div>
 </div>
@@ -935,7 +1068,7 @@
   const API_BASE = window.location.origin;
   // Config: highlight users on outdated extension versions
   // Set to true once Chrome Web Store v1.8 is published and ready
-  const SHOW_OUTDATED_EXTENSION_NUDGE = false;
+  const SHOW_OUTDATED_EXTENSION_NUDGE = true;
   const REQUIRED_EXTENSION_VERSION = '1.8';
   let currentTab = 'all';
   let boardType = 'session';
@@ -993,15 +1126,17 @@
       "var elm=b.match(/\\$(\\d+(?:,\\d{3})*)\\s*\\n?\\s*Monthly spend limit/i),el=elm?parseFloat(elm[1].replace(/,/g,'')):null;" +
       "var ep=(esm&&all.length>=4)?all[3]:null;" +
       // Confirm
-      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Weekly: '+(wp||'--')+'%';" +
+      "var msg='Sync as '+n+' ('+t+')?\\nSession: '+(sp||'--')+'%  Monthly: '+(wp||'--')+'%';" +
       "if(es!==null)msg+='\\nExtra usage: $'+es.toFixed(2)+' spent';" +
       "if(!confirm(msg))return;" +
+      // Detect plan type — look for 20x or 5x on page
+      "var pt=null;if(/\\b20\\s*[×x]\\b/i.test(b))pt='max20';else if(/\\b5\\s*[×x]\\b/i.test(b))pt='max5';" +
       // Build payload — send raw values, server handles per-plan tracking
-      "var p={name:n,team:t,source:'console'};if(sp!==null)p.sessionPct=sp;if(wp!==null)p.weeklyPct=wp;" +
+      "var p={name:n,team:t,source:'console'};if(pt)p.planType=pt;if(sp!==null)p.sessionPct=sp;if(wp!==null)p.weeklyPct=wp;" +
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
       "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
-      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
+      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Monthly: '+(wp||'--')+'%');" +
       "else alert('Sync failed. Please try again.')" +
       "})()";
   }
@@ -1022,6 +1157,26 @@
     if (val >= 40)  return { title: 'GOLD',       icon: '\u{1f31f}', cls: 'rank-gold' };
     if (val >= 20)  return { title: 'SILVER',     icon: '\u{26a1}',  cls: 'rank-silver' };
     return                   { title: 'BRONZE',    icon: '\u{1f6e1}\u{fe0f}',  cls: 'rank-bronze' };
+  }
+
+  function getNextRank(pct) {
+    const thresholds = [
+      { threshold: 20, title: 'SILVER' },
+      { threshold: 40, title: 'GOLD' },
+      { threshold: 60, title: 'PLATINUM' },
+      { threshold: 80, title: 'DIAMOND' },
+      { threshold: 100, title: 'LEGENDARY' },
+    ];
+    if (pct > 100) return null;
+    if (pct >= 100) return { nextTitle: 'MYTHIC', threshold: 101, progress: pct / 101, remaining: 1 };
+    for (let i = 0; i < thresholds.length; i++) {
+      if (pct < thresholds[i].threshold) {
+        const prev = i > 0 ? thresholds[i - 1].threshold : 0;
+        const progress = (pct - prev) / (thresholds[i].threshold - prev);
+        return { nextTitle: thresholds[i].title, remaining: thresholds[i].threshold - pct, progress, threshold: thresholds[i].threshold };
+      }
+    }
+    return null;
   }
 
   function getBarClass(pct) {
@@ -1171,7 +1326,7 @@
     return x.toFixed(2) + 'x';
   }
 
-  function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
+  function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey, delta) {
     const pct = effectivePct(u, pctKey);
     const otherPct = effectivePct(u, otherPctKey);
     const rank = getRank(pct);
@@ -1188,18 +1343,24 @@
     const sparkData = nf > 1 ? rawSparkData.map(v => v / nf) : rawSparkData;
     const sparkColor = pctColor(pct);
     const safeId = escAttr(u.id);
+    const hoursAgo = u.lastUpdated ? (Date.now() - new Date(u.lastUpdated).getTime()) / 3600000 : Infinity;
+    const isStale = hoursAgo > 24;
+    const isInactive = hoursAgo > 72;
+    const nextRank = getNextRank(pct);
+    const deltaHtml = delta !== undefined && delta !== null ? `<span class="rank-delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'same'}">${delta > 0 ? '\u2191' + delta : delta < 0 ? '\u2193' + Math.abs(delta) : '\u2014'}</span>` : '';
 
     return `
-      <div class="lb-row clickable ${rowClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
-        <div class="lb-position ${posClass}">#${pos}</div>
+      <div class="lb-row clickable ${rowClass}${isStale ? ' stale' : ''}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
+        <div class="lb-position ${posClass}">#${pos}${deltaHtml}</div>
         <div class="lb-user-info">
           <div class="lb-name">${fire}${escHtml(u.name)}</div>
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
             ${u.planType ? `<span class="lb-plan-tag ${escAttr(u.planType)}">${({'max5':'M5','max20':'M20','pro':'PRO','free':'FREE'})[u.planType] || escHtml(u.planType)}</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
-            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
-            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+            ${SHOW_OUTDATED_EXTENSION_NUDGE && !u.planType && u.source !== 'extension' ? `<span class="lb-outdated-tag" title="Plan type unknown. Install/update extension to detect automatically." style="background:rgba(255,159,28,0.15);color:#ff9f1c;">sync</span>` : ''}
+            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>${nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : ''}
+            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}${isStale ? `<span class="lb-stale-tag ${isInactive ? 'stale-72h' : 'stale-24h'}">${isInactive ? 'INACTIVE' : 'STALE'}</span>` : ''}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
           </div>
@@ -1227,6 +1388,19 @@
     else if (currentTab === 'hs') filtered = sorted.filter(u => u.team === 'HS');
     else if (currentTab === 'jp') filtered = sorted.filter(u => u.team === 'JP');
     else if (currentTab === 'top5') filtered = sorted.slice(0, 5);
+    else if (currentTab === 'top10') filtered = sorted.slice(0, 10);
+
+    // Rank change deltas
+    let prevPositions = {};
+    try { const stored = JSON.parse(localStorage.getItem('lb_prev_positions') || '{}'); prevPositions = stored[containerId] || {}; } catch (e) {}
+    const hasPrev = Object.keys(prevPositions).length > 0;
+    const newPositions = {};
+    filtered.forEach((u, i) => { newPositions[u.id] = i + 1; });
+    function getDelta(userId, newPos) {
+      if (!hasPrev || !(userId in prevPositions)) return null;
+      return prevPositions[userId] - newPos;
+    }
+    try { const stored = JSON.parse(localStorage.getItem('lb_prev_positions') || '{}'); stored[containerId] = newPositions; localStorage.setItem('lb_prev_positions', JSON.stringify(stored)); } catch (e) {}
 
     const lb = document.getElementById(containerId);
     if (filtered.length === 0) {
@@ -1240,7 +1414,7 @@
 
     // If user list or order changed, do a full rebuild
     if (existingIds.length !== newIds.length || existingIds.some((id, i) => id !== newIds[i])) {
-      lb.innerHTML = filtered.map((u, i) => buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey)).join('');
+      lb.innerHTML = filtered.map((u, i) => buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey, getDelta(u.id, i + 1))).join('');
       return;
     }
 
@@ -1283,23 +1457,139 @@
       // Update time ago
       const agoEl = row.querySelector('.lb-meta .lb-updated');
       if (agoEl) agoEl.textContent = ago;
+
+      // Update staleness
+      const hoursAgo = u.lastUpdated ? (Date.now() - new Date(u.lastUpdated).getTime()) / 3600000 : Infinity;
+      const isStale = hoursAgo > 24;
+      const isInactive = hoursAgo > 72;
+      row.classList.toggle('stale', isStale);
+      let staleTag = row.querySelector('.lb-stale-tag');
+      if (isStale) {
+        if (!staleTag) { staleTag = document.createElement('span'); row.querySelector('.lb-meta').appendChild(staleTag); }
+        staleTag.className = 'lb-stale-tag ' + (isInactive ? 'stale-72h' : 'stale-24h');
+        staleTag.textContent = isInactive ? 'INACTIVE' : 'STALE';
+      } else if (staleTag) { staleTag.remove(); }
+
+      // Update rank progress bar
+      const nextRank = getNextRank(pct);
+      let rpBar = row.querySelector('.rank-progress');
+      if (nextRank) {
+        if (!rpBar) { rpBar = document.createElement('span'); rpBar.className = 'rank-progress'; rpBar.innerHTML = '<span class="rank-progress-fill"></span>'; const badge = row.querySelector('.lb-rank-badge'); if (badge) badge.after(rpBar); }
+        const fill = rpBar.querySelector('.rank-progress-fill');
+        if (fill) { fill.style.width = Math.round(nextRank.progress * 100) + '%'; fill.style.background = pctColor(pct); }
+      } else if (rpBar) { rpBar.remove(); }
     });
+  }
+
+  function renderMyStatus(data) {
+    const container = document.getElementById('myStatusCard');
+    if (!container) return;
+    const myName = localStorage.getItem('claude_lb_name');
+    if (!myName) { container.innerHTML = ''; return; }
+    const me = data.users.find(u => u.name.toLowerCase() === myName.toLowerCase());
+    if (!me) { container.innerHTML = ''; return; }
+
+    const sorted = [...data.users].sort((a, b) => effectivePct(b, 'weeklyPct') - effectivePct(a, 'weeklyPct'));
+    const myPos = sorted.findIndex(u => u.id === me.id) + 1;
+    const total = sorted.length;
+    const pct = effectivePct(me, 'weeklyPct');
+    const rank = getRank(pct);
+    const nextRank = getNextRank(pct);
+
+    let nextRankHtml = '';
+    if (nextRank) {
+      nextRankHtml = `<div class="my-status-next">
+        <span>\u2192 ${nextRank.nextTitle}: ${Math.round(nextRank.remaining)}% to go</span>
+        <div class="my-status-next-bar"><div class="my-status-next-fill" style="width:${Math.round(nextRank.progress * 100)}%"></div></div>
+      </div>`;
+    }
+
+    container.innerHTML = `<div class="my-status-card" id="my-status-card">
+      <div class="my-status-card-inner">
+        <div>
+          <div class="my-status-name">${escHtml(me.name)}</div>
+          <div class="my-status-rank-info">Rank #${myPos} of ${total}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
+          <span class="my-status-pct" style="color:${pctColor(pct)}">${fmtMultiplier(pct)}</span>
+        </div>
+        ${nextRankHtml}
+        <span class="my-status-change" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Not you? Change</span>
+      </div>
+    </div>`;
   }
 
   function renderData(data) {
     const { users, stats, teams } = data;
     const scrollY = window.scrollY;
 
-    // Render both leaderboards
-    renderLeaderboard(users, 'leaderboardSession', 'sessionPct', 'weeklyPct', 'wk');
+    // Render both leaderboards (Individual tab)
+    renderLeaderboard(users, 'leaderboardSession', 'sessionPct', 'weeklyPct', 'mo');
     renderLeaderboard(users, 'leaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
 
-    // Stats
-    document.getElementById('statAvgUsage').textContent = fmtMultiplier(stats.avgSessionPct || 0);
-    document.getElementById('statAvgWeekly').textContent = fmtMultiplier(stats.avgWeeklyPct || 0);
+    // Render team leaderboards (Team tab) — same data, same filter
+    if (document.getElementById('teamLeaderboardSession')) {
+      renderLeaderboard(users, 'teamLeaderboardSession', 'sessionPct', 'weeklyPct', 'mo');
+      renderLeaderboard(users, 'teamLeaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
+    }
+
+    // My Status Card
+    renderMyStatus(data);
+
+    // Utilisation Gauge
+    const INR_RATE = 94.7;
+    const fmtINR = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
     const totalExtraSpent = data.users.reduce((s, u) => s + (u.extraUsageSpent || 0), 0);
-    document.getElementById('statTotalBudget').textContent = '$' + (stats.totalBudget || 0).toFixed(0) + (totalExtraSpent > 0 ? ' + $' + totalExtraSpent.toFixed(0) : '');
-    document.getElementById('statUsers').textContent = stats.totalUsers;
+    const budgetUSD = data.users.reduce((s, u) => s + (u.budget || 0), 0);
+    // Utilised = each user's monthly multiplier × their plan cost + extra usage
+    const utilisedUSD = data.users.reduce((s, u) => {
+      const userMult = (u.weeklyPct || 0) / 100;
+      const userPlanCost = (u.budget || 200) / (u.numPlans || 1); // per-plan cost
+      return s + (userMult * userPlanCost) + (u.extraUsageSpent || 0);
+    }, 0);
+    const pct = budgetUSD > 0 ? Math.round((utilisedUSD / budgetUSD) * 100) : 0;
+    const sessionsActive = data.users.filter(u => (u.sessionPct || 0) > 0).length;
+
+    document.getElementById('gaugeUtilised').textContent = fmtINR(utilisedUSD * INR_RATE);
+    document.getElementById('gaugeBudget').textContent = fmtINR(budgetUSD * INR_RATE);
+    document.getElementById('gaugeUSD').textContent = '[$' + Math.round(utilisedUSD).toLocaleString('en-US') + ' / $' + budgetUSD.toLocaleString('en-US') + ']';
+
+    const bar = document.getElementById('gaugeBarFill');
+    const barWidth = Math.min(pct, 150); // allow visual overflow past 100%
+    bar.style.width = barWidth + '%';
+    // Color: red < 25%, orange 25-50%, yellow 50-75%, green > 75%, purple > 100%
+    if (pct > 100) bar.style.background = 'linear-gradient(90deg, #2DC653, #a855f7)';
+    else if (pct >= 75) bar.style.background = 'linear-gradient(90deg, #2DC653, #22c55e)';
+    else if (pct >= 50) bar.style.background = 'linear-gradient(90deg, #ffd166, #2DC653)';
+    else if (pct >= 25) bar.style.background = 'linear-gradient(90deg, #ff9f1c, #ffd166)';
+    else bar.style.background = 'linear-gradient(90deg, #ef476f, #ff9f1c)';
+
+    const pctEl = document.getElementById('gaugePct');
+    pctEl.textContent = pct + '%';
+    pctEl.style.color = pct > 100 ? '#a855f7' : pct >= 50 ? '#2DC653' : pct >= 25 ? '#ff9f1c' : '#ef476f';
+
+    // 100% marker position: if pct > 100, marker moves left proportionally
+    const marker = document.getElementById('gaugeBar100');
+    if (pct > 100) marker.style.left = (100 / pct * 100) + '%';
+    else marker.style.left = '100%';
+
+    document.getElementById('gaugeUsers').textContent = sessionsActive + ' active / ' + stats.totalUsers + ' users';
+    document.getElementById('gaugeAvg').textContent = fmtMultiplier(stats.avgWeeklyPct || 0);
+
+    // Max possible gauge
+    let remainingPotentialUSD = 0;
+    data.users.forEach(u => {
+      const planCost = 200;
+      const scale = (u.planType === 'max5') ? 0.25 : 1.0;
+      const currentMult = (u.weeklyPct || 0) / 100;
+      const maxCapacity = 4 * scale * (u.numPlans || 1);
+      const remaining = Math.max(0, maxCapacity - currentMult);
+      remainingPotentialUSD += remaining * planCost;
+    });
+    const maxPossiblePct = budgetUSD > 0 ? Math.round(((utilisedUSD + remainingPotentialUSD) / budgetUSD) * 100) : 0;
+    document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 150) + '%';
+    document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
 
     // Teams - use weekly for team battle (or could use session)
     const teamNames = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
@@ -1318,8 +1608,9 @@
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
       document.getElementById(tid + 'BarVal').textContent = fmtMultiplier(weeklyPct);
 
-      // Mini team battle (show session — more dynamic/real-time)
-      document.getElementById(tid + 'MiniPct').textContent = fmtMultiplier(sessionPct);
+      // Mini team battle (show session — if element exists)
+      const miniEl = document.getElementById(tid + 'MiniPct');
+      if (miniEl) miniEl.textContent = fmtMultiplier(sessionPct);
     });
 
     const updatedText = 'Last updated: ' + new Date().toLocaleString();
@@ -1408,16 +1699,48 @@
     }
   }
 
-  async function removeUser() {
-    const userId = document.getElementById('removeUserSelect').value;
+  function onManageUserChange() {
+    const sel = document.getElementById('manageUserSelect');
+    const opt = sel.selectedOptions[0];
+    if (opt && opt.dataset.team) {
+      document.getElementById('manageUserTeam').value = opt.dataset.team;
+      document.getElementById('manageUserName').value = opt.text.split(' (')[0];
+    }
+  }
+
+  async function updateUser() {
+    const userId = document.getElementById('manageUserSelect').value;
     if (!userId) return toast('Select a user', true);
-    const userName = document.getElementById('removeUserSelect').selectedOptions[0]?.text || 'user';
+    const team = document.getElementById('manageUserTeam').value;
+    const name = document.getElementById('manageUserName').value.trim();
+    try {
+      const d = await apiFetch('/api/users/' + userId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team, name: name || undefined }),
+      });
+      if (d && d.ok) {
+        closeModal('manageUser');
+        render(true);
+        toast('Updated ' + (d.user?.name || 'user'));
+      } else {
+        toast((d && d.error) || 'Failed', true);
+      }
+    } catch (e) {
+      toast('Error: ' + e.message, true);
+    }
+  }
+
+  async function removeUser() {
+    const userId = document.getElementById('manageUserSelect').value;
+    if (!userId) return toast('Select a user', true);
+    const userName = document.getElementById('manageUserSelect').selectedOptions[0]?.text || 'user';
     if (!confirm('Are you sure you want to permanently remove ' + userName + '? This cannot be undone.')) return;
 
     try {
       const d = await apiFetch('/api/users/' + userId, { method: 'DELETE' });
       if (d && d.ok) {
-        closeModal('removeUser');
+        closeModal('manageUser');
         render(true);
         toast('Removed ' + (d.removed || 'user'));
       } else {
@@ -1473,16 +1796,17 @@
   function openModal(name) {
     if (cachedData) {
       const users = cachedData.users || [];
-      ['logUsageUser', 'addPlanUser', 'removeUserSelect'].forEach(id => {
+      ['logUsageUser', 'addPlanUser', 'manageUserSelect'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
           el.innerHTML = users.map(u =>
-            '<option value="' + escAttr(u.id) + '">' + escHtml(u.name) + ' (' + escHtml(u.team) + ')</option>'
+            '<option value="' + escAttr(u.id) + '" data-team="' + escAttr(u.team) + '">' + escHtml(u.name) + ' (' + escHtml(u.team) + ')</option>'
           ).join('');
         }
       });
     }
     document.getElementById('modal-' + name).classList.add('active');
+    if (name === 'manageUser') onManageUserChange();
   }
 
   function closeModal(name) {
@@ -1499,11 +1823,33 @@
   // ============================================================
   // TABS
   // ============================================================
+  function setMainTab(tab, btn) {
+    document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('mainTabIndividual').style.display = tab === 'individual' ? '' : 'none';
+    document.getElementById('mainTabTeam').style.display = tab === 'team' ? '' : 'none';
+    document.getElementById('mainTabSettings').style.display = tab === 'settings' ? '' : 'none';
+    if (tab === 'team') {
+      const firstTeamBtn = document.querySelector('#teamTabs .tab:first-child');
+      if (firstTeamBtn) firstTeamBtn.click();
+    }
+  }
+
   function setTab(tab, el) {
     currentTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     if (cachedData) renderData(cachedData);
+    if (['ny','nc','xyne','hs','jp'].includes(tab) && cachedData) {
+      const teamKey = tab === 'ny' ? 'NY' : tab === 'nc' ? 'NC' : tab === 'xyne' ? 'Xyne' : tab === 'hs' ? 'HS' : 'JP';
+      const td = cachedData.teams[teamKey] || {};
+      const teamUsers = cachedData.users.filter(u => u.team === teamKey);
+      document.getElementById('teamMetricUtil').textContent = fmtMultiplier(td.avgWeeklyPct || 0);
+      document.getElementById('teamMetricMembers').textContent = td.members || 0;
+      const tBudget = teamUsers.reduce((s,u) => s + (u.budget || 200), 0);
+      document.getElementById('teamMetricBudget').textContent = '$' + tBudget.toLocaleString();
+      document.getElementById('teamMetrics').style.display = '';
+    }
   }
 
   // ============================================================
@@ -1724,12 +2070,26 @@
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(user.sessionPct)}%</div><div class="detail-stat-label">Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(user.weeklyPct)}%</div><div class="detail-stat-label">Monthly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
         ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
         ${user.extraUsageLimit ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">$${user.extraUsageLimit}</div><div class="detail-stat-label">Spend Limit</div></div>` : ''}
       </div>
     </div>`;
+
+    // Individual utilisation bar
+    const userMult = (user.weeklyPct || 0) / 100;
+    const userScale = user.planType === 'max5' ? 0.25 : 1.0;
+    const userMaxCapacity = 4 * userScale * (user.numPlans || 1);
+    const userUtilPct = userMaxCapacity > 0 ? Math.round((userMult / userMaxCapacity) * 100) : 0;
+    const barColor = userUtilPct >= 75 ? '#2DC653' : userUtilPct >= 50 ? '#ffd166' : userUtilPct >= 25 ? '#ff9f1c' : '#ef476f';
+    html += `<div style="margin:12px 0 4px;"><div style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+        <div style="width:${Math.min(userUtilPct,100)}%;height:100%;border-radius:4px;background:${barColor};transition:width 0.5s;"></div>
+      </div>
+      <span style="font-size:0.7rem;font-weight:700;color:${barColor};">${userUtilPct}%</span>
+    </div>
+    <div style="font-size:0.6rem;color:rgba(255,255,255,0.35);text-align:center;margin-top:2px;">${fmtMultiplier(user.weeklyPct || 0)} of ${userMaxCapacity.toFixed(1)}x monthly capacity</div></div>`;
 
     // Summary metrics
     html += `<div class="detail-section">
@@ -1738,9 +2098,9 @@
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${Math.round(peakSession)}%</div><div class="detail-stat-label">Peak Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-blue)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${totalSessions}</div><div class="detail-stat-label">Total Sessions</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Weekly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Weeks Tracked</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-pink)">${Math.round(peakWeekly)}%</div><div class="detail-stat-label">Peak Monthly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Monthly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">${weekly.length}</div><div class="detail-stat-label">Months Tracked</div></div>
       </div>
     </div>`;
 
@@ -1749,7 +2109,7 @@
       <div class="detail-section-title">Session History</div>
       <div class="detail-chart-container">${renderLineChart(history, 'sessionPct', 'sessionSlot', {
         color: '#f97316', color2: '#a855f7', valueKey2: 'weeklyPct',
-        label: 'Session', label2: 'Weekly'
+        label: 'Session', label2: 'Monthly'
       })}</div>
     </div>`;
 
@@ -1759,19 +2119,19 @@
       ${renderSessionHistoryTable(history, 20, user)}
     </div>`;
 
-    // Weekly history chart
+    // Monthly history chart
     if (weekly.length > 0) {
       html += `<div class="detail-section">
-        <div class="detail-section-title">Weekly History</div>
+        <div class="detail-section-title">Monthly History</div>
         <div class="detail-chart-container">${renderLineChart(weekly, 'avgSessionPct', 'weekKey', {
           color: '#3b82f6', color2: '#22c55e', valueKey2: 'avgWeeklyPct',
-          label: 'Avg Session', label2: 'Avg Weekly'
+          label: 'Avg Session', label2: 'Avg Monthly'
         })}</div>
       </div>`;
 
-      // Weekly history table
+      // Monthly history table
       html += `<div class="detail-section">
-        <div class="detail-section-title">Weekly History Log</div>
+        <div class="detail-section-title">Monthly History Log</div>
         ${renderWeeklyHistoryTable(weekly)}
       </div>`;
     }
@@ -1893,7 +2253,7 @@
       <div class="detail-section-title">Current</div>
       <div class="detail-stats-grid">
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${Math.round(avgSession)}%</div><div class="detail-stat-label">Avg Session</div></div>
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Weekly</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-purple)">${Math.round(avgWeekly)}%</div><div class="detail-stat-label">Avg Monthly</div></div>
         <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${teamMembers.length}</div><div class="detail-stat-label">Members</div></div>
       </div>
     </div>`;
@@ -1913,17 +2273,17 @@
       <div class="detail-section-title">Session History</div>
       <div class="detail-chart-container">${renderLineChart(history, 'sessionPct', 'sessionSlot', {
         color: '#f97316', color2: '#a855f7', valueKey2: 'weeklyPct',
-        label: 'Avg Session', label2: 'Avg Weekly'
+        label: 'Avg Session', label2: 'Avg Monthly'
       })}</div>
     </div>`;
 
-    // Team weekly chart
+    // Team monthly chart
     if (weekly.length > 0) {
       html += `<div class="detail-section">
-        <div class="detail-section-title">Weekly History</div>
+        <div class="detail-section-title">Monthly History</div>
         <div class="detail-chart-container">${renderLineChart(weekly, 'avgSessionPct', 'weekKey', {
           color: '#3b82f6', color2: '#22c55e', valueKey2: 'avgWeeklyPct',
-          label: 'Avg Session', label2: 'Avg Weekly'
+          label: 'Avg Session', label2: 'Avg Monthly'
         })}</div>
       </div>`;
     }
@@ -2014,7 +2374,7 @@
     const planCost = (user && user.budget && user.numPlans) ? user.budget / user.numPlans : 200;
     const extraSpent = user ? (user.extraUsageSpent || 0) : 0;
     let html = `<div class="detail-table-wrap"><table class="detail-table">
-      <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Weekly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
+      <thead><tr><th>Time</th><th>Session Slot</th><th>Session</th><th>Monthly (cumul.)</th><th>Source</th></tr></thead><tbody>`;
     rows.forEach((h, i) => {
       const ts = h.timestamp ? new Date(h.timestamp).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '--';
       let sessionDisplay = Math.round(h.sessionPct || 0);
@@ -2038,7 +2398,7 @@
     if (!weekly || weekly.length === 0) return '<p style="color:var(--text-dim);font-size:0.75rem;">No data yet</p>';
     const rows = weekly.slice(-maxRows).reverse();
     let html = `<div class="detail-table-wrap"><table class="detail-table">
-      <thead><tr><th>Week</th><th>Avg Session</th><th>Peak Session</th><th>Avg Weekly</th><th>Peak Weekly</th><th>Points</th></tr></thead><tbody>`;
+      <thead><tr><th>Week</th><th>Avg Session</th><th>Peak Session</th><th>Avg Monthly</th><th>Peak Monthly</th><th>Points</th></tr></thead><tbody>`;
     rows.forEach(w => {
       html += `<tr>
         <td>${w.weekKey || '--'}</td>
@@ -2087,7 +2447,7 @@
     const sessionLabel = session ? session.label : '--';
     const weeklyLabel = weekly ? weekly.label : '--';
     const sessionSub = session ? '5-hour window' : 'no data yet';
-    const weeklySub = weekly ? '7-day cycle' : 'no data yet';
+    const weeklySub = weekly ? 'next billing cycle' : 'no data yet';
     const sessionEst = user.sessionResetSource === 'estimated';
     const weeklyEst = user.weeklyResetSource === 'estimated';
     const estHint = '<span class="reset-estimated" style="margin-left:6px;">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>';
@@ -2098,7 +2458,7 @@
         <div class="countdown-sub">${sessionSub}</div>
       </div>
       <div class="countdown-card">
-        <div class="countdown-label">Weekly Resets In ${weeklyEst ? estHint : ''}</div>
+        <div class="countdown-label">Monthly Resets In ${weeklyEst ? estHint : ''}</div>
         <div class="countdown-value" data-countdown-weekly="${escAttr(user.id)}">${weeklyLabel}</div>
         <div class="countdown-sub">${weeklySub}</div>
       </div>
