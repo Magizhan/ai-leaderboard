@@ -1503,7 +1503,7 @@
       <span class="spent">\u20B9${(baseUtilized * inrRate).toLocaleString('en-IN')} / \u20B9${(budget * inrRate).toLocaleString('en-IN')}</span>
       <span style="color:var(--text-dim);font-size:0.65rem">($${baseUtilized}/$${budget})</span>
       ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+\u20B9${Math.round(extraSpent * inrRate).toLocaleString('en-IN')} extra</span>` : ''}
-      ${lostPct > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
+      ${lostDollars > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
       ${timeHtml}
     </div>
     ${oppPct > 0 ? `<div style="font-size:0.65rem;color:var(--accent-green);margin-top:2px;">\u20B9${(oppDollars * inrRate).toLocaleString('en-IN')} still achievable this month</div>` : ''}`;
@@ -2104,22 +2104,22 @@
       </div>
     </div>`;
 
-    // Financial summary
-    const inr = 94.7;
-    const fmtINRDetail = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
-    const detailBudget = user.budget || 0;
-    const detailBasePct = user.baseWeeklyPct || 0;
-    const detailBaseUtilized = Math.round((detailBasePct / 100) * detailBudget);
-    const detailExtra = user.extraUsageSpent || 0;
-    const detailLost = user.lostDollars || 0;
-    const detailOpp = user.opportunityDollars || 0;
+    // Financial summary in detail panel
+    const _inr = 94.7;
+    const _fmtINR = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
+    const _budget = user.budget || 0;
+    const _basePct = user.baseWeeklyPct || 0;
+    const _baseUtil = Math.round((_basePct / 100) * _budget);
+    const _extra = user.extraUsageSpent || 0;
+    const _lost = user.lostDollars || 0;
+    const _opp = user.opportunityDollars || 0;
     html += `<div class="detail-section">
       <div class="detail-section-title">Financials</div>
       <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${fmtINRDetail(detailBaseUtilized * inr)}</div><div class="detail-stat-label">Utilized (${fmtINRDetail(detailBudget * inr)} budget)</div></div>
-        ${detailExtra > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${fmtINRDetail(detailExtra * inr)}</div><div class="detail-stat-label">Extra Usage</div></div>` : ''}
-        ${detailLost > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:#ef4444">${fmtINRDetail(detailLost * inr)}</div><div class="detail-stat-label">Lost Forever (${user.completedWeeks || 0} wk)</div></div>` : ''}
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${fmtINRDetail(detailOpp * inr)}</div><div class="detail-stat-label">Still Achievable</div></div>
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${_fmtINR(_baseUtil * _inr)}</div><div class="detail-stat-label">Utilized (of ${_fmtINR(_budget * _inr)})</div></div>
+        ${_extra > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${_fmtINR(_extra * _inr)}</div><div class="detail-stat-label">Extra Usage</div></div>` : ''}
+        ${_lost > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:#ef4444">${_fmtINR(_lost * _inr)}</div><div class="detail-stat-label">Lost Forever (${user.completedWeeks || 0} wk)</div></div>` : ''}
+        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${_fmtINR(_opp * _inr)}</div><div class="detail-stat-label">Still Achievable</div></div>
       </div>
     </div>`;
 

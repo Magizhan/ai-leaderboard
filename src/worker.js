@@ -937,14 +937,13 @@ async function getLeaderboardData(env) {
       displayWeeklyPct = currentWeekValue / 4;
     }
 
-    // Lost = absolute $ from completed weeks not fully used (can never be recovered)
-    // e.g., week peaked at 166% of 200% capacity → lost 34% × ($400/numPlans) per plan
-    // Per-plan cost × unused% = dollars lost per week
+    // Lost = capacity from completed weeks that can never be recovered
+    // e.g., week peaked at 94% of 100% capacity → lost 6% that week
     const completedWeeks = completedWeekPeaks.length;
     const perPlanCostForLost = planTypeCost(activePlanType);
+    // Lost = absolute $ from completed weeks not fully used
     const lostDollars = completedWeekPeaks.reduce((s, peak) => {
-      const unusedPct = Math.max(0, maxWeeklyCapacity - peak);
-      return s + (unusedPct / 100) * perPlanCostForLost;
+      return s + (Math.max(0, maxWeeklyCapacity - peak) / 100) * perPlanCostForLost;
     }, 0);
     // Opportunity = absolute $ still achievable (current week remainder + future weeks)
     const futureWeeks = Math.max(0, 4 - completedWeeks - 1);
