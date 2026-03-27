@@ -654,8 +654,8 @@ async function logUsage(body, env) {
   // --- Compute combined totals ---
   // sessionPct = active plan's session (only one session active at a time)
   const combinedSessionPct = plan.sessionPct || 0;
-  // weeklyPct = sum of all plans' weekly
-  const combinedWeeklyPct = plans.reduce((sum, p) => sum + (p.weeklyPct || 0), 0);
+  // weeklyPct = active plan's weekly (summing all slots picked up stale data from inactive plans)
+  const combinedWeeklyPct = plan.weeklyPct || 0;
   // totalExtraUsageSpent = max across plans (extra is per-account, not per-plan —
   // same $549 gets written to whichever plan is active during sync, so take max not sum)
   const totalExtraUsageSpent = Math.max(...plans.map(p => p.extraUsageSpent || 0), 0);
@@ -694,15 +694,17 @@ async function logUsage(body, env) {
   const weeklyResetHist = weeklyDroppedHist && weeklyExpired;
 
   if (lastEntry && !sessionResetHist && !weeklyResetHist && lastEntry.sessionSlot === currentSlot) {
-    histSessionPct = Math.max(combinedSessionPct, lastEntry.sessionPct || 0);
-    histWeeklyPct = Math.max(combinedWeeklyPct, lastEntry.weeklyPct || 0);
+    // Use current combined values — don't max with history (old inflated values from
+    // multi-plan summing bug would get stuck forever via Math.max)
+    histSessionPct = combinedSessionPct;
+    histWeeklyPct = combinedWeeklyPct;
     lastEntry.sessionPct = histSessionPct;
     lastEntry.weeklyPct = histWeeklyPct;
     lastEntry.timestamp = now;
     lastEntry.source = source;
   } else {
     if (sessionResetHist && !weeklyResetHist && lastEntry) {
-      histWeeklyPct = Math.max(combinedWeeklyPct, lastEntry.weeklyPct || 0);
+      histWeeklyPct = combinedWeeklyPct;
     }
     history.push({
       sessionPct: histSessionPct,

@@ -47,11 +47,6 @@ async function scrapeAndSync() {
   // Scrape percentages — anchored to section headings, with positional fallback
   const bodyText = document.body.innerText;
 
-  // Get email for multi-plan identification
-  let email = null;
-  const emailMatch = bodyText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  if (emailMatch) email = emailMatch[1].toLowerCase();
-
   // Anchored extraction: find % near known section headings
   const sessionMatch = bodyText.match(/(?:current\s+)?session[\s\S]{0,200}?(\d{1,3})%\s*used/i);
   const weeklyMatch = bodyText.match(/weekly[\s\S]{0,200}?(\d{1,3})%\s*used/i);
@@ -123,11 +118,10 @@ async function scrapeAndSync() {
   else if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
   // Detect plan type — resilient to Claude UI changes
+  // Just look for "20x" or "5x" near "Max" or "usage" context
   let planType = null;
   if (/\b20\s*[×x]\b/i.test(bodyText)) planType = 'max20';
   else if (/\b5\s*[×x]\b/i.test(bodyText)) planType = 'max5';
-  else if (/\bPro\b/i.test(bodyText) && /plan/i.test(bodyText)) planType = 'pro';
-  else if (/\bFree\b/i.test(bodyText) && /plan/i.test(bodyText)) planType = 'free';
 
   // Get saved team preference (default to NC)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
@@ -145,7 +139,6 @@ async function scrapeAndSync() {
   try {
     const manifest = chrome.runtime.getManifest();
     const payload = { name, team, source: 'extension', extensionVersion: manifest.version };
-    if (email) payload.email = email;
     if (planType) payload.planType = planType;
     if (sessionPct !== null) payload.sessionPct = sessionPct;
     if (weeklyPct !== null) payload.weeklyPct = weeklyPct;
