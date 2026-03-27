@@ -300,16 +300,12 @@ function scrapeUsagePage() {
   if (extraMatch) extraUsagePct = parseInt(extraMatch[1]);
   else if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
-  // Detect plan type (Max 5x, Max 20x, Pro, Free, etc.)
+  // Detect plan type — resilient to Claude UI changes
   let planType = null;
-  const maxMatch = bodyText.match(/(Max)\s*(?:\((\d+)\s*[×x]\s*usage\))?/i);
-  if (maxMatch) {
-    planType = `max${maxMatch[2] ? parseInt(maxMatch[2]) : 20}`;
-  } else if (/\bPro\b/i.test(bodyText) && /usage/i.test(bodyText)) {
-    planType = 'pro';
-  } else if (/\bFree\b/i.test(bodyText) && /usage/i.test(bodyText)) {
-    planType = 'free';
-  }
+  if (/\b20\s*[×x]\b/i.test(bodyText)) planType = 'max20';
+  else if (/\b5\s*[×x]\b/i.test(bodyText)) planType = 'max5';
+  else if (/\bPro\b/i.test(bodyText) && /plan/i.test(bodyText)) planType = 'pro';
+  else if (/\bFree\b/i.test(bodyText) && /plan/i.test(bodyText)) planType = 'free';
 
   return { name, sessionPct, weeklyPct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType };
 }
