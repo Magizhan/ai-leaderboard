@@ -940,15 +940,11 @@ async function getLeaderboardData(env) {
     // Lost = capacity from completed weeks that can never be recovered
     // e.g., week peaked at 94% of 100% capacity → lost 6% that week
     const completedWeeks = completedWeekPeaks.length;
-    const perPlanCostForLost = planTypeCost(activePlanType);
-    // Lost = absolute $ from completed weeks not fully used
-    const lostDollars = completedWeekPeaks.reduce((s, peak) => {
-      return s + (Math.max(0, maxWeeklyCapacity - peak) / 100) * perPlanCostForLost;
-    }, 0);
-    // Opportunity = absolute $ still achievable (current week remainder + future weeks)
-    const futureWeeks = Math.max(0, 4 - completedWeeks - 1);
+    const lostPct = completedWeekPeaks.reduce((s, peak) => s + Math.max(0, maxWeeklyCapacity - peak), 0) / 4;
+    // Opportunity = capacity still achievable (current week remainder + future weeks)
+    const futureWeeks = Math.max(0, 4 - completedWeeks - 1); // -1 for current week
     const currentWeekRemaining = Math.max(0, maxWeeklyCapacity - currentWeekValue);
-    const opportunityDollars = ((currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 100) * perPlanCostForLost;
+    const opportunityPct = (currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 4;
 
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
@@ -992,9 +988,9 @@ async function getLeaderboardData(env) {
       amountUtilized: Math.round((displayWeeklyPct / 100) * budget),
       amountRemaining: Math.max(0, budget - Math.round((displayWeeklyPct / 100) * budget)),
       roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
-      // Lost & opportunity (absolute $)
-      lostDollars: Math.round(lostDollars),
-      opportunityDollars: Math.round(opportunityDollars),
+      // Lost & opportunity
+      lostPct: Math.round(lostPct * 10) / 10,
+      opportunityPct: Math.round(opportunityPct * 10) / 10,
       completedWeeks,
       currentWeekPct: currentWeekValue,
       maxWeeklyCapacity,

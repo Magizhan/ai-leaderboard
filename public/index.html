@@ -1497,13 +1497,15 @@
     }
 
     const inrRate = 85;
-    const lostDollars = me.lostDollars || 0;
-    const oppDollars = me.opportunityDollars || 0;
+    const lostPct = me.lostPct || 0;
+    const oppPct = me.opportunityPct || 0;
+    const lostDollars = Math.round((lostPct / 100) * budget);
+    const oppDollars = Math.round((oppPct / 100) * budget);
     const financialHtml = `<div class="my-status-financial">
       <span class="spent">\u20B9${(baseUtilized * inrRate).toLocaleString('en-IN')} / \u20B9${(budget * inrRate).toLocaleString('en-IN')}</span>
       <span style="color:var(--text-dim);font-size:0.65rem">($${baseUtilized}/$${budget})</span>
       ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+\u20B9${Math.round(extraSpent * inrRate).toLocaleString('en-IN')} extra</span>` : ''}
-      ${lostDollars > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
+      ${lostPct > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
       ${timeHtml}
     </div>
     ${oppPct > 0 ? `<div style="font-size:0.65rem;color:var(--accent-green);margin-top:2px;">\u20B9${(oppDollars * inrRate).toLocaleString('en-IN')} still achievable this month</div>` : ''}`;
@@ -1597,8 +1599,8 @@
     document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
 
     // Lost & opportunity (overall)
-    const totalLostUSD = data.users.reduce((s, u) => s + (u.lostDollars || 0), 0);
-    const totalOppUSD = data.users.reduce((s, u) => s + (u.opportunityDollars || 0), 0);
+    const totalLostUSD = data.users.reduce((s, u) => s + ((u.lostPct || 0) / 100) * (u.budget || 0), 0);
+    const totalOppUSD = data.users.reduce((s, u) => s + ((u.opportunityPct || 0) / 100) * (u.budget || 0), 0);
     const lostEl = document.getElementById('gaugeLost');
     if (lostEl) {
       if (totalLostUSD > 0) {
@@ -1629,14 +1631,19 @@
       const weeklyPct = teamData.avgWeeklyPct || 0;
       const sessionPct = teamData.avgSessionPct || 0;
 
-      // Full team battle
-      document.getElementById(tid + 'Pct').textContent = fmtMultiplier(weeklyPct);
-      document.getElementById(tid + 'Details').textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
-      document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
-      document.getElementById(tid + 'BarVal').textContent = fmtMultiplier(weeklyPct);
+      // Full team battle (elements may not exist if tab not rendered)
+      const pctEl = document.getElementById(tid + 'Pct');
+      const detEl = document.getElementById(tid + 'Details');
+      const barEl = document.getElementById(tid + 'Bar');
+      const barValEl = document.getElementById(tid + 'BarVal');
+      if (pctEl) pctEl.textContent = fmtMultiplier(weeklyPct);
+      if (detEl) detEl.textContent = `${teamData.members} member${teamData.members !== 1 ? 's' : ''}`;
+      if (barEl) barEl.style.width = (weeklyPct / maxTeamPct * 100) + '%';
+      if (barValEl) barValEl.textContent = fmtMultiplier(weeklyPct);
 
       // Mini team battle (show session — more dynamic/real-time)
-      document.getElementById(tid + 'MiniPct').textContent = fmtMultiplier(sessionPct);
+      const miniEl = document.getElementById(tid + 'MiniPct');
+      if (miniEl) miniEl.textContent = fmtMultiplier(sessionPct);
     });
 
     const updatedText = 'Last updated: ' + new Date().toLocaleString();
@@ -2101,25 +2108,6 @@
         <div class="detail-stat"><div class="detail-stat-value" style="color:${trendColor}">${trend === 'Trending Up' ? '&#9650;' : trend === 'Trending Down' ? '&#9660;' : '&#9654;'}</div><div class="detail-stat-label">${trend}</div></div>
         ${user.extraUsageSpent ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">$${user.extraUsageSpent.toFixed(2)}</div><div class="detail-stat-label">Extra $ Spent</div></div>` : ''}
         ${user.extraUsageLimit ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--text-secondary)">$${user.extraUsageLimit}</div><div class="detail-stat-label">Spend Limit</div></div>` : ''}
-      </div>
-    </div>`;
-
-    // Financial summary in detail panel
-    const _inr = 94.7;
-    const _fmtINR = (v) => '\u20B9' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v);
-    const _budget = user.budget || 0;
-    const _basePct = user.baseWeeklyPct || 0;
-    const _baseUtil = Math.round((_basePct / 100) * _budget);
-    const _extra = user.extraUsageSpent || 0;
-    const _lost = user.lostDollars || 0;
-    const _opp = user.opportunityDollars || 0;
-    html += `<div class="detail-section">
-      <div class="detail-section-title">Financials</div>
-      <div class="detail-stats-grid">
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-green)">${_fmtINR(_baseUtil * _inr)}</div><div class="detail-stat-label">Utilized (of ${_fmtINR(_budget * _inr)})</div></div>
-        ${_extra > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-orange)">${_fmtINR(_extra * _inr)}</div><div class="detail-stat-label">Extra Usage</div></div>` : ''}
-        ${_lost > 0 ? `<div class="detail-stat"><div class="detail-stat-value" style="color:#ef4444">${_fmtINR(_lost * _inr)}</div><div class="detail-stat-label">Lost Forever (${user.completedWeeks || 0} wk)</div></div>` : ''}
-        <div class="detail-stat"><div class="detail-stat-value" style="color:var(--accent-cyan)">${_fmtINR(_opp * _inr)}</div><div class="detail-stat-label">Still Achievable</div></div>
       </div>
     </div>`;
 
