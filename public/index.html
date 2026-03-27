@@ -381,6 +381,19 @@
   .my-status-change { font-size: 0.65rem; color: var(--text-dim); text-decoration: underline; cursor: pointer; margin-left: auto; }
   .my-status-change:hover { color: var(--text-secondary); }
 
+  /* Staleness */
+  .lb-row.stale { opacity: 0.5; }
+  .lb-row.stale:hover { opacity: 0.8; }
+  .lb-stale-tag { font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(239,68,68,0.15); color: #ef4444; margin-left: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lb-stale-tag.inactive { background: rgba(100,100,120,0.15); color: #64748b; }
+
+  /* Streak */
+  .lb-streak { font-size: 0.65rem; color: #ff6b35; font-weight: 700; margin-left: 4px; }
+
+  /* Rank progress */
+  .rank-progress { display: inline-block; width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; vertical-align: middle; margin-left: 4px; }
+  .rank-progress-fill { display: block; height: 100%; border-radius: 2px; transition: width 0.5s; }
+
   .lb-usage-bar { position: relative; height: 22px; background: var(--bg-primary); border-radius: 6px; overflow: hidden; }
   .lb-usage-fill { height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
   .lb-usage-fill.low { background: linear-gradient(90deg, #1e40af, var(--accent-blue)); }
@@ -1305,9 +1318,16 @@
     const sparkData = nf > 1 ? rawSparkData.map(v => v / nf) : rawSparkData;
     const sparkColor = pctColor(pct);
     const safeId = escAttr(u.id);
+    const isStale = u.isStale || false;
+    const isInactive = u.isInactive || false;
+    const staleClass = isInactive ? ' stale inactive' : isStale ? ' stale' : '';
+    const staleTag = isInactive ? '<span class="lb-stale-tag inactive">INACTIVE</span>' : isStale ? '<span class="lb-stale-tag">STALE</span>' : '';
+    const streakHtml = u.streak > 0 ? `<span class="lb-streak" title="${u.streak}-day streak">\u{1f525}${u.streak}</span>` : '';
+    const nextRank = getNextRank(pct);
+    const progressHtml = nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : '';
 
     return `
-      <div class="lb-row clickable ${rowClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
+      <div class="lb-row clickable ${rowClass}${staleClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
         <div class="lb-position ${posClass}">#${pos}</div>
         <div class="lb-user-info">
           <div class="lb-name">${fire}${escHtml(u.name)}</div>
@@ -1316,8 +1336,8 @@
             ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && !u.planType && u.source !== 'extension' ? `<span class="lb-outdated-tag" title="Plan type unknown. Install/update extension to detect automatically." style="background:rgba(255,159,28,0.15);color:#ff9f1c;">sync</span>` : ''}
-            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
-            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
+            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>${progressHtml}${streakHtml}
+            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}${staleTag}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
           </div>
@@ -1410,9 +1430,12 @@
     const container = document.getElementById('myStatusCard');
     if (!container) return;
     const myName = localStorage.getItem('claude_lb_name');
-    if (!myName) { container.innerHTML = ''; return; }
+    if (!myName) {
+      container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;cursor:pointer;" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Click here to set your name and see your personal status card</div>`;
+      return;
+    }
     const me = data.users.find(u => u.name.toLowerCase() === myName.toLowerCase());
-    if (!me) { container.innerHTML = ''; return; }
+    if (!me) { container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;">"${escHtml(myName)}" not found. <span style="text-decoration:underline;cursor:pointer;" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Change name</span></div>`; return; }
 
     const sorted = [...data.users].sort((a, b) => effectivePct(b, 'weeklyPct') - effectivePct(a, 'weeklyPct'));
     const myPos = sorted.findIndex(u => u.id === me.id) + 1;
