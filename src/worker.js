@@ -967,9 +967,15 @@ async function getLeaderboardData(env) {
       streak: usage ? (usage.streak || { count: 0 }).count : 0,
       isStale: usage && usage.timestamp && (nowMs - new Date(usage.timestamp).getTime()) > 24 * 3600000,
       isInactive: usage && usage.timestamp && (nowMs - new Date(usage.timestamp).getTime()) > 72 * 3600000,
-      valueExtracted: Math.round((displayWeeklyPct / 100) * budget),
-      planCost: budget,
+      // Financial: how much of the monthly budget has been utilized
+      amountSpent: budget,
+      amountUtilized: Math.round((displayWeeklyPct / 100) * budget),
+      amountRemaining: Math.max(0, budget - Math.round((displayWeeklyPct / 100) * budget)),
       roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
+      // Time left: hours until weekly reset (creates urgency)
+      weeklyResetHoursLeft: usage && usage.weeklyResetsAt
+        ? Math.max(0, Math.round((new Date(usage.weeklyResetsAt).getTime() - nowMs) / 3600000))
+        : null,
     };
   }));
 

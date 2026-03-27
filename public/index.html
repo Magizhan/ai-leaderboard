@@ -105,7 +105,6 @@
   .gauge-sub { font-size: 0.72rem; color: rgba(255,255,255,0.45); display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .gauge-dot { opacity: 0.3; }
   .gauge-beyond { color: rgba(168,85,247,0.6); cursor: help; font-style: italic; }
-  .billing-countdown { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-align: center; margin-top: 6px; }
 
   /* Stats (legacy) */
   .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
@@ -348,15 +347,12 @@
   }
   .lb-plan-tag.max5 { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
   .lb-plan-tag.max20 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .lb-plan-tag.pro { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
-  .lb-plan-tag.free { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
   .lb-outdated-tag {
     font-size: 0.5rem; font-weight: 600; padding: 1px 5px; border-radius: 3px;
     background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);
     cursor: help;
   }
 
-  .lb-streak { font-size: 0.65rem; color: #ff6b35; font-weight: 700; margin-left: 4px; }
   .lb-rank-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .rank-mythic { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.4); text-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
   .rank-legendary { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
@@ -366,7 +362,10 @@
   .rank-silver { background: rgba(148, 163, 184, 0.15); color: var(--silver); border: 1px solid rgba(148, 163, 184, 0.2); }
   .rank-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze-color); border: 1px solid rgba(205, 127, 50, 0.2); }
 
-  /* My Status Card */
+  .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
+  .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
+  .lb-updated { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
+
   .my-status-card { position: relative; padding: 2px; border-radius: 14px; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-blue)); }
   .my-status-card-inner { background: var(--bg-card); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .my-status-name { font-size: 1.1rem; font-weight: 800; }
@@ -375,28 +374,12 @@
   .my-status-next { font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
   .my-status-next-bar { width: 80px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
   .my-status-next-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); }
+  .my-status-financial { font-size: 0.75rem; color: var(--text-secondary); display: flex; gap: 12px; flex-wrap: wrap; }
+  .my-status-financial .spent { color: var(--accent-orange); font-weight: 600; }
+  .my-status-financial .remaining { color: var(--accent-green); }
+  .my-status-financial .urgency { color: var(--accent-pink); font-weight: 600; }
   .my-status-change { font-size: 0.65rem; color: var(--text-dim); text-decoration: underline; cursor: pointer; margin-left: auto; }
   .my-status-change:hover { color: var(--text-secondary); }
-
-  /* Rank Progress Bar (inline in leaderboard rows) */
-  .rank-progress { display: inline-block; width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; vertical-align: middle; margin-left: 4px; }
-  .rank-progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
-
-  /* Rank Delta */
-  .rank-delta { font-size: 0.55rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-left: 2px; }
-  .rank-delta.up { color: var(--accent-green); }
-  .rank-delta.down { color: #ef4444; }
-  .rank-delta.same { color: var(--text-dim); }
-
-  /* Staleness */
-  .lb-row.stale { opacity: 0.5; }
-  .lb-stale-tag { font-size: 0.5rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .lb-stale-tag.stale-24h { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
-  .lb-stale-tag.stale-72h { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-
-  .lb-plans { font-size: 0.8rem; color: var(--text-secondary); text-align: center; font-family: 'JetBrains Mono', monospace; }
-  .lb-plans .sub { color: var(--text-dim); font-size: 0.65rem; }
-  .lb-updated { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
 
   .lb-usage-bar { position: relative; height: 22px; background: var(--bg-primary); border-radius: 6px; overflow: hidden; }
   .lb-usage-fill { height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -458,15 +441,6 @@
   .refresh-bar { display: none; }
 
   .confetti-piece { position: fixed; z-index: 3000; pointer-events: none; }
-
-  .milestone-toast {
-    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--bg-card); border: 1px solid var(--accent-purple);
-    color: var(--text-primary); padding: 10px 24px; border-radius: 10px;
-    font-size: 0.95rem; font-weight: 700; z-index: 2500;
-    animation: toastIn 0.4s ease, toastOut 0.4s ease 2.5s forwards;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4); pointer-events: none;
-  }
 
   .last-updated { text-align: center; color: var(--text-dim); font-size: 0.7rem; margin-top: 24px; padding-bottom: 40px; }
 
@@ -704,10 +678,6 @@
     .lb-position { font-size: 0.85rem; }
     .lb-meta { gap: 4px; }
     .lb-updated { font-size: 0.55rem; }
-    .my-status-card-inner { padding: 12px 14px; gap: 10px; }
-    .my-status-pct { font-size: 1rem; }
-    .my-status-name { font-size: 0.9rem; }
-    .rank-progress { width: 30px; }
 
     /* Modals */
     .modal { width: 95%; padding: 20px; }
@@ -753,6 +723,8 @@
   <!-- Individual Tab Content -->
   <div id="mainTabIndividual">
 
+  <div id="myStatusCard"></div>
+
   <div class="utilisation-gauge" id="utilisationGauge">
     <div class="gauge-amounts">
       <span class="gauge-utilised" id="gaugeUtilised">₹0</span>
@@ -777,21 +749,6 @@
       <span class="gauge-beyond" title="Multi-plan users can push past 100%. Add plans to go beyond.">Beyond 100%? Add more plans →</span>
       <span class="gauge-dot">·</span>
       <span>Max possible: <span id="gaugeMaxPossible">0%</span></span>
-    </div>
-    <div class="billing-countdown" id="billingCountdown"></div>
-  </div>
-
-  <!-- My Status Card -->
-  <div id="myStatusCard"></div>
-
-  <!-- Team Mini Battle (Individual tab) -->
-  <div class="team-battle-mini" id="teamMiniIndividual">
-    <div class="team-mini-row">
-      <div class="team-mini-ny"><div class="team-mini-name">NY</div><div class="team-mini-pct" id="nyMiniPct">0x</div></div>
-      <div class="team-mini-nc"><div class="team-mini-name">NC</div><div class="team-mini-pct" id="ncMiniPct">0x</div></div>
-      <div class="team-mini-xyne"><div class="team-mini-name">XYNE</div><div class="team-mini-pct" id="xyneMiniPct">0x</div></div>
-      <div class="team-mini-hs"><div class="team-mini-name">HS</div><div class="team-mini-pct" id="hsMiniPct">0x</div></div>
-      <div class="team-mini-jp"><div class="team-mini-name">JP</div><div class="team-mini-pct" id="jpMiniPct">0x</div></div>
     </div>
   </div>
 
@@ -1305,21 +1262,14 @@
   }
 
   /**
-   * Normalize usage relative to one Max 20x plan ($200, the base).
-   * Returns a divisor: higher = smaller plan relative to Max 20x.
+   * Normalize usage relative to one Max 20x plan (the base).
+   * Returns a multiplier: 1.0x = 100% of one Max 20x plan.
    *
-   * Max 20x ($200) = baseline   → normFactor = 1   (100% = 1.0x)
-   * Max 5x  ($100) = 1/4 cap   → normFactor = 4   (100% = 0.25x)
-   * Pro     ($20)  = 1/20 cap  → normFactor = 20  (100% = 0.05x)
-   * Free    ($0)   = 1/20 cap  → normFactor = 20  (100% = 0.05x)
+   * Max 5x = 1/4 capacity of Max 20x → normFactor = 4.
+   * Display: "0.25x" for Max 5x at 100%, "1.0x" for Max 20x at 100%.
    */
   function planNormFactor(u) {
-    switch (u.planType) {
-      case 'max5': return 4;
-      case 'pro':  return 20;
-      case 'free': return 20;
-      default:     return 1; // max20 or unset
-    }
+    return u.planType === 'max5' ? 4 : 1;
   }
 
   /** Returns effective usage as a percentage (for internal sorting/ranking) */
@@ -1338,7 +1288,7 @@
     return x.toFixed(2) + 'x';
   }
 
-  function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey, delta) {
+  function buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey) {
     const pct = effectivePct(u, pctKey);
     const otherPct = effectivePct(u, otherPctKey);
     const rank = getRank(pct);
@@ -1355,24 +1305,19 @@
     const sparkData = nf > 1 ? rawSparkData.map(v => v / nf) : rawSparkData;
     const sparkColor = pctColor(pct);
     const safeId = escAttr(u.id);
-    const hoursAgo = u.lastUpdated ? (Date.now() - new Date(u.lastUpdated).getTime()) / 3600000 : Infinity;
-    const isStale = hoursAgo > 24;
-    const isInactive = hoursAgo > 72;
-    const nextRank = getNextRank(pct);
-    const deltaHtml = delta !== undefined && delta !== null ? `<span class="rank-delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'same'}">${delta > 0 ? '\u2191' + delta : delta < 0 ? '\u2193' + Math.abs(delta) : '\u2014'}</span>` : '';
 
     return `
-      <div class="lb-row clickable ${rowClass}${isStale ? ' stale' : ''}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
-        <div class="lb-position ${posClass}">#${pos}${deltaHtml}</div>
+      <div class="lb-row clickable ${rowClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
+        <div class="lb-position ${posClass}">#${pos}</div>
         <div class="lb-user-info">
           <div class="lb-name">${fire}${escHtml(u.name)}</div>
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
-            ${u.planType ? `<span class="lb-plan-tag ${escAttr(u.planType)}">${({'max5':'M5','max20':'M20','pro':'PRO','free':'FREE'})[u.planType] || escHtml(u.planType)}</span>` : ''}
+            ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && u.extensionVersion && u.extensionVersion < REQUIRED_EXTENSION_VERSION ? `<span class="lb-outdated-tag" title="Extension v${escAttr(u.extensionVersion)} — update to v${REQUIRED_EXTENSION_VERSION}">update</span>` : ''}
             ${SHOW_OUTDATED_EXTENSION_NUDGE && !u.planType && u.source !== 'extension' ? `<span class="lb-outdated-tag" title="Plan type unknown. Install/update extension to detect automatically." style="background:rgba(255,159,28,0.15);color:#ff9f1c;">sync</span>` : ''}
-            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>${u.streak > 0 ? `<span class="lb-streak" title="${u.streak}-day streak">\u{1f525}${u.streak}</span>` : ''}${nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : ''}
-            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}${isStale ? `<span class="lb-stale-tag ${isInactive ? 'stale-72h' : 'stale-24h'}">${isInactive ? 'INACTIVE' : 'STALE'}</span>` : ''}
+            <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
+            ${ago ? `<span class="lb-updated">${ago}</span>` : ''}
             ${pctKey === 'sessionPct' && u.sessionResetsAt ? `<span class="lb-reset session"><span data-reset-session="${escAttr(u.sessionResetsAt)}"></span>${u.sessionResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
             ${pctKey === 'weeklyPct' && u.weeklyResetsAt ? `<span class="lb-reset weekly"><span data-reset-weekly="${escAttr(u.weeklyResetsAt)}"></span>${u.weeklyResetSource === 'estimated' ? '<span class="reset-estimated">i<span class="reset-tooltip">Estimated from usage drop. Update extension for accurate data.</span></span>' : ''}</span>` : ''}
           </div>
@@ -1390,8 +1335,9 @@
 
   function renderLeaderboard(users, containerId, pctKey, otherPctKey, otherLabel) {
     const sparkKey = pctKey === 'sessionPct' ? 'sessionSparkline' : 'weeklySparkline';
-    // Include all plan types — usage is normalized relative to Max 20x ($200)
-    const sorted = [...users].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
+    // Exclude Pro/Free plans — leaderboard is for Max plan GPU utilization only
+    const maxUsers = users.filter(u => !u.planType || u.planType.startsWith('max'));
+    const sorted = [...maxUsers].sort((a, b) => effectivePct(b, pctKey) - effectivePct(a, pctKey));
 
     let filtered = sorted;
     if (currentTab === 'ny') filtered = sorted.filter(u => u.team === 'NY');
@@ -1401,18 +1347,6 @@
     else if (currentTab === 'jp') filtered = sorted.filter(u => u.team === 'JP');
     else if (currentTab === 'top5') filtered = sorted.slice(0, 5);
     else if (currentTab === 'top10') filtered = sorted.slice(0, 10);
-
-    // Rank change deltas
-    let prevPositions = {};
-    try { const stored = JSON.parse(localStorage.getItem('lb_prev_positions') || '{}'); prevPositions = stored[containerId] || {}; } catch (e) {}
-    const hasPrev = Object.keys(prevPositions).length > 0;
-    const newPositions = {};
-    filtered.forEach((u, i) => { newPositions[u.id] = i + 1; });
-    function getDelta(userId, newPos) {
-      if (!hasPrev || !(userId in prevPositions)) return null;
-      return prevPositions[userId] - newPos;
-    }
-    try { const stored = JSON.parse(localStorage.getItem('lb_prev_positions') || '{}'); stored[containerId] = newPositions; localStorage.setItem('lb_prev_positions', JSON.stringify(stored)); } catch (e) {}
 
     const lb = document.getElementById(containerId);
     if (filtered.length === 0) {
@@ -1426,7 +1360,7 @@
 
     // If user list or order changed, do a full rebuild
     if (existingIds.length !== newIds.length || existingIds.some((id, i) => id !== newIds[i])) {
-      lb.innerHTML = filtered.map((u, i) => buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey, getDelta(u.id, i + 1))).join('');
+      lb.innerHTML = filtered.map((u, i) => buildRowHTML(u, i, pctKey, otherPctKey, otherLabel, sparkKey)).join('');
       return;
     }
 
@@ -1469,39 +1403,8 @@
       // Update time ago
       const agoEl = row.querySelector('.lb-meta .lb-updated');
       if (agoEl) agoEl.textContent = ago;
-
-      // Update staleness
-      const hoursAgo = u.lastUpdated ? (Date.now() - new Date(u.lastUpdated).getTime()) / 3600000 : Infinity;
-      const isStale = hoursAgo > 24;
-      const isInactive = hoursAgo > 72;
-      row.classList.toggle('stale', isStale);
-      let staleTag = row.querySelector('.lb-stale-tag');
-      if (isStale) {
-        if (!staleTag) { staleTag = document.createElement('span'); row.querySelector('.lb-meta').appendChild(staleTag); }
-        staleTag.className = 'lb-stale-tag ' + (isInactive ? 'stale-72h' : 'stale-24h');
-        staleTag.textContent = isInactive ? 'INACTIVE' : 'STALE';
-      } else if (staleTag) { staleTag.remove(); }
-
-      // Update rank progress bar
-      const nextRank = getNextRank(pct);
-      let rpBar = row.querySelector('.rank-progress');
-      if (nextRank) {
-        if (!rpBar) { rpBar = document.createElement('span'); rpBar.className = 'rank-progress'; rpBar.innerHTML = '<span class="rank-progress-fill"></span>'; const badge = row.querySelector('.lb-rank-badge'); if (badge) badge.after(rpBar); }
-        const fill = rpBar.querySelector('.rank-progress-fill');
-        if (fill) { fill.style.width = Math.round(nextRank.progress * 100) + '%'; fill.style.background = pctColor(pct); }
-      } else if (rpBar) { rpBar.remove(); }
     });
   }
-
-  function showMilestoneToast(msg) {
-    const el = document.createElement('div');
-    el.className = 'milestone-toast';
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 3000);
-  }
-
-  const RANK_ORDER = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'LEGENDARY', 'MYTHIC'];
 
   function renderMyStatus(data) {
     const container = document.getElementById('myStatusCard');
@@ -1518,25 +1421,6 @@
     const rank = getRank(pct);
     const nextRank = getNextRank(pct);
 
-    // Milestone: rank up detection
-    const prevRankTitle = localStorage.getItem('lb_prev_rank');
-    if (prevRankTitle && prevRankTitle !== rank.title) {
-      const prevIdx = RANK_ORDER.indexOf(prevRankTitle);
-      const curIdx = RANK_ORDER.indexOf(rank.title);
-      if (curIdx > prevIdx) {
-        confetti();
-        showMilestoneToast(`Rank up! ${rank.title} ${rank.icon}`);
-      }
-    }
-    localStorage.setItem('lb_prev_rank', rank.title);
-
-    // Milestone: first time crossing 100% this session
-    if (pct >= 100 && !sessionStorage.getItem('lb_celebrated_100')) {
-      sessionStorage.setItem('lb_celebrated_100', '1');
-      confetti();
-      showMilestoneToast('You crossed 100%! \u{1f389}');
-    }
-
     let nextRankHtml = '';
     if (nextRank) {
       nextRankHtml = `<div class="my-status-next">
@@ -1545,16 +1429,30 @@
       </div>`;
     }
 
-    // ROI display
-    let roiHtml = '';
-    if (me.valueExtracted != null && me.planCost != null) {
-      const roiVal = me.roi || 0;
-      const color = roiVal >= 1.0 ? '#22c55e' : roiVal < 0.5 ? '#f97316' : 'var(--text-dim)';
-      const label = roiVal >= 1.0 ? '\u{1f3af} Getting your money\'s worth!' : roiVal < 0.5 ? 'Room to grow' : '';
-      roiHtml = `<div style="font-size:0.75rem;color:${color};margin-top:2px;">$${Math.round(me.valueExtracted)} / $${Math.round(me.planCost)} plan${label ? ' \u2014 ' + label : ''}</div>`;
+    // Financial summary
+    const utilized = me.amountUtilized || 0;
+    const spent = me.amountSpent || 0;
+    const remaining = me.amountRemaining || 0;
+    const hoursLeft = me.weeklyResetHoursLeft;
+    const daysLeft = hoursLeft !== null ? Math.floor(hoursLeft / 24) : null;
+    const hrsLeft = hoursLeft !== null ? hoursLeft % 24 : null;
+    const roiVal = me.roi || 0;
+    const roiColor = roiVal >= 1 ? 'var(--accent-green)' : roiVal >= 0.5 ? 'var(--accent-orange)' : 'var(--text-dim)';
+    const roiLabel = roiVal >= 1 ? 'Getting your money\'s worth!' : roiVal >= 0.5 ? 'Good progress' : 'Room to grow';
+
+    let timeHtml = '';
+    if (daysLeft !== null) {
+      timeHtml = `<span class="urgency">${daysLeft > 0 ? daysLeft + 'd ' : ''}${hrsLeft}h left this week</span>`;
     }
 
-    container.innerHTML = `<div class="my-status-card" id="my-status-card">
+    const financialHtml = `<div class="my-status-financial">
+      <span class="spent">$${utilized} / $${spent}</span>
+      <span class="remaining">$${remaining} remaining</span>
+      ${timeHtml}
+      <span style="color:${roiColor}">${roiLabel}</span>
+    </div>`;
+
+    container.innerHTML = `<div class="my-status-card">
       <div class="my-status-card-inner">
         <div>
           <div class="my-status-name">${escHtml(me.name)}</div>
@@ -1564,8 +1462,8 @@
           <span class="lb-rank-badge ${rank.cls}">${rank.icon} ${rank.title}</span>
           <span class="my-status-pct" style="color:${pctColor(pct)}">${fmtMultiplier(pct)}</span>
         </div>
-        ${roiHtml}
         ${nextRankHtml}
+        ${financialHtml}
         <span class="my-status-change" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Not you? Change</span>
       </div>
     </div>`;
@@ -1574,6 +1472,9 @@
   function renderData(data) {
     const { users, stats, teams } = data;
     const scrollY = window.scrollY;
+
+    // Render personal status card
+    renderMyStatus(data);
 
     // Render both leaderboards (Individual tab)
     renderLeaderboard(users, 'leaderboardSession', 'sessionPct', 'weeklyPct', 'mo');
@@ -1584,9 +1485,6 @@
       renderLeaderboard(users, 'teamLeaderboardSession', 'sessionPct', 'weeklyPct', 'mo');
       renderLeaderboard(users, 'teamLeaderboardWeekly', 'weeklyPct', 'sessionPct', 'sess');
     }
-
-    // My Status Card
-    renderMyStatus(data);
 
     // Utilisation Gauge
     const INR_RATE = 94.7;
@@ -1642,22 +1540,6 @@
     document.getElementById('gaugeBarPossible').style.width = Math.min(maxPossiblePct, 150) + '%';
     document.getElementById('gaugeMaxPossible').textContent = maxPossiblePct + '%';
 
-    // Billing countdown — find soonest weekly reset
-    const countdownEl = document.getElementById('billingCountdown');
-    const soonestReset = data.users
-      .filter(u => u.weeklyResetsAt)
-      .map(u => new Date(u.weeklyResetsAt).getTime())
-      .filter(t => t > Date.now())
-      .sort((a, b) => a - b)[0];
-    if (soonestReset) {
-      const diff = soonestReset - Date.now();
-      const days = Math.floor(diff / 86400000);
-      const hours = Math.floor((diff % 86400000) / 3600000);
-      countdownEl.textContent = 'Weekly reset in ' + days + ' day' + (days !== 1 ? 's' : '') + ' ' + hours + ' hour' + (hours !== 1 ? 's' : '');
-    } else {
-      countdownEl.textContent = '';
-    }
-
     // Teams - use weekly for team battle (or could use session)
     const teamNames = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
     const teamIds = ['ny', 'nc', 'xyne', 'hs', 'jp'];
@@ -1675,9 +1557,8 @@
       document.getElementById(tid + 'Bar').style.width = (weeklyPct / maxTeamPct * 100) + '%';
       document.getElementById(tid + 'BarVal').textContent = fmtMultiplier(weeklyPct);
 
-      // Mini team battle (show session — if element exists)
-      const miniEl = document.getElementById(tid + 'MiniPct');
-      if (miniEl) miniEl.textContent = fmtMultiplier(sessionPct);
+      // Mini team battle (show session — more dynamic/real-time)
+      document.getElementById(tid + 'MiniPct').textContent = fmtMultiplier(sessionPct);
     });
 
     const updatedText = 'Last updated: ' + new Date().toLocaleString();
