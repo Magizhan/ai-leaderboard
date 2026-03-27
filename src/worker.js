@@ -949,21 +949,23 @@ async function getLeaderboardData(env) {
       const unusedDollars = (Math.max(0, maxWeeklyCapacity - peak) / 100) * perPlanCost;
       return s + (budget > 0 ? (unusedDollars / budget) * 100 : 0);
     }, 0);
-    const futureWeeks = Math.max(0, 4 - completedWeeks - 1);
-    const currentWeekRemaining = Math.max(0, maxWeeklyCapacity - currentWeekValue);
-    const oppDollars = ((currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 100) * perPlanCost;
-    const opportunityPct = budget > 0 ? (oppDollars / budget) * 100 : 0;
+    // Achievable = budget - utilized - lost (what's still possible this month)
+    // Computed after displayWeeklyPct is finalized (below), so set placeholder
+    let opportunityPct = 0; // will be set after extra usage is added
 
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
 
     // Extra usage contribution: (extraSpent / (planCost * 4)) * 100
-    // e.g., $549 spent with $200 plan = $549 / $800 * 100 = 68.6%
     if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
       const extraSpent = usage.totalExtraUsageSpent || usage.extraUsageSpent || 0;
-      const perPlanCost = planTypeCost(activePlanType);
-      displayWeeklyPct += (extraSpent / (perPlanCost * 4)) * 100;
+      displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
     }
+
+    // Achievable = budget - utilized - lost (simple, bounded by budget)
+    const utilizedDollars = Math.round((baseWeeklyPct / 100) * budget);
+    const lostDollars = Math.round((lostPct / 100) * budget);
+    opportunityPct = budget > 0 ? (Math.max(0, budget - utilizedDollars - lostDollars) / budget) * 100 : 0;
 
     return {
       ...u,
