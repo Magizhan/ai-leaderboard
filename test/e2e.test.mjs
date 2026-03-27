@@ -73,19 +73,20 @@ async function testUserCRUD() {
   const list = await api('/api/users');
   assert(list.data.some(u => u.id === testUserId), 'User appears in list');
 
-  // Create with XSS in name
+  // Create with XSS in name — use unique name to avoid 409 duplicate
+  const xssName = `<script>alert(${Date.now()})</script>`;
   const xss = await api('/api/users', 'POST', {
-    name: '<script>alert(1)</script>', team: 'NY',
+    name: xssName, team: 'NY',
   });
   assert(!xss.data.name.includes('<script>'), 'XSS tags stripped from name');
   // Clean up XSS user
   if (xss.data.id) await api(`/api/users/${xss.data.id}`, 'DELETE');
 
-  // Invalid team defaults to NY
+  // Invalid team defaults to NC
   const badTeam = await api('/api/users', 'POST', {
     name: `_test_badteam_${Date.now()}`, team: 'INVALID',
   });
-  assertEq(badTeam.data.team, 'NY', 'Invalid team defaults to NY');
+  assertEq(badTeam.data.team, 'NC', 'Invalid team defaults to NC');
   if (badTeam.data.id) await api(`/api/users/${badTeam.data.id}`, 'DELETE');
 }
 
