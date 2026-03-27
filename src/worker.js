@@ -937,14 +937,19 @@ async function getLeaderboardData(env) {
       displayWeeklyPct = currentWeekValue / 4;
     }
 
-    // Lost = capacity from completed weeks that can never be recovered
-    // e.g., week peaked at 94% of 100% capacity → lost 6% that week
+    // Lost = absolute $ from completed weeks not fully used (can never be recovered)
+    // e.g., week peaked at 166% of 200% capacity → lost 34% × ($400/numPlans) per plan
+    // Per-plan cost × unused% = dollars lost per week
     const completedWeeks = completedWeekPeaks.length;
-    const lostPct = completedWeekPeaks.reduce((s, peak) => s + Math.max(0, maxWeeklyCapacity - peak), 0) / 4;
-    // Opportunity = capacity still achievable (current week remainder + future weeks)
-    const futureWeeks = Math.max(0, 4 - completedWeeks - 1); // -1 for current week
+    const perPlanCostForLost = planTypeCost(activePlanType);
+    const lostDollars = completedWeekPeaks.reduce((s, peak) => {
+      const unusedPct = Math.max(0, maxWeeklyCapacity - peak);
+      return s + (unusedPct / 100) * perPlanCostForLost;
+    }, 0);
+    // Opportunity = absolute $ still achievable (current week remainder + future weeks)
+    const futureWeeks = Math.max(0, 4 - completedWeeks - 1);
     const currentWeekRemaining = Math.max(0, maxWeeklyCapacity - currentWeekValue);
-    const opportunityPct = (currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 4;
+    const opportunityDollars = ((currentWeekRemaining + futureWeeks * maxWeeklyCapacity) / 100) * perPlanCostForLost;
 
     // Base monthly (without extra usage) — for financial display
     const baseWeeklyPct = displayWeeklyPct;
@@ -988,9 +993,9 @@ async function getLeaderboardData(env) {
       amountUtilized: Math.round((displayWeeklyPct / 100) * budget),
       amountRemaining: Math.max(0, budget - Math.round((displayWeeklyPct / 100) * budget)),
       roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
-      // Lost & opportunity
-      lostPct: Math.round(lostPct * 10) / 10,
-      opportunityPct: Math.round(opportunityPct * 10) / 10,
+      // Lost & opportunity (absolute $)
+      lostDollars: Math.round(lostDollars),
+      opportunityDollars: Math.round(opportunityDollars),
       completedWeeks,
       currentWeekPct: currentWeekValue,
       maxWeeklyCapacity,
