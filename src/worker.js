@@ -114,7 +114,7 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
   return weekStart.toISOString().slice(0, 10);
 }
 
-const MAX_HISTORY = 500;
+const MAX_HISTORY = 2000;
 const MAX_WEEKLY = 52;
 const CACHE_TTL_MS = 60_000; // 60s cache for leaderboard data
 const VALID_TEAMS = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
@@ -701,9 +701,9 @@ async function logUsage(body, env) {
     }
   }
 
-  // --- Update history (store active plan's raw values, not combined) ---
-  let histSessionPct = plan.sessionPct || 0;
-  let histWeeklyPct = plan.weeklyPct || 0;
+  // --- Update history (always store combined values for consistent monthly calc) ---
+  let histSessionPct = combinedSessionPct;
+  let histWeeklyPct = combinedWeeklyPct;
 
   const sessionDroppedHist = lastEntry && histSessionPct < (lastEntry.sessionPct || 0) - 1;
   const weeklyDroppedHist = lastEntry && histWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
@@ -731,7 +731,20 @@ async function logUsage(body, env) {
   }
 
   if (history.length > MAX_HISTORY) {
-    history = history.slice(history.length - MAX_HISTORY);
+    // Downsample: keep all entries from last 24h, 1 per hour for older entries
+    const oneDayAgo = Date.now() - 24 * 3600000;
+    const recent = history.filter(h => new Date(h.timestamp).getTime() >= oneDayAgo);
+    const older = history.filter(h => new Date(h.timestamp).getTime() < oneDayAgo);
+    // Keep peak entry per hour for older entries
+    const hourBuckets = {};
+    for (const h of older) {
+      const hourKey = new Date(h.timestamp).toISOString().slice(0, 13);
+      if (!hourBuckets[hourKey] || (h.weeklyPct || 0) > (hourBuckets[hourKey].weeklyPct || 0)) {
+        hourBuckets[hourKey] = h;
+      }
+    }
+    history = [...Object.values(hourBuckets), ...recent];
+    history.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 
   // --- Build usage data ---
@@ -919,7 +932,7 @@ async function getLeaderboardData(env) {
         for (let i = 1; i < recent.length; i++) {
           const prevW = recent[i - 1].weeklyPct || 0;
           const curW = recent[i].weeklyPct || 0;
-          if (prevW > 20 && curW < 5) {
+          if (prevW > 20 && curW < prevW * 0.3) {
             cyclePreResetValues.push(prevW);
           }
         }
@@ -959,19 +972,29 @@ async function getLeaderboardData(env) {
           // Single plan
           const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentVal;
           const numCycles = cyclePreResetValues.length + 1;
-          const denom = Math.max(4, numCycles);
+          // Use actual weeks elapsed (from oldest recent entry to now), min 1, max 4
+          const oldestRecentTs = new Date(recent[0].timestamp).getTime();
+          const weeksElapsed = Math.max(1, Math.min(4, Math.ceil((nowMs - oldestRecentTs) / (7 * 86400000))));
+          const denom = Math.max(weeksElapsed, numCycles);
           displayWeeklyPct = (totalRaw / denom) * scale;
         }
       } else if (recent.length === 1) {
-        displayWeeklyPct = ((recent[0].weeklyPct || 0) / 4) * scale;
+        // Single recent entry — use weeks elapsed, not hardcoded /4
+        const entryAge = nowMs - new Date(recent[0].timestamp).getTime();
+        const weeksElapsed = Math.max(1, Math.min(4, Math.ceil(entryAge / (7 * 86400000))));
+        displayWeeklyPct = ((recent[0].weeklyPct || 0) / weeksElapsed) * scale;
       }
     }
 
-    // Fallback: if no history, use current usage value / 4
+    // Also handle: history exists but all entries are older than 28 days
+    // (unreachable code path fix — moved outside history.length >= 2 check)
     if (displayWeeklyPct === 0 && usage) {
       const rawWeekly = usage.combinedWeeklyPct !== undefined
         ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0);
-      displayWeeklyPct = (rawWeekly / 4) * scale;
+      // Use weeks since last sync, not hardcoded /4
+      const lastSyncAge = usage.timestamp ? (nowMs - new Date(usage.timestamp).getTime()) : 28 * 86400000;
+      const weeksElapsed = Math.max(1, Math.min(4, Math.ceil(lastSyncAge / (7 * 86400000))));
+      displayWeeklyPct = (rawWeekly / weeksElapsed) * scale;
     }
 
     // Extra usage: cap at factor of 4 (no rate limits, exhausts fast)
@@ -1011,10 +1034,14 @@ async function getLeaderboardData(env) {
   }));
 
   function teamStats(teamUsers) {
+    // Exclude inactive users (>72h stale) from averages to prevent them dragging down team scores
+    const active = teamUsers.filter(u => !u.isInactive);
+    const avgDiv = active.length || 1;
     return {
       members: teamUsers.length,
-      avgSessionPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.sessionPct, 0) / teamUsers.length : 0,
-      avgWeeklyPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.weeklyPct, 0) / teamUsers.length : 0,
+      activeMembers: active.length,
+      avgSessionPct: active.reduce((s, u) => s + u.sessionPct, 0) / avgDiv,
+      avgWeeklyPct: active.reduce((s, u) => s + u.weeklyPct, 0) / avgDiv,
     };
   }
 
