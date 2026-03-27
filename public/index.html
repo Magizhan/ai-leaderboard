@@ -1501,14 +1501,15 @@
     const oppPct = me.opportunityPct || 0;
     const lostDollars = Math.round((lostPct / 100) * budget);
     const oppDollars = Math.round((oppPct / 100) * budget);
+    const toINR = (usd) => '\u20B9' + Math.round(usd * inrRate).toLocaleString('en-IN');
     const financialHtml = `<div class="my-status-financial">
-      <span class="spent">\u20B9${(baseUtilized * inrRate).toLocaleString('en-IN')} / \u20B9${(budget * inrRate).toLocaleString('en-IN')}</span>
+      <span class="spent">${toINR(baseUtilized)} / ${toINR(budget)}</span>
       <span style="color:var(--text-dim);font-size:0.65rem">($${baseUtilized}/$${budget})</span>
-      ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+\u20B9${Math.round(extraSpent * inrRate).toLocaleString('en-IN')} extra</span>` : ''}
-      ${lostPct > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">\u20B9${(lostDollars * inrRate).toLocaleString('en-IN')} lost</span>` : ''}
+      ${extraSpent > 0 ? `<span style="color:var(--accent-orange)">+${toINR(extraSpent)} extra</span>` : ''}
+      ${lostDollars > 0 ? `<span style="color:#ef4444;font-size:0.7rem" title="From ${me.completedWeeks || 0} completed week(s) not fully used">${toINR(lostDollars)} lost</span>` : ''}
       ${timeHtml}
     </div>
-    ${oppPct > 0 ? `<div style="font-size:0.65rem;color:var(--accent-green);margin-top:2px;">\u20B9${(oppDollars * inrRate).toLocaleString('en-IN')} still achievable this month</div>` : ''}`;
+    ${oppDollars > 0 ? `<div style="font-size:0.65rem;color:var(--accent-green);margin-top:2px;">${toINR(oppDollars)} still achievable this month</div>` : ''}`;
 
     container.innerHTML = `<div class="my-status-card">
       <div class="my-status-card-inner">
