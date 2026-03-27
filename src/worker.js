@@ -929,13 +929,54 @@ async function getLeaderboardData(env) {
     // Normalize session by plan type: 100% on max20 = 100 (displays as 1.0x), on max5 = 25 (displays as 0.25x)
     let displaySessionPct = rawSessionPct * planScale(activePlanType);
 
-    // Weekly = current week's combined usage, normalized by plan type
-    // 1.0x = 100% of a max20 plan used this week. No averaging over multiple weeks.
+    // Weekly = accumulated weekly peaks across billing cycles, averaged by actual cycles seen
+    // Detects resets (weekly drops >70%) to capture per-cycle peaks
+    // Denominator = actual number of cycles (not hardcoded 4)
     const scale = planScale(activePlanType);
+    const cutoffMs = nowMs - 28 * 86400000;
     let displayWeeklyPct = 0;
 
-    // Use combined weekly from usage record (most current)
-    if (usage) {
+    if (history.length >= 2) {
+      const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
+
+      if (recent.length >= 2) {
+        const cyclePreResetValues = [];
+        for (let i = 1; i < recent.length; i++) {
+          const prevW = recent[i - 1].weeklyPct || 0;
+          const curW = recent[i].weeklyPct || 0;
+          if (prevW > 20 && curW < prevW * 0.3) {
+            cyclePreResetValues.push(prevW);
+          }
+        }
+        const currentVal = recent[recent.length - 1].weeklyPct || 0;
+        const numCycles = cyclePreResetValues.length + 1;
+
+        if (u.numPlans > 1) {
+          let p1Total = 0, p2Total = 0;
+          for (const preReset of cyclePreResetValues) {
+            p1Total += Math.min(preReset, 100);
+            p2Total += Math.max(preReset - 100, 0);
+          }
+          const plans = (usage && usage.plans) || [];
+          if (plans.length >= 2) {
+            p1Total += plans[0].weeklyPct || 0;
+            p2Total += plans[1].weeklyPct || 0;
+          } else {
+            p1Total += Math.min(currentVal, 100);
+            p2Total += Math.max(currentVal - 100, 0);
+          }
+          displayWeeklyPct = ((p1Total / numCycles) + (p2Total / numCycles)) * scale;
+        } else {
+          const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentVal;
+          displayWeeklyPct = (totalRaw / numCycles) * scale;
+        }
+      } else if (recent.length === 1) {
+        displayWeeklyPct = (recent[0].weeklyPct || 0) * scale;
+      }
+    }
+
+    // Fallback: no history or all entries older than 28 days
+    if (displayWeeklyPct === 0 && usage) {
       const rawWeekly = usage.combinedWeeklyPct !== undefined
         ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0);
       displayWeeklyPct = rawWeekly * scale;
