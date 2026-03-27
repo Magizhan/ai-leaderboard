@@ -128,9 +128,9 @@ function sanitizeString(str, maxLen = 50) {
 
 /** Validate team against allowlist */
 function sanitizeTeam(team) {
-  if (typeof team !== 'string') return 'NY';
+  if (typeof team !== 'string') return 'NC';
   const match = VALID_TEAMS.find(t => t.toLowerCase() === team.toLowerCase());
-  return match || 'NY';
+  return match || 'NC';
 }
 
 /** Validate source against allowlist */
@@ -222,6 +222,12 @@ async function handleApi(path, request, env, url, auth) {
   if (path.startsWith('/api/users/') && method === 'DELETE') {
     const id = path.split('/api/users/')[1];
     return deleteUser(id, env);
+  }
+
+  // PATCH /api/users/:id — update user team/name
+  if (path.match(/^\/api\/users\/[^/]+$/) && method === 'PATCH') {
+    const id = path.split('/api/users/')[1];
+    return updateUser(id, await request.json(), env);
   }
 
   if (path === '/api/usage' && method === 'POST') {
@@ -383,11 +389,40 @@ async function addUser(body, env) {
   if (!name) return jsonResponse({ error: 'name and team required' }, 400);
 
   const users = await kvGet(env, 'users', []);
+  if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+    return jsonResponse({ error: 'User with this name already exists' }, 409);
+  }
   const id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   users.push({ id, name, team, numPlans });
   await kvPut(env, 'users', users);
   invalidateLeaderboardCache(env);
   return jsonResponse({ id, name, team, numPlans });
+}
+
+async function updateUser(id, body, env) {
+  const users = await kvGet(env, 'users', []);
+  const user = users.find(u => u.id === id);
+  if (!user) return jsonResponse({ error: 'User not found' }, 404);
+
+  let changed = false;
+  if (body.team) {
+    const newTeam = sanitizeTeam(body.team);
+    if (newTeam !== user.team) { user.team = newTeam; changed = true; }
+  }
+  if (body.name) {
+    const newName = sanitizeString(body.name);
+    if (newName && newName !== user.name) { user.name = newName; changed = true; }
+  }
+  if (body.numPlans !== undefined) {
+    const n = Math.max(1, Math.min(10, parseInt(body.numPlans) || 1));
+    if (n !== user.numPlans) { user.numPlans = n; changed = true; }
+  }
+
+  if (changed) {
+    await kvPut(env, 'users', users);
+    invalidateLeaderboardCache(env);
+  }
+  return jsonResponse({ ok: true, user });
 }
 
 async function deleteUser(id, env) {
@@ -396,7 +431,7 @@ async function deleteUser(id, env) {
   if (!user) return jsonResponse({ error: 'User not found' }, 404);
 
   users = users.filter(u => u.id !== id);
-  await kvPut(env, 'users', users);
+  await kvPut(env, 'users', users, { allowShrink: true });
   // Clean up all related keys
   await Promise.all([
     env.LEADERBOARD_KV.delete(`usage:${id}`),
@@ -432,8 +467,8 @@ async function logUsage(body, env) {
   }
   if (!user) return jsonResponse({ error: 'User not found. Provide a name to auto-register.' }, 404);
 
-  // Update team if extension sends a different one
-  if (body.team) {
+  // Only update team from non-extension sources (extension defaults to NY which overwrites real team)
+  if (body.team && source !== 'extension') {
     const newTeam = sanitizeTeam(body.team);
     if (newTeam !== user.team) {
       user.team = newTeam;
@@ -698,7 +733,7 @@ async function logUsage(body, env) {
     weeklyResetsAt: plan.weeklyResetsAt || null,
     sessionResetSource,
     weeklyResetSource,
-    planType: plan.planType || null,
+    planType: plan.planType || existing.planType || null,
     extraUsageSpent: plan.extraUsageSpent || null,
     extraUsageLimit: plan.extraUsageLimit || null,
     extraUsagePct: plan.extraUsagePct || null,
@@ -736,6 +771,10 @@ function updateWeeklyAggregation(weeklyHistory, sessionHistory, currentWeekKey, 
   const peakWeeklyPct = Math.max(...weekEntries.map(e => e.weeklyPct || 0));
   const avgWeeklyPct = weekEntries.reduce((s, e) => s + (e.weeklyPct || 0), 0) / weekEntries.length;
 
+  // Determine planType from latest history entry for this week
+  const latestHistoryEntry = weekEntries[weekEntries.length - 1];
+  const weekPlanType = latestHistoryEntry ? (latestHistoryEntry.planType || null) : null;
+
   const weekRecord = {
     weekKey: currentWeekKey,
     peakSessionPct: Math.round(peakSessionPct * 100) / 100,
@@ -744,6 +783,7 @@ function updateWeeklyAggregation(weeklyHistory, sessionHistory, currentWeekKey, 
     avgWeeklyPct: Math.round(avgWeeklyPct * 100) / 100,
     dataPoints: weekEntries.length,
     lastUpdated: now,
+    planType: weekPlanType,
   };
 
   // Upsert into weekly history
@@ -796,40 +836,131 @@ async function getLeaderboardData(env) {
   const nowMs = Date.now();
 
   const board = await Promise.all(users.map(async (u) => {
-    const [usage, history] = await Promise.all([
+    const [usage, history, weeklyHistory] = await Promise.all([
       kvGet(env, `usage:${u.id}`, null),
       kvGet(env, `history:${u.id}`, []),
+      kvGet(env, `weekly:${u.id}`, []),
     ]);
-    const budget = u.numPlans * planCost;
+    // Plan-specific cost: max20=$200, max5=$100, unknown defaults to $200
+    const planTypeCost = (pt) => pt === 'max5' ? 100 : 200;
 
     // Build sparkline from last 20 session history entries
     const sparklineEntries = history.slice(-20);
     const sessionSparkline = sparklineEntries.map(e => e.sessionPct || 0);
     const weeklySparkline = sparklineEntries.map(e => e.weeklyPct || 0);
 
-    // Read combined values (new format) or fall back to flat fields (unmigrated)
-    let displaySessionPct = usage
-      ? (usage.combinedSessionPct !== undefined ? usage.combinedSessionPct : (usage.sessionPct || 0))
-      : 0;
-    let displayWeeklyPct = usage
-      ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
-      : 0;
-
-    // Auto-reset: if session timer expired, show 0 for combined session
-    if (usage && usage.sessionResetsAt && new Date(usage.sessionResetsAt).getTime() <= nowMs) {
-      displaySessionPct = 0;
-    }
-    if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
-      displayWeeklyPct = 0;
-    }
-
-    // Determine planType from active plan or top-level
+    // Determine planType from active plan or top-level (needed before session/monthly calcs)
     let activePlanType = null;
     if (usage && usage.plans && usage.plans.length > 0) {
       const ap = usage.plans[usage.activePlan || 0];
       activePlanType = ap ? (ap.planType || null) : null;
     } else if (usage) {
       activePlanType = usage.planType || null;
+    }
+
+    // Plan-type multiplier: max5 = 0.25x per 100%, max20/null = 1.0x per 100%
+    const planScale = (pt) => (pt === 'max5' ? 0.25 : 1.0);
+
+    // Budget: for multi-plan, sum per-plan costs; otherwise use activePlanType
+    let budget = 0;
+    if (usage && usage.plans && usage.plans.length > 0) {
+      budget = usage.plans.reduce((s, p) => s + planTypeCost(p.planType), 0);
+    } else {
+      budget = u.numPlans * planTypeCost(activePlanType);
+    }
+
+    // Read combined values (new format) or fall back to flat fields (unmigrated)
+    let rawSessionPct = usage
+      ? (usage.combinedSessionPct !== undefined ? usage.combinedSessionPct : (usage.sessionPct || 0))
+      : 0;
+
+    // Auto-reset: if session timer expired, show 0 for combined session
+    if (usage && usage.sessionResetsAt && new Date(usage.sessionResetsAt).getTime() <= nowMs) {
+      rawSessionPct = 0;
+    }
+
+    // Normalize session by plan type: 100% on max20 = 100 (displays as 1.0x), on max5 = 25 (displays as 0.25x)
+    let displaySessionPct = rawSessionPct * planScale(activePlanType);
+
+    // Monthly = reset-detection approach, averaged over 4 weeks
+    // 1.0x monthly = maxed out every week for 4 weeks (single plan, max20)
+    // Detect billing cycle resets in history (weekly% drops from >20% to <5%)
+    // Sum pre-reset peaks + current cycle value, divide by max(4, numCycles)
+    // For multi-plan: infer per-plan split (excess above 100% = plan 2)
+    let displayWeeklyPct = 0;
+
+    const scale = planScale(activePlanType);
+    const cutoffMs = nowMs - 28 * 86400000; // 28 days ago
+
+    if (history.length >= 2) {
+      const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
+
+      if (recent.length >= 2) {
+        // Detect resets: weekly drops from >20% to <5%
+        const cyclePreResetValues = [];
+        for (let i = 1; i < recent.length; i++) {
+          const prevW = recent[i - 1].weeklyPct || 0;
+          const curW = recent[i].weeklyPct || 0;
+          if (prevW > 20 && curW < 5) {
+            cyclePreResetValues.push(prevW);
+          }
+        }
+        const currentVal = recent[recent.length - 1].weeklyPct || 0;
+
+        if (u.numPlans > 1) {
+          // Multi-plan: infer per-plan split
+          // Excess above 100% assumed to be plan 2
+          let p1Total = 0, p2Total = 0;
+
+          // Find when multi-plan started (first time weekly > 105%)
+          const multiStart = recent.find(e => (e.weeklyPct || 0) > 105);
+          const multiStartTs = multiStart ? multiStart.timestamp : null;
+
+          for (const preReset of cyclePreResetValues) {
+            if (multiStartTs) {
+              p1Total += Math.min(preReset, 100);
+              p2Total += Math.max(preReset - 100, 0);
+            } else {
+              p1Total += preReset;
+            }
+          }
+          // Current: use actual per-plan data if available
+          const plans = (usage && usage.plans) || [];
+          if (plans.length >= 2) {
+            p1Total += plans[0].weeklyPct || 0;
+            p2Total += plans[1].weeklyPct || 0;
+          } else {
+            p1Total += Math.min(currentVal, 100);
+            p2Total += Math.max(currentVal - 100, 0);
+          }
+
+          const numCycles = cyclePreResetValues.length + 1;
+          const denom = Math.max(4, numCycles);
+          displayWeeklyPct = ((p1Total / denom) + (p2Total / denom)) * scale;
+        } else {
+          // Single plan
+          const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentVal;
+          const numCycles = cyclePreResetValues.length + 1;
+          const denom = Math.max(4, numCycles);
+          displayWeeklyPct = (totalRaw / denom) * scale;
+        }
+      } else if (recent.length === 1) {
+        displayWeeklyPct = ((recent[0].weeklyPct || 0) / 4) * scale;
+      }
+    }
+
+    // Fallback: if no history, use current usage value / 4
+    if (displayWeeklyPct === 0 && usage) {
+      const rawWeekly = usage.combinedWeeklyPct !== undefined
+        ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0);
+      displayWeeklyPct = (rawWeekly / 4) * scale;
+    }
+
+    // Extra usage: cap at factor of 4 (no rate limits, exhausts fast)
+    // e.g., $549 spent with $200 plan cost = $549 / ($200 * 4) = 0.686x contribution
+    if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
+      const extraSpent = usage.totalExtraUsageSpent || usage.extraUsageSpent || 0;
+      displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
     }
 
     return {
