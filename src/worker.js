@@ -963,12 +963,19 @@ async function getLeaderboardData(env) {
       displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
     }
 
+    const lastUpdated = usage ? usage.timestamp : null;
+
     return {
       ...u,
       budget,
       sessionPct: displaySessionPct,
       weeklyPct: displayWeeklyPct,
-      lastUpdated: usage ? usage.timestamp : null,
+      lastUpdated,
+      isStale: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 24 * 60 * 60 * 1000,
+      isInactive: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 72 * 60 * 60 * 1000,
+      valueExtracted: Math.round((displayWeeklyPct / 100) * budget),
+      planCost: budget,
+      roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
       source: usage ? usage.source : null,
       sessionSparkline,
       weeklySparkline,
