@@ -44,15 +44,23 @@ async function scrapeAndSync() {
   }
   if (!name) return; // Can't identify user, skip silently
 
-  // Scrape percentages
+  // Scrape percentages — anchored to section headings, with positional fallback
   const bodyText = document.body.innerText;
+
+  // Anchored extraction: find % near known section headings
+  const sessionMatch = bodyText.match(/(?:current\s+)?session[\s\S]{0,200}?(\d{1,3})%\s*used/i);
+  const weeklyMatch = bodyText.match(/weekly[\s\S]{0,200}?(\d{1,3})%\s*used/i);
+  const extraMatch = bodyText.match(/extra\s+usage[\s\S]{0,200}?(\d{1,3})%\s*used/i);
+
+  // Positional fallback: collect all "X% used" by order of appearance
   const re = /(\d{1,3})%\s*used/g;
   const all = [];
   let m;
   while ((m = re.exec(bodyText)) !== null) all.push(parseInt(m[1]));
 
-  let sessionPct = all.length >= 1 ? all[0] : null;
-  let weeklyPct = all.length >= 2 ? all[1] : null;
+  // Prefer anchored match, fall back to positional
+  let sessionPct = sessionMatch ? parseInt(sessionMatch[1]) : (all.length >= 1 ? all[0] : null);
+  let weeklyPct = weeklyMatch ? parseInt(weeklyMatch[1]) : (all.length >= 2 ? all[1] : null);
   if (sessionPct === null && weeklyPct === null) return;
 
   // Scrape reset timers — use section-specific text to avoid matching Sonnet's timer
@@ -105,8 +113,9 @@ async function scrapeAndSync() {
   if (spentMatch) extraUsageSpent = parseFloat(spentMatch[1]);
   const limitMatch = bodyText.match(/\$(\d+(?:,\d{3})*)\s*\n?\s*Monthly spend limit/i);
   if (limitMatch) extraUsageLimit = parseFloat(limitMatch[1].replace(/,/g, ''));
-  // Extra usage % is the 4th "X% used" (after session, weekly, sonnet)
-  if (spentMatch && all.length >= 4) extraUsagePct = all[3];
+  // Extra usage %: prefer anchored match, fall back to 4th positional
+  if (extraMatch) extraUsagePct = parseInt(extraMatch[1]);
+  else if (spentMatch && all.length >= 4) extraUsagePct = all[3];
 
   // Detect plan type (Max 5x, Max 20x, Pro, Free, etc.)
   let planType = null;
@@ -119,9 +128,9 @@ async function scrapeAndSync() {
     planType = 'free';
   }
 
-  // Get saved team preference (default to NY)
+  // Get saved team preference (default to NC)
   const stored = await chrome.storage.local.get(['claude_lb_team']);
-  const team = stored.claude_lb_team || 'NY';
+  const team = stored.claude_lb_team || 'NC';
 
   // Don't sync if we just synced the same values recently (avoid spam)
   const cacheKey = `${name}_${sessionPct}_${weeklyPct}`;
