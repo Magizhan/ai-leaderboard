@@ -877,18 +877,72 @@ async function getLeaderboardData(env) {
       rawSessionPct = 0;
     }
 
-    // Display = combined values directly from usage record
-    // Known-good approach from commit f6534c0 — no /4, no scale, no cycle detection
-    // Frontend handles plan normalization (max5 /4) and multiplier formatting
-    // Extra usage shown as a separate tag, not baked into percentage
+    // Session display = raw combined value (frontend handles planNormFactor)
     let displaySessionPct = rawSessionPct;
-    let displayWeeklyPct = usage
-      ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
-      : 0;
 
-    // Auto-reset: if weekly timer expired, show 0
-    if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
-      displayWeeklyPct = 0;
+    // Monthly display = sum of weekly peaks from history / 4
+    // Algorithm:
+    //   1. Scan history for weekly resets (weeklyPct drops >70% from previous)
+    //   2. Capture peak weeklyPct before each reset
+    //   3. Current week's value = latest history entry (or live combinedWeeklyPct)
+    //   4. Monthly = sum(peaks + current) / 4
+    //   5. Extra usage added on top: (extraSpent / (planCost * 4)) * 100
+    let displayWeeklyPct = 0;
+
+    const cutoffMs = nowMs - 28 * 86400000;
+
+    if (history.length >= 2) {
+      const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
+
+      if (recent.length >= 2) {
+        // Detect weekly resets and capture pre-reset peaks
+        const cyclePreResetValues = [];
+        let runningPeak = recent[0].weeklyPct || 0;
+
+        for (let i = 1; i < recent.length; i++) {
+          const curW = recent[i].weeklyPct || 0;
+          if (runningPeak > 20 && curW < runningPeak * 0.3) {
+            // Reset detected — save the peak before reset
+            cyclePreResetValues.push(runningPeak);
+            runningPeak = curW;
+          } else {
+            runningPeak = Math.max(runningPeak, curW);
+          }
+        }
+
+        // Current week = running peak (highest value since last reset)
+        // But also check live usage in case it's higher than last history entry
+        const liveWeekly = usage
+          ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
+          : 0;
+        // Auto-reset check: if weekly timer expired, current week is 0
+        const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
+        const currentWeekValue = weeklyExpired ? 0 : Math.max(runningPeak, liveWeekly);
+
+        const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentWeekValue;
+        displayWeeklyPct = totalRaw / 4;
+      } else if (recent.length === 1) {
+        const liveWeekly = usage
+          ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || 0))
+          : 0;
+        const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
+        displayWeeklyPct = (weeklyExpired ? 0 : Math.max(recent[0].weeklyPct || 0, liveWeekly)) / 4;
+      }
+    } else {
+      // No history or only 1 entry — use live combined value / 4
+      const liveWeekly = usage
+        ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
+        : 0;
+      const weeklyExpired = usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs;
+      displayWeeklyPct = (weeklyExpired ? 0 : liveWeekly) / 4;
+    }
+
+    // Extra usage contribution: (extraSpent / (planCost * 4)) * 100
+    // e.g., $549 spent with $200 plan = $549 / $800 * 100 = 68.6%
+    if (usage && (usage.totalExtraUsageSpent || usage.extraUsageSpent)) {
+      const extraSpent = usage.totalExtraUsageSpent || usage.extraUsageSpent || 0;
+      const perPlanCost = planTypeCost(activePlanType);
+      displayWeeklyPct += (extraSpent / (perPlanCost * 4)) * 100;
     }
 
     return {
