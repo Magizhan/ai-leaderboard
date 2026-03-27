@@ -730,6 +730,21 @@ async function logUsage(body, env) {
     });
   }
 
+  // --- Streak tracking ---
+  const streakData = usage.streak || { count: 0, lastActiveDate: null };
+  const today = new Date(nowMs).toISOString().slice(0, 10); // YYYY-MM-DD
+  if (combinedWeeklyPct >= 20 && today !== streakData.lastActiveDate) {
+    const yesterday = new Date(nowMs - 86400000).toISOString().slice(0, 10);
+    if (streakData.lastActiveDate === yesterday) {
+      streakData.count += 1;
+    } else if (!streakData.lastActiveDate) {
+      streakData.count = 1;
+    } else {
+      streakData.count = 1; // streak broken, restart
+    }
+    streakData.lastActiveDate = today;
+  }
+
   if (history.length > MAX_HISTORY) {
     // Downsample: keep all entries from last 24h, 1 per hour for older entries
     const oneDayAgo = Date.now() - 24 * 3600000;
@@ -769,6 +784,7 @@ async function logUsage(body, env) {
     extraUsageLimit: plan.extraUsageLimit || null,
     extraUsagePct: plan.extraUsagePct || null,
     extensionVersion: extensionVersion || existing.extensionVersion || null,
+    streak: streakData,
   };
 
   // Update weekly aggregation
@@ -1030,6 +1046,7 @@ async function getLeaderboardData(env) {
       planType: activePlanType,
       extensionVersion: usage ? (usage.extensionVersion || null) : null,
       plans: usage ? (usage.plans || null) : null,
+      streak: usage ? (usage.streak || { count: 0 }).count : 0,
     };
   }));
 
