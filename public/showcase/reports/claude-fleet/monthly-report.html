@@ -60,6 +60,10 @@
   .msg-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 20px; font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.85); margin-bottom: 12px; }
   .msg-name { font-weight: 700; color: var(--ny-green); margin-bottom: 4px; font-size: 15px; }
   .scroll-col { overflow-y: auto; max-height: calc(100vh - 180px); padding-right: 8px; }
+  .waste-bar { height: 40px; border-radius: 8px; overflow: hidden; display: flex; margin: 8px 0; }
+  .waste-used { background: var(--ny-green); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .waste-lost { background: var(--ny-red); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .waste-unused { background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
 </style>
 </head>
 <body>
@@ -70,199 +74,254 @@
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
     <p style="font-size:14px;text-transform:uppercase;letter-spacing:3px;color:var(--ny-green);margin-bottom:16px;">Claude Usage Leaderboard</p>
     <h1>Monthly Performance Report</h1>
-    <p class="subtitle">March 15 — March 27, 2026 &nbsp;|&nbsp; 38 Active Users &nbsp;|&nbsp; 5 Teams</p>
-    <div class="grid-5" style="margin-top:48px;width:100%;max-width:900px;">
-      <div class="stat"><div class="stat-value green" style="font-size:36px;">38</div><div class="stat-label">Users</div></div>
-      <div class="stat"><div class="stat-value orange" style="font-size:36px;">~27%</div><div class="stat-label">Avg Peak</div></div>
-      <div class="stat"><div class="stat-value red" style="font-size:36px;">3</div><div class="stat-label">Ghost Users</div></div>
-      <div class="stat"><div class="stat-value cyan" style="font-size:36px;">5</div><div class="stat-label">Hit 80%+</div></div>
-      <div class="stat"><div class="stat-value purple" style="font-size:36px;">$7,600</div><div class="stat-label">Weekly Budget</div></div>
+    <p class="subtitle">March 15 — March 27, 2026 &nbsp;|&nbsp; 39 Users &nbsp;|&nbsp; 5 Teams</p>
+    <div class="grid-5" style="margin-top:48px;width:100%;max-width:1000px;">
+      <div class="stat"><div class="stat-value green" style="font-size:36px;">39</div><div class="stat-label">Users</div></div>
+      <div class="stat"><div class="stat-value cyan" style="font-size:36px;">$1,125</div><div class="stat-label">Utilized</div></div>
+      <div class="stat"><div class="stat-value red" style="font-size:36px;">$7,100</div><div class="stat-label">Total Budget</div></div>
+      <div class="stat"><div class="stat-value orange" style="font-size:36px;">15.8%</div><div class="stat-label">Fleet ROI</div></div>
+      <div class="stat"><div class="stat-value purple" style="font-size:36px;">8</div><div class="stat-label">Ghost/Zero</div></div>
     </div>
+    <p style="margin-top:32px;font-size:18px;color:rgba(255,255,255,0.5);">$5,975 of $7,100 budget sitting idle every month</p>
   </div>
 </div>
 
-<!-- Slide 2: Team Overview -->
+<!-- Slide 2: Financials -->
 <div class="slide">
-  <h2>Team Performance</h2>
-  <div class="grid-5" style="margin-bottom:32px;">
-    <div class="card stat"><div class="stat-value green" style="font-size:32px;">HS</div><div class="stat-label">~38% avg</div></div>
-    <div class="card stat"><div class="stat-value cyan" style="font-size:32px;">Xyne</div><div class="stat-label">~32% avg</div></div>
-    <div class="card stat"><div class="stat-value blue" style="font-size:32px;">NY</div><div class="stat-label">~25% avg</div></div>
-    <div class="card stat"><div class="stat-value orange" style="font-size:32px;">JP</div><div class="stat-label">~17% avg</div></div>
-    <div class="card stat"><div class="stat-value purple" style="font-size:32px;">NC</div><div class="stat-label">15% avg</div></div>
-  </div>
-  <div class="bar-chart" style="flex:1;">
-    <div class="bar-row"><div class="bar-label">HS (3 users)</div><div class="bar-track"><div class="bar-fill bar-green" style="width:38%;">38%</div></div></div>
-    <div class="bar-row"><div class="bar-label">Xyne (4 users)</div><div class="bar-track"><div class="bar-fill bar-green" style="width:32%;">32%</div></div></div>
-    <div class="bar-row"><div class="bar-label">NY (18 users)</div><div class="bar-track"><div class="bar-fill bar-blue" style="width:25%;">25%</div></div></div>
-    <div class="bar-row"><div class="bar-label">JP (9 users)</div><div class="bar-track"><div class="bar-fill bar-orange" style="width:17%;">17%</div></div></div>
-    <div class="bar-row"><div class="bar-label">NC (1 user)</div><div class="bar-track"><div class="bar-fill bar-purple" style="width:15%;">15%</div></div></div>
-  </div>
-  <p style="margin-top:20px;font-size:14px;color:rgba(255,255,255,0.4);">Target: 80%+ for all teams. No team is there yet.</p>
-</div>
-
-<!-- Slide 3: Top Performers -->
-<div class="slide">
-  <h2>Stars <span class="tier-badge tier-star">Peak 80%+</span></h2>
-  <p style="margin-bottom:24px;">These 5 users are leading the way. They've proven Claude can be maxed out.</p>
-  <table>
-    <thead><tr><th>#</th><th>Name</th><th>Team</th><th>Peak Monthly</th><th>Avg Peak</th><th>Active Since</th><th>Highlight</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td style="color:var(--ny-green);font-weight:700;">Mags</td><td>NY</td><td style="color:var(--ny-green);">166%</td><td>122%</td><td>Mar 15</td><td>2 plans, both maxed. The benchmark.</td></tr>
-      <tr><td>2</td><td style="color:var(--ny-green);font-weight:700;">saheb</td><td>Xyne</td><td style="color:var(--ny-green);">99%</td><td>98%</td><td>Mar 24</td><td>Near-perfect utilization every week</td></tr>
-      <tr><td>3</td><td style="color:var(--ny-green);font-weight:700;">piyush</td><td>NY</td><td style="color:var(--ny-green);">94%</td><td>53%</td><td>Mar 15</td><td>Hit 94% in best week</td></tr>
-      <tr><td>4</td><td style="color:var(--ny-green);font-weight:700;">Shiva Nandan</td><td>HS</td><td style="color:var(--ny-green);">93%</td><td>81%</td><td>Mar 24</td><td>HS team leader, very consistent</td></tr>
-      <tr><td>5</td><td style="color:var(--ny-green);font-weight:700;">Vijay</td><td>NY</td><td style="color:var(--ny-green);">89%</td><td>88%</td><td>Mar 16</td><td>Strong sustained usage</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- Slide 4: Good Start -->
-<div class="slide">
-  <h2>Good Start <span class="tier-badge tier-good">Peak 30-80%</span></h2>
-  <p style="margin-bottom:20px;">11 users who've shown they can use Claude but aren't maxing out.</p>
-  <table style="font-size:13px;">
-    <thead><tr><th>Name</th><th>Team</th><th>Peak</th><th>Avg</th><th>Key Insight</th></tr></thead>
-    <tbody>
-      <tr><td>Shan MS</td><td>NY</td><td class="green">96%</td><td>40%</td><td>Hit 96% once but current week at 5% — inconsistent</td></tr>
-      <tr><td>PARTH VORA</td><td>JP</td><td class="blue">57%</td><td>21%</td><td>90% session peaks — uses it hard in bursts</td></tr>
-      <tr><td>Shailesh Gahlawat</td><td>NY</td><td class="blue">60%</td><td>44%</td><td>Started at 60%, declining — needs re-engagement</td></tr>
-      <tr><td>Vignesh</td><td>NY</td><td class="blue">53%</td><td>27%</td><td>No data since Mar 22 — extension may be broken</td></tr>
-      <tr><td>Sidharth Sethu</td><td>NY</td><td class="blue">48%</td><td>47%</td><td>Consistent but leaving half unused</td></tr>
-      <tr><td>Malav Shah</td><td>JP</td><td class="blue">48%</td><td>45%</td><td>JP team leader — 100% session peaks</td></tr>
-      <tr><td>Srid</td><td>JP</td><td class="blue">49%</td><td>37%</td><td>Improving week-over-week. Good trajectory</td></tr>
-      <tr><td>HS Control Center</td><td>HS</td><td class="blue">32%</td><td>31%</td><td>Shared account — just started Mar 26</td></tr>
-      <tr><td>Parthi</td><td>JP</td><td class="blue">32%</td><td>32%</td><td>No data since Mar 18 — 9 days dark</td></tr>
-      <tr><td>Yash</td><td>Xyne</td><td class="blue">32%</td><td>17%</td><td>16x growth from week 1 to week 2</td></tr>
-      <tr><td>Khuzema</td><td>NY</td><td class="blue">32%</td><td>22%</td><td>Steady upward trend 7% → 27% → 32%</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- Slide 5: Needs Improvement -->
-<div class="slide">
-  <h2>Needs Improvement <span class="tier-badge tier-low">Peak 10-30%</span></h2>
-  <p style="margin-bottom:20px;">11 users with significant unused capacity.</p>
-  <table style="font-size:13px;">
-    <thead><tr><th>Name</th><th>Team</th><th>Peak</th><th>Issue</th></tr></thead>
-    <tbody>
-      <tr><td>Arjun</td><td>NY</td><td class="orange">24%</td><td>Consistent syncing but very light usage</td></tr>
-      <tr><td>Ujjwal</td><td>JP</td><td class="orange">24%</td><td>100% session peaks but low weekly — burst-only</td></tr>
-      <tr><td>Akhilesh</td><td>NY</td><td class="orange">34%</td><td>4 weeks of data, flat at 12-19% avg</td></tr>
-      <tr><td>Dayanidhi</td><td>NY</td><td class="orange">23%</td><td>Max 5x plan, declining from 15% to 10%</td></tr>
-      <tr><td>Ishan Sharma</td><td>NC</td><td class="orange">15%</td><td>Only 1 manual data point</td></tr>
-      <tr><td>RITIKA</td><td>NY</td><td class="orange">20%</td><td>Dropping — current week at 2%</td></tr>
-      <tr><td>Arun Raj</td><td>HS</td><td class="orange">21%</td><td>Dropped from 21% to 3% — big gap vs Shiva (93%)</td></tr>
-      <tr><td>JP</td><td>JP</td><td class="orange">12%</td><td>Only 1 data point (Mar 16) — likely inactive</td></tr>
-      <tr><td>JusCoder</td><td>NY</td><td class="orange">12%</td><td>Just started, 2 data points</td></tr>
-      <tr><td>Hemant Mangla</td><td>NY</td><td class="orange">14%</td><td>Extension works but barely uses Claude</td></tr>
-      <tr><td>George</td><td>JP</td><td class="orange">10%</td><td>No data since Mar 20 — 7 days dark</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- Slide 6: Critical + Ghost -->
-<div class="slide">
-  <h2>Critical <span class="tier-badge tier-critical">Peak &lt;10%</span> &nbsp; Ghost <span class="tier-badge tier-ghost">No Data</span></h2>
+  <h2>Financials <span style="font-size:16px;color:rgba(255,255,255,0.4);font-weight:400;">— Where the money goes</span></h2>
   <div class="grid-2">
     <div>
-      <h3 style="color:var(--ny-red);">Critical (Peak &lt;10%)</h3>
-      <table style="font-size:13px;">
-        <thead><tr><th>Name</th><th>Team</th><th>Peak</th><th>Last Sync</th></tr></thead>
-        <tbody>
-          <tr><td>sheetal</td><td>JP</td><td class="red">9%</td><td>Mar 22</td></tr>
-          <tr><td>Venky</td><td>Xyne</td><td class="red">8%</td><td>Mar 20</td></tr>
-          <tr><td>Siva Prasad</td><td>NY</td><td class="red">8%</td><td>Mar 25</td></tr>
-          <tr><td>Arun KS</td><td>JP</td><td class="red">8%</td><td>Mar 26</td></tr>
-          <tr><td>Adam Dhayfa Umar</td><td>NY</td><td class="red">7%</td><td>Mar 27</td></tr>
-          <tr><td>Natarajan Kannan</td><td>NY</td><td class="red">7%</td><td>Mar 27</td></tr>
-          <tr><td>Prithvi Raj</td><td>NY</td><td class="red">12%</td><td>Mar 27</td></tr>
-          <tr><td>Vimal</td><td>JP</td><td class="red">8%</td><td>Mar 25</td></tr>
-          <tr><td>Harsharanga</td><td>Xyne</td><td class="red">4%</td><td>Mar 20</td></tr>
-          <tr><td>Vicky</td><td>NY</td><td class="red">4%</td><td>Mar 24</td></tr>
-        </tbody>
-      </table>
+      <div class="card" style="margin-bottom:20px;border-color:var(--ny-red);">
+        <h3 style="color:var(--ny-red);font-size:16px;">Budget Utilization</h3>
+        <div class="waste-bar">
+          <div class="waste-used" style="width:15.8%;">$1,125</div>
+          <div class="waste-unused" style="width:84.2%;">$5,975 unused</div>
+        </div>
+        <p style="font-size:13px;margin-top:8px;">Only <strong style="color:var(--ny-red);">15.8%</strong> of the $7,100 monthly budget is being utilized. <strong>$5,975/mo wasted.</strong></p>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:16px;">Team Budget vs Utilized</h3>
+        <table style="font-size:13px;">
+          <thead><tr><th>Team</th><th>Budget</th><th>Utilized</th><th>ROI</th><th>Waste</th></tr></thead>
+          <tbody>
+            <tr><td>NY (17)</td><td>$3,400</td><td>~$843</td><td class="orange">24.8%</td><td class="red">$2,557</td></tr>
+            <tr><td>JP (12)</td><td>$1,900</td><td>~$96</td><td class="red">5.1%</td><td class="red">$1,804</td></tr>
+            <tr><td>Xyne (4)</td><td>$600</td><td>~$70</td><td class="orange">11.7%</td><td class="red">$530</td></tr>
+            <tr><td>HS (4)</td><td>$700</td><td>~$57</td><td class="red">8.1%</td><td class="red">$643</td></tr>
+            <tr><td>NC (2)</td><td>$400</td><td>~$12</td><td class="red">3.0%</td><td class="red">$388</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div>
-      <h3 style="color:rgba(255,255,255,0.4);">Ghost Users (Zero Data)</h3>
-      <table style="font-size:13px;">
-        <thead><tr><th>Name</th><th>Team</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>Sidharth</td><td>NY</td><td style="color:var(--ny-red);">Never synced</td></tr>
-          <tr><td>Akash</td><td>JP</td><td style="color:var(--ny-red);">Never synced</td></tr>
-          <tr><td>Adam</td><td>NY</td><td style="color:var(--ny-red);">Never synced</td></tr>
-        </tbody>
-      </table>
-      <div class="card" style="margin-top:24px;border-color:var(--ny-red);">
-        <h3 style="color:var(--ny-red);">Action Required</h3>
-        <p style="font-size:14px;">These 13 users represent ~$2,600/week in unused Claude capacity. Each needs a direct conversation to unblock them.</p>
+      <div class="card" style="margin-bottom:20px;border-color:var(--ny-green);">
+        <h3 style="font-size:16px;">Top 5 ROI</h3>
+        <table style="font-size:13px;">
+          <thead><tr><th>Name</th><th>Budget</th><th>Utilized</th><th>ROI</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--ny-green);font-weight:700;">Mags</td><td>$400</td><td>$455</td><td class="green">1.14x</td></tr>
+            <tr><td>piyush</td><td>$200</td><td>$73</td><td class="green">0.37x</td></tr>
+            <tr><td>Vijay</td><td>$200</td><td>$64</td><td class="green">0.32x</td></tr>
+            <tr><td>Shan MS</td><td>$200</td><td>$56</td><td class="green">0.28x</td></tr>
+            <tr><td>saheb</td><td>$200</td><td>$50</td><td class="green">0.25x</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="border-color:var(--ny-red);">
+        <h3 style="color:var(--ny-red);font-size:16px;">Bottom 5 ROI (active users)</h3>
+        <table style="font-size:13px;">
+          <thead><tr><th>Name</th><th>Budget</th><th>Utilized</th><th>ROI</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--ny-red);">Adam Dhayfa Umar</td><td>$200</td><td>$4</td><td class="red">0.02x</td></tr>
+            <tr><td style="color:var(--ny-red);">Natarajan Kannan</td><td>$200</td><td>$4</td><td class="red">0.02x</td></tr>
+            <tr><td style="color:var(--ny-red);">Vimal</td><td>$200</td><td>$4</td><td class="red">0.02x</td></tr>
+            <tr><td style="color:var(--ny-red);">Harsharanga</td><td>$100</td><td>$1</td><td class="red">0.01x</td></tr>
+            <tr><td style="color:var(--ny-red);">Prithvi Raj</td><td>$200</td><td>$6</td><td class="red">0.03x</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Slide 7: Individual Messages (Stars + Good Start) -->
+<!-- Slide 3: Team Performance -->
+<div class="slide">
+  <h2>Team Performance</h2>
+  <div class="grid-5" style="margin-bottom:32px;">
+    <div class="card stat"><div class="stat-value green" style="font-size:32px;">NY</div><div class="stat-label">21.5% avg</div></div>
+    <div class="card stat"><div class="stat-value cyan" style="font-size:32px;">Xyne</div><div class="stat-label">13.5% avg</div></div>
+    <div class="card stat"><div class="stat-value blue" style="font-size:32px;">JP</div><div class="stat-label">8.1% avg</div></div>
+    <div class="card stat"><div class="stat-value orange" style="font-size:32px;">HS</div><div class="stat-label">7.8% avg</div></div>
+    <div class="card stat"><div class="stat-value purple" style="font-size:32px;">NC</div><div class="stat-label">2% avg</div></div>
+  </div>
+  <div class="bar-chart" style="flex:1;">
+    <div class="bar-row"><div class="bar-label">NY (17 users, 15 active)</div><div class="bar-track"><div class="bar-fill bar-green" style="width:21.5%;">21.5%</div></div></div>
+    <div class="bar-row"><div class="bar-label">Xyne (4 users, 3 active)</div><div class="bar-track"><div class="bar-fill bar-blue" style="width:13.5%;">13.5%</div></div></div>
+    <div class="bar-row"><div class="bar-label">JP (12 users, 8 active)</div><div class="bar-track"><div class="bar-fill bar-orange" style="width:8.1%;">8.1%</div></div></div>
+    <div class="bar-row"><div class="bar-label">HS (4 users, 4 active)</div><div class="bar-track"><div class="bar-fill bar-orange" style="width:7.8%;">7.8%</div></div></div>
+    <div class="bar-row"><div class="bar-label">NC (2 users, 1 active)</div><div class="bar-track"><div class="bar-fill bar-red" style="width:5%;">2%</div></div></div>
+  </div>
+  <p style="margin-top:20px;font-size:14px;color:rgba(255,255,255,0.4);">Target: 80%+ for all teams. No team is there yet. NY leads at 21.5% avg weekly.</p>
+</div>
+
+<!-- Slide 4: Stars (>20%) -->
+<div class="slide">
+  <h2>Stars <span class="tier-badge tier-star">Weekly &gt; 20%</span></h2>
+  <p style="margin-bottom:24px;">8 users consistently using Claude above 20% weekly utilization.</p>
+  <table>
+    <thead><tr><th>#</th><th>Name</th><th>Team</th><th>Weekly %</th><th>Budget</th><th>Utilized</th><th>ROI</th><th>Lost</th><th>Highlight</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td style="color:var(--ny-green);font-weight:700;">Mags</td><td>NY</td><td style="color:var(--ny-green);">113.6%</td><td>$400</td><td>$455</td><td class="green">1.14x</td><td>4.3%</td><td>2 plans, $549 extra usage. The benchmark.</td></tr>
+      <tr><td>2</td><td style="color:var(--ny-green);font-weight:700;">piyush</td><td>NY</td><td style="color:var(--ny-green);">36.5%</td><td>$200</td><td>$73</td><td class="green">0.37x</td><td>1.5%</td><td>Consistent top performer</td></tr>
+      <tr><td>3</td><td style="color:var(--ny-green);font-weight:700;">Vijay</td><td>NY</td><td style="color:var(--ny-green);">32%</td><td>$200</td><td>$64</td><td class="green">0.32x</td><td>2.7%</td><td>Strong sustained usage</td></tr>
+      <tr><td>4</td><td style="color:var(--ny-green);font-weight:700;">Shan MS</td><td>NY</td><td style="color:var(--ny-green);">27.75%</td><td>$200</td><td>$56</td><td class="green">0.28x</td><td>1%</td><td>Low waste, solid performer</td></tr>
+      <tr><td>5</td><td style="color:var(--ny-green);font-weight:700;">saheb</td><td>Xyne</td><td style="color:var(--ny-green);">25%</td><td>$200</td><td>$50</td><td class="green">0.25x</td><td>0%</td><td>Current week 97% — surging</td></tr>
+      <tr><td>6</td><td style="color:var(--ny-green);font-weight:700;">Shiva Nandan</td><td>HS</td><td style="color:var(--ny-green);">23.25%</td><td>$200</td><td>$47</td><td class="green">0.23x</td><td>0%</td><td>Current week 93% — HS team leader</td></tr>
+      <tr><td>7</td><td style="color:var(--ny-green);font-weight:700;">Sidharth Sethu</td><td>NY</td><td style="color:var(--ny-green);">20.5%</td><td>$200</td><td>$41</td><td>0.21x</td><td class="red">32.8%</td><td>High lost % — needs consistency</td></tr>
+      <tr><td>8</td><td style="color:var(--ny-green);font-weight:700;">Shailesh Gahlawat</td><td>NY</td><td style="color:var(--ny-green);">20.25%</td><td>$200</td><td>$41</td><td>0.20x</td><td class="orange">10%</td><td>Steady but could push higher</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Slide 5: Good Start (10-20%) -->
+<div class="slide">
+  <h2>Good Start <span class="tier-badge tier-good">Weekly 10-20%</span></h2>
+  <p style="margin-bottom:20px;">8 users showing traction but leaving most of their budget unused.</p>
+  <table style="font-size:13px;">
+    <thead><tr><th>Name</th><th>Team</th><th>Weekly %</th><th>Budget</th><th>Utilized</th><th>ROI</th><th>Lost</th><th>Key Insight</th></tr></thead>
+    <tbody>
+      <tr><td>Malav Shah</td><td>JP</td><td class="blue">18.75%</td><td>$100</td><td>$19</td><td>0.19x</td><td class="orange">13%</td><td>JP team leader</td></tr>
+      <tr><td>Vignesh</td><td>NY</td><td class="blue">17.75%</td><td>$200</td><td>$36</td><td>0.18x</td><td class="orange">11.8%</td><td>Stale since Mar 22 — extension broken?</td></tr>
+      <tr><td>Srid</td><td>JP</td><td class="blue">17%</td><td>$100</td><td>$17</td><td>0.17x</td><td class="orange">12.8%</td><td>Improving trajectory</td></tr>
+      <tr><td>Khuzema</td><td>NY</td><td class="blue">16%</td><td>$200</td><td>$32</td><td>0.16x</td><td class="red">34.8%</td><td>Highest lost % in tier — very inconsistent</td></tr>
+      <tr><td>PARTH VORA</td><td>JP</td><td class="blue">16%</td><td>$200</td><td>$32</td><td>0.16x</td><td class="orange">10.8%</td><td>Burst usage pattern</td></tr>
+      <tr><td>Yash</td><td>Xyne</td><td class="blue">12.25%</td><td>$100</td><td>$12</td><td>0.12x</td><td class="orange">17%</td><td>Good growth from week 1</td></tr>
+      <tr><td>Akhilesh</td><td>NY</td><td class="blue">12.25%</td><td>$200</td><td>$25</td><td>0.12x</td><td class="orange">16.5%</td><td>Flat usage over 4 weeks</td></tr>
+      <tr><td>GRACE 10x</td><td>NY</td><td class="blue">10.75%</td><td>$200</td><td>$22</td><td>0.11x</td><td>0%</td><td>Current week 43% — accelerating</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Slide 6: Needs Improvement (1-10%) -->
+<div class="slide">
+  <h2>Needs Improvement <span class="tier-badge tier-low">Weekly 1-10%</span></h2>
+  <p style="margin-bottom:20px;">15 users with significant unused capacity. Combined budget: ~$2,800/mo.</p>
+  <table style="font-size:12px;">
+    <thead><tr><th>Name</th><th>Team</th><th>Weekly %</th><th>Budget</th><th>Utilized</th><th>ROI</th><th>Lost</th><th>Issue</th></tr></thead>
+    <tbody>
+      <tr><td>Dayanidhi</td><td>NY</td><td class="orange">8.75%</td><td>$100</td><td>$9</td><td>0.09x</td><td class="orange">19.3%</td><td>Declining from peak</td></tr>
+      <tr><td>Arjun</td><td>NY</td><td class="orange">8%</td><td>$200</td><td>$16</td><td>0.08x</td><td class="orange">19%</td><td>Syncing but barely using</td></tr>
+      <tr><td>Ujjwal</td><td>JP</td><td class="orange">7%</td><td>$100</td><td>$7</td><td>0.07x</td><td class="orange">18.5%</td><td>Burst-only pattern</td></tr>
+      <tr><td>Hemant Mangla</td><td>NY</td><td class="orange">6%</td><td>$200</td><td>$12</td><td>0.06x</td><td>0%</td><td>Extension works, barely uses Claude</td></tr>
+      <tr><td>Arun Raj</td><td>HS</td><td class="orange">6.25%</td><td>$100</td><td>$6</td><td>0.06x</td><td class="orange">19.8%</td><td>Teammate Shiva at 93% — huge gap</td></tr>
+      <tr><td>RITIKA</td><td>NY</td><td class="orange">5%</td><td>$200</td><td>$10</td><td>0.05x</td><td>0%</td><td>Dropping week over week</td></tr>
+      <tr><td>Ishan Sharma</td><td>NC</td><td class="orange">3.75%</td><td>$200</td><td>$8</td><td>0.04x</td><td>0%</td><td>Minimal data points</td></tr>
+      <tr><td>Venky</td><td>Xyne</td><td class="orange">3.25%</td><td>$200</td><td>$7</td><td>0.03x</td><td>0%</td><td>Current week 13% — improving</td></tr>
+      <tr><td>JusCoder</td><td>JP</td><td class="orange">3%</td><td>$100</td><td>$3</td><td>0.03x</td><td>0%</td><td>Just started</td></tr>
+      <tr><td>Siva Prasad</td><td>JP</td><td class="orange">3.13%</td><td>$200</td><td>$6</td><td>0.03x</td><td>0%</td><td>Very light usage</td></tr>
+      <tr><td>Prithvi Raj</td><td>NY</td><td class="orange">3%</td><td>$200</td><td>$6</td><td>0.03x</td><td>0%</td><td>No growth over 3 weeks</td></tr>
+      <tr><td>Vimal</td><td>NC</td><td class="orange">2%</td><td>$200</td><td>$4</td><td>0.02x</td><td>0%</td><td>Barely active</td></tr>
+      <tr><td>Adam Dhayfa Umar</td><td>NY</td><td class="orange">1.75%</td><td>$200</td><td>$4</td><td>0.02x</td><td>0%</td><td>Very low engagement</td></tr>
+      <tr><td>Natarajan Kannan</td><td>HS</td><td class="orange">1.75%</td><td>$200</td><td>$4</td><td>0.02x</td><td>0%</td><td>HS weakest link</td></tr>
+      <tr><td>Harsharanga</td><td>Xyne</td><td class="red">0.875%</td><td>$100</td><td>$1</td><td>0.01x</td><td>0%</td><td>Stale since Mar 20</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Slide 7: Critical / Ghost -->
+<div class="slide">
+  <h2>Critical <span class="tier-badge tier-critical">0% / Expired</span> &nbsp; Ghost <span class="tier-badge tier-ghost">Never Synced</span></h2>
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--ny-red);">Zero / Expired Weekly (8 users)</h3>
+      <table style="font-size:13px;">
+        <thead><tr><th>Name</th><th>Team</th><th>Budget</th><th>Last Sync</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>sheetal</td><td>JP</td><td>$100</td><td>Mar 22</td><td class="red">Stale 5 days</td></tr>
+          <tr><td>Parthi</td><td>JP</td><td>$200</td><td>Mar 18</td><td class="red">Stale 9 days</td></tr>
+          <tr><td>JP</td><td>JP</td><td>$200</td><td>Mar 16</td><td class="red">Stale 11 days</td></tr>
+          <tr><td>Akash</td><td>JP</td><td>$200</td><td>—</td><td style="color:var(--ny-red);">Never synced</td></tr>
+          <tr><td>George</td><td>JP</td><td>$200</td><td>Mar 20</td><td class="red">Stale 7 days</td></tr>
+          <tr><td>Vicky</td><td>NY</td><td>$200</td><td>Mar 24</td><td class="red">Stale 3 days</td></tr>
+          <tr><td>Arun KS</td><td>JP</td><td>$200</td><td>Mar 26</td><td class="orange">Weekly expired</td></tr>
+          <tr><td>HS Control Center</td><td>HS</td><td>$200</td><td>—</td><td class="red">Weekly expired</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="card" style="border-color:var(--ny-red);margin-bottom:20px;">
+        <h3 style="color:var(--ny-red);font-size:18px;">$1,500/mo wasted</h3>
+        <p style="font-size:14px;">These 8 users have a combined budget of <strong>$1,500/mo</strong> with <strong>zero utilization</strong> this week. That's 21% of total fleet budget producing nothing.</p>
+      </div>
+      <div class="card" style="border-color:var(--ny-orange);">
+        <h3 style="color:var(--ny-orange);font-size:16px;">JP Team Crisis</h3>
+        <p style="font-size:14px;">5 of 8 ghost/zero users are from JP team. JP has 12 members but only averages 8.1% weekly. The team needs structural intervention — not just individual nudges.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: Individual Messages — Top -->
 <div class="slide">
   <h2>Individual Messages — Top Performers</h2>
   <div class="scroll-col">
-    <div class="msg-box"><div class="msg-name">Mags (NY, 2 plans, peak 166%)</div>You're the undisputed champion. Peak 166% across 2 plans, consistently high. Your Mar 18 week averaged 150%. The current week (Mar 25) dropped to 14% avg though — lighter week or something changed? Keep leading by example.</div>
-    <div class="msg-box"><div class="msg-name">saheb (Xyne, peak 99%)</div>99% weekly is incredible — essentially maxing out every week. This is exactly what we want. Keep this intensity up. Any tips you can share with the team on how you're using Claude so effectively?</div>
-    <div class="msg-box"><div class="msg-name">Vijay (NY, peak 89%)</div>Peak 89% is fantastic, Mar 16 week averaged 48%. But Mar 23 dropped to avg 18%. You have the capability — what happened? If you sustain 80%+ pace you'd be consistent top-3.</div>
-    <div class="msg-box"><div class="msg-name">Shiva Nandan (HS, peak 93%)</div>Peak 93%, averaging 71% in your best week. Excellent intensity. You're HS team's strongest performer. Can you hit 80%+ every single week? Would love to share your approach with the wider team.</div>
-    <div class="msg-box"><div class="msg-name">piyush (NY, peak 94%)</div>Peak 94% shows you can max out. Your Mar 16 week was great at 39% avg. Last sync was Mar 25 — make sure extension is working. You've proven the capability; now make it a habit.</div>
-    <div class="msg-box"><div class="msg-name">Shan MS (NY, peak 96%)</div>You hit 96% in one week — amazing. But current week is at 5%. Massive drop. Can you aim for consistent 50%+ every week instead of spiking and crashing?</div>
-    <div class="msg-box"><div class="msg-name">Sidharth Sethu (NY, peak 48%)</div>Peak 48% is decent but half your budget is unused even in your best week. Try using Claude for every PR, debugging session, code review. What's holding you back from doubling usage?</div>
-    <div class="msg-box"><div class="msg-name">Malav Shah (JP, peak 48%)</div>Peak 48%, JP team's top performer. But Mar 23 week dropped to 16% avg. You have 100% session peaks — push to make weekly match your session intensity.</div>
-    <div class="msg-box"><div class="msg-name">Srid (JP, peak 49%)</div>Peak 49% and improving (13% → 26% week-over-week). Great trajectory. Push past 50% — you're close to being a top performer.</div>
-    <div class="msg-box"><div class="msg-name">Khuzema (NY, peak 32%)</div>Steady improvement 7% → 27% → 32%. The upward trend is encouraging. Target 50% next week, then 80%. What's working well for you?</div>
-    <div class="msg-box"><div class="msg-name">Yash (Xyne, peak 32%)</div>Nice improvement from 2% to 32% — 16x growth in one week. Whatever you did, keep doing it. Push past 50% next.</div>
+    <div class="msg-box"><div class="msg-name">Mags (NY, 113.6%, ROI 1.14x, 2 plans)</div>You're the only user generating positive ROI — $455 utilized on a $400 budget, plus $549 in extra usage. You've proven the model works. Current week lighter at 14% — push back to 100%+ and keep mentoring others.</div>
+    <div class="msg-box"><div class="msg-name">piyush (NY, 36.5%, ROI 0.37x)</div>Second highest utilization. $73 of $200 used, only 1.5% lost. Very efficient. Push toward 60%+ weekly — you have the habits, just need more volume.</div>
+    <div class="msg-box"><div class="msg-name">Vijay (NY, 32%, ROI 0.32x)</div>$64 utilized, low waste at 2.7%. Strong and consistent. Target 50% next week — you're leaving $136/mo on the table.</div>
+    <div class="msg-box"><div class="msg-name">Shan MS (NY, 27.75%, ROI 0.28x)</div>Solid performer with only 1% lost. Very disciplined usage. But $144/mo unused — try using Claude for every code review, doc, and debug session.</div>
+    <div class="msg-box"><div class="msg-name">saheb (Xyne, 25%, ROI 0.25x, current week 97%)</div>Current week at 97% is incredible. If you sustain that, you'll be #2 overall. Your monthly average of 25% should skyrocket next report. Keep this intensity.</div>
+    <div class="msg-box"><div class="msg-name">Shiva Nandan (HS, 23.25%, ROI 0.23x, current week 93%)</div>Current week 93% — you're hitting your stride. Zero waste. HS team's engine. Can you help Arun Raj and Natarajan get to even 20%?</div>
+    <div class="msg-box"><div class="msg-name">Sidharth Sethu (NY, 20.5%, ROI 0.21x)</div>$41 utilized but 32.8% lost — that's the highest lost rate among stars. You're using it in bursts then letting weeks expire. More consistency would easily push you to 40%+.</div>
+    <div class="msg-box"><div class="msg-name">Shailesh Gahlawat (NY, 20.25%, ROI 0.20x)</div>$41 utilized, 10% lost. Steady but you started higher and have been declining. Reverse the trend — target 30% next week.</div>
   </div>
 </div>
 
-<!-- Slide 8: Individual Messages (Needs Improvement + Critical) -->
+<!-- Slide 9: Individual Messages — Needs Support -->
 <div class="slide">
   <h2>Individual Messages — Needs Support</h2>
   <div class="scroll-col">
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Arjun (NY, peak 24%)</div>24% peak is too low. You're syncing regularly but barely using Claude. Try making it your first stop for everything. What's your main barrier? Let's find a way to 3x your usage.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Ujjwal (JP, peak 24%)</div>Session peaks of 100% but weekly stays low — intense bursts then stop. Try spreading usage across more days. You have Max 5x — push to use all of it.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Akhilesh (NY, peak 34%)</div>4 weeks of data but usage is flat at 12-19%. You should be at 2-3x your current level. What tasks are you NOT using Claude for that you could be?</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Dayanidhi (NY, peak 23%)</div>Peak 23%, currently at 12% avg. Max 5x plan but usage is low. Can we set up a pairing session to identify where Claude fits in your day?</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">RITIKA (NY, peak 20%)</div>Peak 20% but dropping. Mar 24 week is only 2%. Please make Claude part of your daily workflow. Even one task per day would improve things.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Arun Raj (HS, peak 21%)</div>Peak 21% but dropped to 3%. Your teammate Shiva Nandan is at 93%. Can you pair with Shiva to learn how he's using Claude?</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Hemant Mangla (NY, peak 14%)</div>Peak 14%. Very low. Extension works but barely using Claude. Let's set up a 15-min walkthrough to show high-impact use cases for your work.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Venky (Xyne, peak 8%)</div>8% peak, no data since Mar 20. Your teammates saheb and Yash are at 99% and 32%. You're the outlier. Please check extension and commit to using Claude daily.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Prithvi Raj (NY, peak 12%)</div>Peak 12% but currently at 3%. Over 3 weeks, usage hasn't grown. What would help you use it more? Let's chat.</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">sheetal (JP, peak 9%)</div>Peak 9%, no data since Mar 22. Max 5x plan mostly unused. Can we find time to discuss how Claude fits into your workflow?</div>
-    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Harsharanga (Xyne, peak 4%)</div>Peak 4%, no data since Mar 20. Your Xyne teammates are at 99% and 32%. Please install v1.8 extension and commit to using Claude daily.</div>
-    <div class="msg-box"><div class="msg-name" style="color:rgba(255,255,255,0.4);">Sidharth, Akash, Adam</div>Zero data. Never synced. Please install the extension and start using Claude. Reach out if you need help getting set up.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">GRACE 10x (NY, 10.75%, current week 43%)</div>Current week at 43% is a breakout. Whatever changed this week, lock it in. You could be a star by next report.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Khuzema (NY, 16%, 34.8% lost)</div>You're using Claude but losing a third of your budget to expired weeks. That's $70/mo wasted. Sync every week without fail.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Malav Shah (JP, 18.75%, ROI 0.19x)</div>JP's top performer but only $19 of $100 used. You're the example for JP team — push to 40% and bring others with you.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Arjun (NY, 8%, 19% lost)</div>$16 of $200 used — that's $184/mo wasted. You're syncing regularly but not using Claude. Make it your first stop for every task. What's blocking you?</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">Arun Raj (HS, 6.25%, 19.8% lost)</div>Your teammate Shiva is at 93% this week. You're at 6.25%. Can you pair with Shiva for a week and mirror his workflow?</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-orange);">RITIKA (NY, 5%, $10 of $200)</div>$190/mo unused. Usage dropping week over week. Let's set up a 15-min pairing session to find 3 daily Claude use cases for your work.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Harsharanga (Xyne, 0.875%, $1 of $100)</div>Your teammates saheb (97%) and Yash (12.25%) are using Claude daily. You're at $1/mo. Please check your extension and commit to using Claude every day.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Natarajan Kannan (HS, 1.75%, $4 of $200)</div>$196/mo wasted. Shiva Nandan on your team is at 93%. Huge gap. Please reach out for help getting started.</div>
+    <div class="msg-box"><div class="msg-name" style="color:var(--ny-red);">Parthi (JP, 0%, stale since Mar 18)</div>9 days with no data. $200/mo budget sitting idle. Please reinstall extension and check in.</div>
+    <div class="msg-box"><div class="msg-name" style="color:rgba(255,255,255,0.4);">Akash (JP) — Never synced</div>Zero data ever. $200/mo budget completely unused. Please install the extension and start using Claude today.</div>
   </div>
 </div>
 
-<!-- Slide 9: Group WhatsApp Message -->
+<!-- Slide 10: Group Message -->
 <div class="slide">
   <h2>Group Message (WhatsApp/Slack)</h2>
   <div class="card" style="max-width:700px;font-size:14px;line-height:1.7;overflow-y:auto;max-height:calc(100vh - 200px);">
-    <p style="color:var(--ny-green);font-weight:700;margin-bottom:8px;">Claude Usage Monthly Report — March 2026</p>
-    <p>Team, here's our first monthly usage report across 38 users.</p>
+    <p style="color:var(--ny-green);font-weight:700;margin-bottom:8px;">Claude Usage Monthly Report — March 27, 2026</p>
+    <p>Team, here's our monthly usage report across 39 users.</p>
     <br>
-    <p><strong>The Good:</strong></p>
-    <p>Mags: 166% (2 plans maxed) | saheb: 99% | piyush: 94% | Shiva Nandan: 93% | Vijay: 89%</p>
+    <p><strong>The Numbers:</strong></p>
+    <p>Total budget: $7,100/mo | Utilized: $1,125 (15.8%) | Wasted: $5,975</p>
+    <br>
+    <p><strong>Top 5:</strong></p>
+    <p>Mags: 113.6% ($455, ROI 1.14x) | piyush: 36.5% | Vijay: 32% | Shan MS: 27.75% | saheb: 25% (this week 97%!)</p>
     <br>
     <p><strong>The Concern:</strong></p>
-    <p>Team average peak: ~27%. Most people leave 70%+ of their Claude budget unused.</p>
-    <p>3 users have zero data (never synced). 10+ users below 10%.</p>
+    <p>Fleet avg: 15.8% ROI. 8 users at 0%. 15 users below 10%. We're burning $5,975/mo in unused licenses.</p>
     <br>
     <p><strong>By Team:</strong></p>
-    <p>HS: 38% avg | Xyne: 32% | NY: 25% | JP: 17% | NC: 15%</p>
+    <p>NY: 21.5% avg | Xyne: 13.5% | JP: 8.1% | HS: 7.8% | NC: 2%</p>
     <br>
-    <p><strong>Goal: Everyone at 80%+ monthly.</strong> If you're below 30%, something is wrong — reach out for help.</p>
+    <p><strong>Hot This Week:</strong> saheb (97%), Shiva Nandan (93%), GRACE 10x (43%)</p>
     <br>
-    <p>Individual messages coming your way. Full report: <em>[leaderboard-url]/showcase/reports/claude-fleet/monthly-report.html</em></p>
+    <p><strong>Goal: Everyone at 80%+ monthly.</strong> If you're below 20%, you're leaving money on the table. Reach out if you need help.</p>
+    <br>
+    <p>Individual messages coming. Full report: <em>[leaderboard-url]/showcase/reports/claude-fleet/monthly-report.html</em></p>
   </div>
   <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.4);">Copy the above for WhatsApp group or Slack #general channel.</p>
 </div>
 
-<!-- Slide 10: Action Items -->
+<!-- Slide 11: Action Items -->
 <div class="slide">
   <h2>Next Steps</h2>
   <div class="grid-2">
@@ -270,38 +329,38 @@
       <h3>Immediate Actions</h3>
       <div class="card" style="margin-bottom:16px;">
         <p style="font-weight:600;color:var(--ny-green);">1. Send individual Slack messages</p>
-        <p style="font-size:14px;">Each user gets a personalized nudge based on their tier.</p>
+        <p style="font-size:14px;">Each user gets a personalized nudge based on their tier and ROI.</p>
       </div>
       <div class="card" style="margin-bottom:16px;">
-        <p style="font-weight:600;color:var(--ny-green);">2. Send group WhatsApp summary</p>
-        <p style="font-size:14px;">Create visibility and peer pressure around usage.</p>
+        <p style="font-weight:600;color:var(--ny-green);">2. JP team intervention</p>
+        <p style="font-size:14px;">5 of 8 ghost users are JP. Schedule a JP team session on Claude workflows. 12 members, 8.1% avg — structural problem.</p>
       </div>
       <div class="card" style="margin-bottom:16px;">
-        <p style="font-weight:600;color:var(--ny-green);">3. Fix ghost users</p>
-        <p style="font-size:14px;">Sidharth, Akash, Adam — direct reach-out to install extension.</p>
+        <p style="font-weight:600;color:var(--ny-green);">3. Fix 8 ghost/zero users</p>
+        <p style="font-size:14px;">$1,500/mo wasted on zero-usage accounts. Direct reach-out for extension install and daily check-in.</p>
       </div>
       <div class="card">
-        <p style="font-weight:600;color:var(--ny-green);">4. Re-engage stale users</p>
-        <p style="font-size:14px;">Parthi (9d), Venky (7d), Harsharanga (7d), George (7d) — no sync.</p>
+        <p style="font-weight:600;color:var(--ny-green);">4. Address high-lost users</p>
+        <p style="font-size:14px;">Khuzema (34.8%), Sidharth Sethu (32.8%) — using Claude but losing weeks. Need weekly sync reminders.</p>
       </div>
     </div>
     <div>
       <h3>Weekly Targets</h3>
       <div class="card" style="margin-bottom:16px;">
-        <p style="font-weight:600;color:var(--ny-orange);">Stars (5 users)</p>
-        <p style="font-size:14px;">Maintain 80%+. Share tips with team. Mags to mentor 1 low user.</p>
+        <p style="font-weight:600;color:var(--ny-green);">Stars (8 users) — $856 utilized</p>
+        <p style="font-size:14px;">Maintain 20%+. Push toward 50%. Mags to mentor 1 low user. saheb and Shiva sustain 90%+ weeks.</p>
       </div>
       <div class="card" style="margin-bottom:16px;">
-        <p style="font-weight:600;color:var(--ny-blue);">Good Start (11 users)</p>
-        <p style="font-size:14px;">Target: increase by 20% each week. Goal: 80% within 2 weeks.</p>
+        <p style="font-weight:600;color:var(--ny-blue);">Good Start (8 users) — $195 utilized</p>
+        <p style="font-size:14px;">Target: 25%+ next week. GRACE 10x at 43% this week shows it's possible. Reduce lost % across the board.</p>
       </div>
       <div class="card" style="margin-bottom:16px;">
-        <p style="font-weight:600;color:var(--ny-orange);">Needs Improvement (11 users)</p>
-        <p style="font-size:14px;">1:1 pairing sessions. Find 3 use cases per person. Target: 30% next week.</p>
+        <p style="font-weight:600;color:var(--ny-orange);">Needs Improvement (15 users) — $101 utilized</p>
+        <p style="font-size:14px;">1:1 pairing sessions. Find 3 use cases per person. Target: 15% next week. $2,800/mo budget at risk.</p>
       </div>
       <div class="card">
-        <p style="font-weight:600;color:var(--ny-red);">Critical + Ghost (13 users)</p>
-        <p style="font-size:14px;">Direct intervention. Set up extension. Daily check-in for 1 week.</p>
+        <p style="font-weight:600;color:var(--ny-red);">Critical + Ghost (8 users) — $0 utilized</p>
+        <p style="font-size:14px;">Direct intervention. Install extension. Daily check-in for 1 week. Consider downgrading plans if no improvement in 2 weeks.</p>
       </div>
     </div>
   </div>
@@ -313,7 +372,7 @@
   <button onclick="go(-1)">&larr; Prev</button>
   <button onclick="go(1)">Next &rarr;</button>
 </div>
-<div class="slide-counter" id="counter">1 / 10</div>
+<div class="slide-counter" id="counter">1 / 11</div>
 
 <script>
   let cur = 0;
