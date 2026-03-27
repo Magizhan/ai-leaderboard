@@ -114,7 +114,7 @@ function getWeekKey(timestamp, weekStartDay = 'monday') {
   return weekStart.toISOString().slice(0, 10);
 }
 
-const MAX_HISTORY = 2000;
+const MAX_HISTORY = 500;
 const MAX_WEEKLY = 52;
 const CACHE_TTL_MS = 60_000; // 60s cache for leaderboard data
 const VALID_TEAMS = ['NY', 'NC', 'Xyne', 'HS', 'JP'];
@@ -448,7 +448,7 @@ async function deleteUser(id, env) {
 // ============================================================
 
 async function logUsage(body, env) {
-  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType, extensionVersion, email } = body;
+  const { userId, sessionPct, weeklyPct, pct, sessionResetsAt, weeklyResetsAt, extraUsageSpent, extraUsageLimit, extraUsagePct, planType, extensionVersion } = body;
   const name = body.name ? sanitizeString(body.name) : undefined;
   const source = sanitizeSource(body.source);
 
@@ -551,64 +551,46 @@ async function logUsage(body, env) {
 
   // --- Plan switch detection (numPlans > 1) ---
   if (numPlans > 1 && incomingWeekly !== undefined) {
-    // Best method: use email to deterministically map to a plan slot
-    if (email) {
-      const cleanEmail = email.toLowerCase().trim();
-      // Find a plan slot already tagged with this email
-      let emailIdx = plans.findIndex(p => p.email === cleanEmail);
-      if (emailIdx >= 0) {
-        activePlan = emailIdx;
-      } else {
-        // Assign to first slot without an email, or LRU slot
-        let freeIdx = plans.findIndex(p => !p.email);
-        if (freeIdx < 0) {
-          // All slots have emails, use LRU
-          let lruIdx = 0, lruTime = Infinity;
-          for (let i = 0; i < plans.length; i++) {
-            const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
-            if (t < lruTime) { lruTime = t; lruIdx = i; }
-          }
-          freeIdx = lruIdx;
-        }
-        plans[freeIdx].email = cleanEmail;
-        activePlan = freeIdx;
+    const prevWeekly = activePlanData.weeklyPct || 0;
+    const prevExtra = activePlanData.extraUsageSpent || 0;
+    const prevWeeklyReset = activePlanData.weeklyResetsAt || '';
+    const inExtra = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : prevExtra;
+    const inWeeklyReset = weeklyResetsAt || prevWeeklyReset;
+
+    // Signals that this is a different plan:
+    // 1. Weekly dropped significantly (but timer not expired)
+    const weeklyDropped = incomingWeekly < prevWeekly - 5 && !weeklyExpired;
+    // 2. Extra usage changed significantly (different $ amount)
+    const extraChanged = Math.abs(inExtra - prevExtra) > 20;
+    // 3. Weekly reset timer is different (different plans have different schedules)
+    const resetDiffers = inWeeklyReset && prevWeeklyReset &&
+      inWeeklyReset !== prevWeeklyReset &&
+      Math.abs(new Date(inWeeklyReset).getTime() - new Date(prevWeeklyReset).getTime()) > 3600000;
+    // 4. Session fresh (0%) while weekly jumped up (switched to a more-used plan)
+    const sessionFreshWeeklyJumped = incomingSession <= 1 && incomingWeekly > prevWeekly + 20;
+
+    const isPlanSwitch = weeklyDropped || (extraChanged && resetDiffers) || sessionFreshWeeklyJumped;
+
+    if (isPlanSwitch) {
+      // Find best matching plan slot
+      let bestIdx = -1;
+      let bestDiff = Infinity;
+      for (let i = 0; i < plans.length; i++) {
+        if (i === activePlan) continue;
+        const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
       }
-    } else {
-      // Fallback: heuristic-based plan switch detection (no email available)
-      const prevWeekly = activePlanData.weeklyPct || 0;
-      const prevExtra = activePlanData.extraUsageSpent || 0;
-      const prevWeeklyReset = activePlanData.weeklyResetsAt || '';
-      const inExtra = extraUsageSpent !== undefined ? parseFloat(extraUsageSpent) : prevExtra;
-      const inWeeklyReset = weeklyResetsAt || prevWeeklyReset;
-
-      const weeklyDropped = incomingWeekly < prevWeekly - 5 && !weeklyExpired;
-      const extraChanged = Math.abs(inExtra - prevExtra) > 20;
-      const resetDiffers = inWeeklyReset && prevWeeklyReset &&
-        inWeeklyReset !== prevWeeklyReset &&
-        Math.abs(new Date(inWeeklyReset).getTime() - new Date(prevWeeklyReset).getTime()) > 3600000;
-      const sessionFreshWeeklyJumped = incomingSession <= 1 && incomingWeekly > prevWeekly + 20;
-
-      const isPlanSwitch = weeklyDropped || (extraChanged && resetDiffers) || sessionFreshWeeklyJumped;
-
-      if (isPlanSwitch) {
-        let bestIdx = -1;
-        let bestDiff = Infinity;
+      // If no close match (diff > 20), use LRU (oldest lastSyncAt)
+      if (bestIdx === -1 || bestDiff > 20) {
+        let lruIdx = -1, lruTime = Infinity;
         for (let i = 0; i < plans.length; i++) {
           if (i === activePlan) continue;
-          const diff = Math.abs(plans[i].weeklyPct - incomingWeekly);
-          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+          const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
+          if (t < lruTime) { lruTime = t; lruIdx = i; }
         }
-        if (bestIdx === -1 || bestDiff > 20) {
-          let lruIdx = -1, lruTime = Infinity;
-          for (let i = 0; i < plans.length; i++) {
-            if (i === activePlan) continue;
-            const t = plans[i].lastSyncAt ? new Date(plans[i].lastSyncAt).getTime() : 0;
-            if (t < lruTime) { lruTime = t; lruIdx = i; }
-          }
-          if (lruIdx >= 0) bestIdx = lruIdx;
-        }
-        if (bestIdx >= 0) activePlan = bestIdx;
+        if (lruIdx >= 0) bestIdx = lruIdx;
       }
+      if (bestIdx >= 0) activePlan = bestIdx;
     }
   }
 
@@ -701,9 +683,9 @@ async function logUsage(body, env) {
     }
   }
 
-  // --- Update history (always store combined values for consistent monthly calc) ---
-  let histSessionPct = combinedSessionPct;
-  let histWeeklyPct = combinedWeeklyPct;
+  // --- Update history (store active plan's raw values, not combined) ---
+  let histSessionPct = plan.sessionPct || 0;
+  let histWeeklyPct = plan.weeklyPct || 0;
 
   const sessionDroppedHist = lastEntry && histSessionPct < (lastEntry.sessionPct || 0) - 1;
   const weeklyDroppedHist = lastEntry && histWeeklyPct < (lastEntry.weeklyPct || 0) - 1;
@@ -730,36 +712,8 @@ async function logUsage(body, env) {
     });
   }
 
-  // --- Streak tracking ---
-  const streakData = existing.streak || { count: 0, lastActiveDate: null };
-  const today = new Date(nowMs).toISOString().slice(0, 10); // YYYY-MM-DD
-  if (combinedWeeklyPct >= 20 && today !== streakData.lastActiveDate) {
-    const yesterday = new Date(nowMs - 86400000).toISOString().slice(0, 10);
-    if (streakData.lastActiveDate === yesterday) {
-      streakData.count += 1;
-    } else if (!streakData.lastActiveDate) {
-      streakData.count = 1;
-    } else {
-      streakData.count = 1; // streak broken, restart
-    }
-    streakData.lastActiveDate = today;
-  }
-
   if (history.length > MAX_HISTORY) {
-    // Downsample: keep all entries from last 24h, 1 per hour for older entries
-    const oneDayAgo = Date.now() - 24 * 3600000;
-    const recent = history.filter(h => new Date(h.timestamp).getTime() >= oneDayAgo);
-    const older = history.filter(h => new Date(h.timestamp).getTime() < oneDayAgo);
-    // Keep peak entry per hour for older entries
-    const hourBuckets = {};
-    for (const h of older) {
-      const hourKey = new Date(h.timestamp).toISOString().slice(0, 13);
-      if (!hourBuckets[hourKey] || (h.weeklyPct || 0) > (hourBuckets[hourKey].weeklyPct || 0)) {
-        hourBuckets[hourKey] = h;
-      }
-    }
-    history = [...Object.values(hourBuckets), ...recent];
-    history.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    history = history.slice(history.length - MAX_HISTORY);
   }
 
   // --- Build usage data ---
@@ -784,7 +738,6 @@ async function logUsage(body, env) {
     extraUsageLimit: plan.extraUsageLimit || null,
     extraUsagePct: plan.extraUsagePct || null,
     extensionVersion: extensionVersion || existing.extensionVersion || null,
-    streak: streakData,
   };
 
   // Update weekly aggregation
@@ -926,61 +879,20 @@ async function getLeaderboardData(env) {
       rawSessionPct = 0;
     }
 
-    // Normalize session by plan type: 100% on max20 = 100 (displays as 1.0x), on max5 = 25 (displays as 0.25x)
-    let displaySessionPct = rawSessionPct * planScale(activePlanType);
+    // Display session = raw combined session value
+    let displaySessionPct = rawSessionPct;
 
-    // Weekly = accumulated weekly peaks across billing cycles, averaged by actual cycles seen
-    // Detects resets (weekly drops >70%) to capture per-cycle peaks
-    // Denominator = actual number of cycles (not hardcoded 4)
-    const scale = planScale(activePlanType);
-    const cutoffMs = nowMs - 28 * 86400000;
-    let displayWeeklyPct = 0;
+    // Display weekly (monthly) = combined weekly / 4 (4 weeks per month, same for all users)
+    let displayWeeklyPct = usage
+      ? (usage.combinedWeeklyPct !== undefined ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0))
+      : 0;
 
-    if (history.length >= 2) {
-      const recent = history.filter(h => new Date(h.timestamp).getTime() >= cutoffMs);
-
-      if (recent.length >= 2) {
-        const cyclePreResetValues = [];
-        for (let i = 1; i < recent.length; i++) {
-          const prevW = recent[i - 1].weeklyPct || 0;
-          const curW = recent[i].weeklyPct || 0;
-          if (prevW > 20 && curW < prevW * 0.3) {
-            cyclePreResetValues.push(prevW);
-          }
-        }
-        const currentVal = recent[recent.length - 1].weeklyPct || 0;
-        const numCycles = cyclePreResetValues.length + 1;
-
-        if (u.numPlans > 1) {
-          let p1Total = 0, p2Total = 0;
-          for (const preReset of cyclePreResetValues) {
-            p1Total += Math.min(preReset, 100);
-            p2Total += Math.max(preReset - 100, 0);
-          }
-          const plans = (usage && usage.plans) || [];
-          if (plans.length >= 2) {
-            p1Total += plans[0].weeklyPct || 0;
-            p2Total += plans[1].weeklyPct || 0;
-          } else {
-            p1Total += Math.min(currentVal, 100);
-            p2Total += Math.max(currentVal - 100, 0);
-          }
-          displayWeeklyPct = ((p1Total / numCycles) + (p2Total / numCycles)) * scale;
-        } else {
-          const totalRaw = cyclePreResetValues.reduce((s, v) => s + v, 0) + currentVal;
-          displayWeeklyPct = (totalRaw / numCycles) * scale;
-        }
-      } else if (recent.length === 1) {
-        displayWeeklyPct = (recent[0].weeklyPct || 0) * scale;
-      }
+    // Auto-reset: if weekly timer expired, show 0
+    if (usage && usage.weeklyResetsAt && new Date(usage.weeklyResetsAt).getTime() <= nowMs) {
+      displayWeeklyPct = 0;
     }
 
-    // Fallback: no history or all entries older than 28 days
-    if (displayWeeklyPct === 0 && usage) {
-      const rawWeekly = usage.combinedWeeklyPct !== undefined
-        ? usage.combinedWeeklyPct : (usage.weeklyPct || usage.pct || 0);
-      displayWeeklyPct = rawWeekly * scale;
-    }
+    displayWeeklyPct = displayWeeklyPct / 4;
 
     // Extra usage: cap at factor of 4 (no rate limits, exhausts fast)
     // e.g., $549 spent with $200 plan cost = $549 / ($200 * 4) = 0.686x contribution
@@ -989,19 +901,12 @@ async function getLeaderboardData(env) {
       displayWeeklyPct += (extraSpent / (planTypeCost(activePlanType) * 4)) * 100;
     }
 
-    const lastUpdated = usage ? usage.timestamp : null;
-
     return {
       ...u,
       budget,
       sessionPct: displaySessionPct,
       weeklyPct: displayWeeklyPct,
-      lastUpdated,
-      isStale: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 24 * 60 * 60 * 1000,
-      isInactive: lastUpdated && (Date.now() - new Date(lastUpdated).getTime()) > 72 * 60 * 60 * 1000,
-      valueExtracted: Math.round((displayWeeklyPct / 100) * budget),
-      planCost: budget,
-      roi: displayWeeklyPct > 0 ? Math.round((displayWeeklyPct / 100) * 100) / 100 : 0,
+      lastUpdated: usage ? usage.timestamp : null,
       source: usage ? usage.source : null,
       sessionSparkline,
       weeklySparkline,
@@ -1015,19 +920,14 @@ async function getLeaderboardData(env) {
       planType: activePlanType,
       extensionVersion: usage ? (usage.extensionVersion || null) : null,
       plans: usage ? (usage.plans || null) : null,
-      streak: usage ? (usage.streak || { count: 0 }).count : 0,
     };
   }));
 
   function teamStats(teamUsers) {
-    // Exclude inactive users (>72h stale) from averages to prevent them dragging down team scores
-    const active = teamUsers.filter(u => !u.isInactive);
-    const avgDiv = active.length || 1;
     return {
       members: teamUsers.length,
-      activeMembers: active.length,
-      avgSessionPct: active.reduce((s, u) => s + u.sessionPct, 0) / avgDiv,
-      avgWeeklyPct: active.reduce((s, u) => s + u.weeklyPct, 0) / avgDiv,
+      avgSessionPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.sessionPct, 0) / teamUsers.length : 0,
+      avgWeeklyPct: teamUsers.length > 0 ? teamUsers.reduce((s, u) => s + u.weeklyPct, 0) / teamUsers.length : 0,
     };
   }
 
