@@ -121,6 +121,23 @@
   }
   .auth-btn:hover { background: #6d28d9; }
 
+  .token-row {
+    margin-top: 8px; display: flex; gap: 6px;
+  }
+  .token-input {
+    flex: 1; padding: 7px 10px; background: #0f0f1a; border: 1px solid #334155;
+    border-radius: 6px; color: #e2e8f0; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; outline: none;
+  }
+  .token-input:focus { border-color: #7c3aed; }
+  .token-save-btn {
+    padding: 7px 12px; border: none; border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    background: #22c55e; color: white; flex-shrink: 0;
+  }
+  .token-save-btn:hover { background: #16a34a; }
+  .token-hint { font-size: 10px; color: #64748b; margin-top: 4px; }
+
   .footer {
     padding: 10px 20px; text-align: center; font-size: 10px;
     color: #475569; border-top: 1px solid #1e293b;
@@ -166,6 +183,13 @@
         <div class="desc" id="authDesc"></div>
       </div>
       <button class="auth-btn" id="authBtn" style="display:none;">Sign In</button>
+    </div>
+    <div class="token-row" id="tokenRow" style="display:none;">
+      <input type="text" class="token-input" id="tokenInput" placeholder="Paste token from setup page">
+      <button class="token-save-btn" id="tokenSaveBtn">Save</button>
+    </div>
+    <div class="token-hint" id="tokenHint" style="display:none;">
+      Get your token from the setup page after SSO sign-in
     </div>
   </div>
 

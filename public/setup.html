@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f1a; color: #e2e8f0;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .card {
+    background: #1a1a2e; border-radius: 16px; padding: 40px;
+    max-width: 480px; width: 100%; border: 1px solid #2d2d44;
+  }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 24px; }
+  .email-badge {
+    display: inline-block; background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; color: #c4b5fd; margin-bottom: 24px;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .user-list {
+    max-height: 280px; overflow-y: auto; margin-bottom: 20px;
+    border: 1px solid #2d2d44; border-radius: 8px;
+  }
+  .user-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; cursor: pointer; transition: background 0.15s;
+    border-bottom: 1px solid #2d2d44;
+  }
+  .user-item:last-child { border-bottom: none; }
+  .user-item:hover { background: rgba(124, 58, 237, 0.1); }
+  .user-item.selected { background: rgba(124, 58, 237, 0.2); border-color: #7c3aed; }
+  .user-item input[type="radio"] { accent-color: #7c3aed; }
+  .user-name { font-weight: 600; font-size: 14px; }
+  .user-team { font-size: 11px; color: #94a3b8; }
+  .divider {
+    text-align: center; color: #64748b; font-size: 12px;
+    margin: 16px 0; position: relative;
+  }
+  .divider::before, .divider::after {
+    content: ''; position: absolute; top: 50%;
+    width: 40%; height: 1px; background: #2d2d44;
+  }
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
+  .new-user-form { display: flex; gap: 8px; margin-bottom: 24px; }
+  .new-user-form input {
+    flex: 1; padding: 10px 12px; background: #0f0f1a;
+    border: 1px solid #334155; border-radius: 8px;
+    color: #e2e8f0; font-size: 13px; outline: none;
+  }
+  .new-user-form input:focus { border-color: #7c3aed; }
+  .new-user-form select {
+    padding: 10px 8px; background: #0f0f1a;
+    border: 1px solid #334155; border-radius: 8px;
+    color: #e2e8f0; font-size: 13px; outline: none;
+  }
+  .btn {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6); color: white;
+    transition: all 0.2s; margin-top: 8px;
+  }
+  .btn:hover { box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .status { text-align: center; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .status.success { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: #86efac; }
+  .status.error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
+
+  .token-block { margin: 20px 0; }
+  .token-display {
+    background: #0f0f1a; border: 1px solid #334155; border-radius: 8px;
+    padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    word-break: break-all; color: #22c55e; cursor: pointer;
+    user-select: all; line-height: 1.5;
+  }
+  .token-display:hover { border-color: #22c55e; }
+  .copy-btn {
+    margin-top: 8px; padding: 8px 16px; border: 1px solid #334155; border-radius: 6px;
+    background: #1e293b; color: #e2e8f0; font-size: 12px; font-weight: 600;
+    cursor: pointer; width: 100%; transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: #22c55e; color: #22c55e; }
+  .copy-btn.copied { border-color: #22c55e; color: #22c55e; }
+
+  .instructions {
+    background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 8px; padding: 14px; font-size: 12px; color: #93c5fd;
+    line-height: 1.6; margin: 16px 0;
+  }
+  .instructions ol { padding-left: 18px; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions code {
+    background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  }
+
+  .token-input-row {
+    display: flex; gap: 8px; margin: 16px 0;
+  }
+  .token-input-row input {
+    flex: 1; padding: 10px 12px; background: #0f0f1a;
+    border: 1px solid #334155; border-radius: 8px;
+    color: #e2e8f0; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none;
+  }
+  .token-input-row input:focus { border-color: #7c3aed; }
+  .token-input-row button {
+    padding: 10px 16px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: #22c55e; color: white; flex-shrink: 0;
+  }
+
+  .hidden { display: none; }
+  .empty-state { text-align: center; padding: 24px; color: #64748b; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Claude Leaderboard Setup</h1>
+  <p class="subtitle">Link your account to the leaderboard</p>
+  <div class="email-badge" id="emailBadge">Loading...</div>
+
+  <!-- TOKEN SCREEN: shown when user is already mapped -->
+  <div id="tokenScreen" class="hidden">
+    <div class="status success" id="tokenScreenStatus"></div>
+    <div class="token-block">
+      <div class="section-label">Your API Token</div>
+      <div class="token-display" id="tokenScreenValue"></div>
+      <button class="copy-btn" id="tokenScreenCopy">Copy Token</button>
+    </div>
+    <div class="instructions">
+      <strong>To connect the Chrome extension:</strong>
+      <ol>
+        <li>Open the <strong>Claude Usage Sync</strong> extension popup</li>
+        <li>Paste this token in the token field and click <code>Save</code></li>
+      </ol>
+    </div>
+    <a href="/" style="text-decoration:none;"><button class="btn">Go to Dashboard</button></a>
+  </div>
+
+  <!-- SETUP SCREEN: shown when SSO is detected but user not yet mapped -->
+  <div id="setupScreen" class="hidden">
+    <div class="section-label">Choose your existing user</div>
+    <div class="user-list" id="userList">
+      <div class="empty-state">Loading users...</div>
+    </div>
+
+    <div class="divider">or create new</div>
+
+    <div class="new-user-form">
+      <input type="text" id="newName" placeholder="Your name" maxlength="50">
+      <select id="newTeam">
+        <option value="NY">NY</option>
+        <option value="NC">NC</option>
+        <option value="Xyne">Xyne</option>
+        <option value="HS">HS</option>
+        <option value="JP">JP</option>
+      </select>
+    </div>
+
+    <div id="statusMsg" class="hidden"></div>
+    <button class="btn" id="confirmBtn" disabled>Confirm Selection</button>
+  </div>
+
+  <!-- NO SSO SCREEN: fallback when Pomerium headers missing -->
+  <div id="noSsoScreen" class="hidden">
+    <div class="status error">Could not detect SSO identity. If you already have a token, enter it below.</div>
+    <div class="token-input-row">
+      <input type="text" id="manualTokenInput" placeholder="Paste your token here">
+      <button id="manualTokenBtn">Verify</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+let selectedUserId = null;
+
+// ============================================================
+// Show token screen (used by both already-linked and post-setup)
+// ============================================================
+function showTokenScreen(token, label) {
+  document.getElementById('tokenScreen').classList.remove('hidden');
+  document.getElementById('tokenScreenStatus').textContent = label;
+  document.getElementById('tokenScreenValue').textContent = token;
+
+  document.getElementById('tokenScreenCopy').addEventListener('click', () => {
+    navigator.clipboard.writeText(token).then(() => {
+      const btn = document.getElementById('tokenScreenCopy');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy Token'; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+
+  setCookie(token);
+}
+
+// ============================================================
+// Init
+// ============================================================
+async function init() {
+  // Step 1: Check Pomerium identity
+  const meRes = await fetch(API_BASE + '/api/me');
+  if (!meRes.ok) {
+    // No SSO — show manual token input
+    document.getElementById('emailBadge').textContent = 'SSO not detected';
+    document.getElementById('noSsoScreen').classList.remove('hidden');
+    initManualTokenEntry();
+    return;
+  }
+  const me = await meRes.json();
+  document.getElementById('emailBadge').textContent = me.email;
+
+  // Step 2: Check if already linked
+  const setupRes = await fetch(API_BASE + '/api/auth/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const setupData = await setupRes.json();
+
+  if (setupData.token && setupData.userId) {
+    // Already mapped — show token screen
+    showTokenScreen(setupData.token, 'Linked to: ' + (setupData.userName || setupData.userId));
+    return;
+  }
+
+  // Step 3: Has token but no user mapping — show user picker
+  document.getElementById('setupScreen').classList.remove('hidden');
+  initUserPicker();
+}
+
+// ============================================================
+// User picker (choose existing or create new)
+// ============================================================
+async function initUserPicker() {
+  const usersRes = await fetch(API_BASE + '/api/auth/unclaimed-users');
+  const users = await usersRes.json();
+
+  const list = document.getElementById('userList');
+  if (users.length === 0) {
+    list.innerHTML = '<div class="empty-state">No unclaimed users. Create a new one below.</div>';
+  } else {
+    list.innerHTML = users.map(u => `
+      <label class="user-item" data-id="${u.id}">
+        <input type="radio" name="user" value="${u.id}">
+        <div>
+          <div class="user-name">${esc(u.name)}</div>
+          <div class="user-team">Team ${esc(u.team)} · ${u.numPlans} plan(s)</div>
+        </div>
+      </label>
+    `).join('');
+  }
+
+  list.addEventListener('change', (e) => {
+    if (e.target.name === 'user') {
+      selectedUserId = e.target.value;
+      document.getElementById('newName').value = '';
+      document.getElementById('confirmBtn').disabled = false;
+      list.querySelectorAll('.user-item').forEach(el => el.classList.remove('selected'));
+      e.target.closest('.user-item').classList.add('selected');
+    }
+  });
+
+  document.getElementById('newName').addEventListener('input', (e) => {
+    if (e.target.value.trim()) {
+      selectedUserId = null;
+      list.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+      list.querySelectorAll('.user-item').forEach(el => el.classList.remove('selected'));
+      document.getElementById('confirmBtn').disabled = false;
+    } else if (!selectedUserId) {
+      document.getElementById('confirmBtn').disabled = true;
+    }
+  });
+
+  document.getElementById('confirmBtn').addEventListener('click', doConfirm);
+}
+
+async function doConfirm() {
+  const btn = document.getElementById('confirmBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
+
+  const body = {};
+  const newName = document.getElementById('newName').value.trim();
+  if (newName) {
+    body.newUserName = newName;
+    body.newUserTeam = document.getElementById('newTeam').value;
+  } else if (selectedUserId) {
+    body.userId = selectedUserId;
+  } else {
+    return;
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/auth/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      statusMsg.className = 'status error';
+      statusMsg.textContent = data.error;
+      statusMsg.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Confirm Selection';
+      return;
+    }
+
+    // Success — hide picker, show token screen
+    document.getElementById('setupScreen').classList.add('hidden');
+    showTokenScreen(data.token, 'Account linked successfully!');
+  } catch (err) {
+    statusMsg.className = 'status error';
+    statusMsg.textContent = 'Error: ' + err.message;
+    statusMsg.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Confirm Selection';
+  }
+}
+
+// ============================================================
+// Manual token entry (no SSO fallback)
+// ============================================================
+function initManualTokenEntry() {
+  document.getElementById('manualTokenBtn').addEventListener('click', async () => {
+    const token = document.getElementById('manualTokenInput').value.trim();
+    if (!token) return;
+    try {
+      const res = await fetch(API_BASE + '/api/auth/verify', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('noSsoScreen').classList.add('hidden');
+        showTokenScreen(token, 'Verified! Linked to: ' + (data.userId || 'user'));
+      } else {
+        document.getElementById('manualTokenInput').style.borderColor = '#ef4444';
+        setTimeout(() => { document.getElementById('manualTokenInput').style.borderColor = ''; }, 2000);
+      }
+    } catch (e) {
+      document.getElementById('manualTokenInput').style.borderColor = '#ef4444';
+    }
+  });
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function setCookie(token) {
+  document.cookie = `leaderboard_token=${token}; path=/; max-age=${365 * 24 * 3600}; SameSite=Lax; Secure`;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>

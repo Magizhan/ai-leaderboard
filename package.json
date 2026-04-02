@@ -14,13 +14,13 @@
     "deploy": "wrangler deploy",
     "deploy:cf": "wrangler deploy",
     "kv:create": "wrangler kv namespace create LEADERBOARD_KV",
-    "migrate:export": "node scripts/migrate-to-redis.mjs export --from https://leaderboard.magizhan.work",
-    "migrate:import": "node scripts/migrate-to-redis.mjs import --redis redis://localhost:6379",
-    "migrate:sync": "node scripts/migrate-to-redis.mjs sync --from https://leaderboard.magizhan.work --redis redis://localhost:6379"
+    "migrate:export": "node scripts/migrate-to-pg.mjs export --from https://leaderboard.magizhan.work",
+    "migrate:import": "node scripts/migrate-to-pg.mjs import --db postgresql://localhost:5432/ai_leaderboard",
+    "migrate:sync": "node scripts/migrate-to-pg.mjs sync --from https://leaderboard.magizhan.work --db postgresql://localhost:5432/ai_leaderboard"
   },
   "dependencies": {
     "express": "^5.1.0",
-    "ioredis": "^5.6.1"
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

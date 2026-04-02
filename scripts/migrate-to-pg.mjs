@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 
 /**
- * Migration script: Export data from Cloudflare Worker and import into Redis.
+ * Migration script: Export data from Cloudflare Worker and import into PostgreSQL.
  *
  * Usage:
  *   # Step 1: Export from CF (saves to export.json)
- *   node scripts/migrate-to-redis.mjs export --from https://leaderboard.magizhan.work
+ *   node scripts/migrate-to-pg.mjs export --from https://leaderboard.magizhan.work
  *
- *   # Step 2: Import into Redis
- *   node scripts/migrate-to-redis.mjs import --redis redis://localhost:6379 --file export.json
+ *   # Step 2: Import into PostgreSQL
+ *   node scripts/migrate-to-pg.mjs import --db postgresql://localhost:5432/ai_leaderboard --file export.json
  *
- *   # Or one-shot: export from CF and import into Redis
- *   node scripts/migrate-to-redis.mjs sync --from https://leaderboard.magizhan.work --redis redis://localhost:6379
+ *   # Or one-shot: export from CF and import into PostgreSQL
+ *   node scripts/migrate-to-pg.mjs sync --from https://leaderboard.magizhan.work --db postgresql://localhost:5432/ai_leaderboard
  */
 
 import { writeFileSync, readFileSync } from 'fs';
+import pg from 'pg';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -37,74 +38,80 @@ async function exportFromCF(baseUrl) {
   return data;
 }
 
-async function importToRedis(data, redisUrl) {
-  const { default: Redis } = await import('ioredis');
-  const redis = new Redis(redisUrl);
+async function importToPg(data, dbUrl) {
+  const pool = new pg.Pool({ connectionString: dbUrl });
 
-  console.log(`\nImporting into Redis at ${redisUrl} ...`);
+  // Create table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS kv_store (
+      key   TEXT PRIMARY KEY,
+      value JSONB NOT NULL
+    )
+  `);
+
+  console.log(`\nImporting into PostgreSQL at ${dbUrl} ...`);
+
+  async function upsert(key, val) {
+    await pool.query(
+      'INSERT INTO kv_store (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+      [key, JSON.stringify(val)]
+    );
+  }
 
   // Users array
-  await redis.set('users', JSON.stringify(data.users || []));
+  await upsert('users', data.users || []);
   console.log(`  users: ${data.users?.length || 0} users written`);
 
   // Usage logs
   for (const log of (data.usageLogs || [])) {
-    if (log.userId) {
-      await redis.set(`usage:${log.userId}`, JSON.stringify(log));
-    }
+    if (log.userId) await upsert(`usage:${log.userId}`, log);
   }
   console.log(`  usage: ${data.usageLogs?.length || 0} logs written`);
 
   // History logs
   for (const log of (data.historyLogs || [])) {
-    if (log.userId) {
-      await redis.set(`history:${log.userId}`, JSON.stringify(log.entries || []));
-    }
+    if (log.userId) await upsert(`history:${log.userId}`, log.entries || []);
   }
   console.log(`  history: ${data.historyLogs?.length || 0} logs written`);
 
   // Weekly logs
   for (const log of (data.weeklyLogs || [])) {
-    if (log.userId) {
-      await redis.set(`weekly:${log.userId}`, JSON.stringify(log.entries || []));
-    }
+    if (log.userId) await upsert(`weekly:${log.userId}`, log.entries || []);
   }
   console.log(`  weekly: ${data.weeklyLogs?.length || 0} logs written`);
 
   // User configs
   for (const cfg of (data.userConfigs || [])) {
-    if (cfg.userId) {
-      await redis.set(`userconfig:${cfg.userId}`, JSON.stringify(cfg.config || { weekStartDay: 'monday' }));
-    }
+    if (cfg.userId) await upsert(`userconfig:${cfg.userId}`, cfg.config || { weekStartDay: 'monday' });
   }
   console.log(`  configs: ${data.userConfigs?.length || 0} configs written`);
 
-  // Projects & Strategies (if present in export)
+  // Projects & Strategies
   if (data.projects) {
-    await redis.set('projects', JSON.stringify(data.projects));
+    await upsert('projects', data.projects);
     console.log(`  projects: ${data.projects.length} written`);
   }
   if (data.strategies) {
-    await redis.set('strategies', JSON.stringify(data.strategies));
+    await upsert('strategies', data.strategies);
     console.log(`  strategies: ${data.strategies.length} written`);
   }
 
   // Config
   if (data.config) {
-    await redis.set('config', JSON.stringify(data.config));
+    await upsert('config', data.config);
     console.log(`  config: written`);
   }
 
-  await redis.quit();
+  await pool.end();
   console.log('\nImport complete!');
 }
 
 async function main() {
   if (!command || command === '--help') {
     console.log(`Usage:
-  node scripts/migrate-to-redis.mjs export --from <cf-url>
-  node scripts/migrate-to-redis.mjs import --redis <redis-url> --file <export.json>
-  node scripts/migrate-to-redis.mjs sync --from <cf-url> --redis <redis-url>`);
+  node scripts/migrate-to-pg.mjs export --from <cf-url>
+  node scripts/migrate-to-pg.mjs import --db <database-url> --file <export.json>
+  node scripts/migrate-to-pg.mjs sync --from <cf-url> --db <database-url>`);
     process.exit(0);
   }
 
@@ -118,18 +125,18 @@ async function main() {
   }
 
   else if (command === 'import') {
-    const redisUrl = getArg('redis') || 'redis://localhost:6379';
+    const dbUrl = getArg('db') || 'postgresql://localhost:5432/ai_leaderboard';
     const file = getArg('file') || 'export.json';
     const data = JSON.parse(readFileSync(file, 'utf-8'));
-    await importToRedis(data, redisUrl);
+    await importToPg(data, dbUrl);
   }
 
   else if (command === 'sync') {
     const from = getArg('from');
-    const redisUrl = getArg('redis') || 'redis://localhost:6379';
+    const dbUrl = getArg('db') || 'postgresql://localhost:5432/ai_leaderboard';
     if (!from) { console.error('--from <url> required'); process.exit(1); }
     const data = await exportFromCF(from);
-    await importToRedis(data, redisUrl);
+    await importToPg(data, dbUrl);
   }
 
   else {

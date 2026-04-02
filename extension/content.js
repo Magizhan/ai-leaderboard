@@ -2,7 +2,7 @@
 // Content script — runs automatically on claude.ai/settings/usage
 // Silently scrapes usage data and syncs to leaderboard
 // ============================================================
-const DEFAULT_API_BASE = 'https://leaderboard.internal.integ.movingtech.net';
+const DEFAULT_API_BASE = 'https://leaderboard.sso.integ.internal.svc.movingtech.net';
 
 // Wait for the page to fully render (Claude is a SPA, content loads async)
 function waitForUsageData(maxWait = 10000) {
