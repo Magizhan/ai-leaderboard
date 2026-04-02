@@ -1,0 +1,10 @@
+node_modules
+.git
+.wrangler
+extension
+test
+*.md
+docker-compose.yml
+Dockerfile
+.dockerignore
+.DS_Store

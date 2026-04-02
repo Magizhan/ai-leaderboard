@@ -2,7 +2,7 @@
 // Content script — runs automatically on claude.ai/settings/usage
 // Silently scrapes usage data and syncs to leaderboard
 // ============================================================
-const API_BASE = 'https://leaderboard.magizhan.work';
+const DEFAULT_API_BASE = 'https://leaderboard.internal.integ.movingtech.net';
 
 // Wait for the page to fully render (Claude is a SPA, content loads async)
 function waitForUsageData(maxWait = 10000) {
@@ -148,9 +148,12 @@ async function scrapeAndSync() {
     if (extraUsageLimit !== null) payload.extraUsageLimit = extraUsageLimit;
     if (extraUsagePct !== null) payload.extraUsagePct = extraUsagePct;
 
+    const stored = await chrome.storage.local.get(['api_base']);
+    const apiBase = stored.api_base || DEFAULT_API_BASE;
+
     const result = await chrome.runtime.sendMessage({
       type: 'api_fetch',
-      url: API_BASE + '/api/usage',
+      url: apiBase + '/api/usage',
       method: 'POST',
       body: payload,
     });

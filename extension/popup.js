@@ -1,8 +1,9 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const API_BASE = 'https://leaderboard.magizhan.work';
+const DEFAULT_API_BASE = 'https://leaderboard.internal.integ.movingtech.net';
 const ALARM_NAME = 'claude_usage_sync';
+let API_BASE = DEFAULT_API_BASE;
 
 // ============================================================
 // DOM refs

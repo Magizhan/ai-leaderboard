@@ -4,9 +4,19 @@
 // ============================================================
 
 const ALARM_NAME = 'claude_usage_sync';
-const API_BASE = 'https://leaderboard.magizhan.work';
+const DEFAULT_API_BASE = 'https://leaderboard.internal.integ.movingtech.net';
 const COOKIE_NAME = 'CF_Authorization';
-const COOKIE_DOMAIN = 'leaderboard.magizhan.work';
+
+/** Get the configured API base URL */
+async function getApiBase() {
+  const stored = await chrome.storage.local.get(['api_base']);
+  return stored.api_base || DEFAULT_API_BASE;
+}
+
+/** Get the cookie domain from the API base URL */
+function getCookieDomain(apiBase) {
+  try { return new URL(apiBase).hostname; } catch { return 'leaderboard.magizhan.work'; }
+}
 
 // ============================================================
 // Auth: JWT from Cloudflare Access cookie
@@ -15,8 +25,9 @@ const COOKIE_DOMAIN = 'leaderboard.magizhan.work';
 /** Read CF_Authorization cookie from leaderboard domain */
 async function getAccessCookie() {
   try {
+    const apiBase = await getApiBase();
     const cookie = await chrome.cookies.get({
-      url: API_BASE,
+      url: apiBase,
       name: COOKIE_NAME,
     });
     return cookie ? cookie.value : null;
@@ -71,7 +82,8 @@ async function triggerAuth() {
 
   let tab;
   try {
-    tab = await chrome.tabs.create({ url: API_BASE, active: true });
+    const apiBase = await getApiBase();
+    tab = await chrome.tabs.create({ url: apiBase, active: true });
   } catch (e) {
     await chrome.storage.local.remove(['auth_in_progress']);
     return { success: false, error: 'Failed to open auth tab' };

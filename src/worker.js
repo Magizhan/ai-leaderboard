@@ -32,6 +32,7 @@ export default {
 
     const ALLOWED_ORIGINS = [
       'https://leaderboard.magizhan.work',
+      'https://leaderboard.internal.integ.movingtech.net',
       'https://claude-leaderboard.mags-814.workers.dev',
       'https://claude.ai',
     ];
