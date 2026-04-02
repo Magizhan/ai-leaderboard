@@ -50,8 +50,9 @@ function updateAuthUI(authenticated, email) {
     authDesc.textContent = email || '';
     authBtn.textContent = 'Re-auth';
     authBtn.style.display = 'block';
-    tokenRow.style.display = 'none';
-    tokenHint.style.display = 'none';
+    tokenRow.style.display = 'flex';
+    tokenHint.style.display = 'block';
+    tokenHint.textContent = 'Paste a new token to switch accounts';
   } else {
     authRow.className = 'auth-row unauthenticated';
     authDot.className = 'auth-dot red';
@@ -67,6 +68,10 @@ function updateAuthUI(authenticated, email) {
 chrome.runtime.sendMessage({ type: 'check_auth_status' }, (response) => {
   if (response) {
     updateAuthUI(response.authenticated, response.auth_email);
+    // Pre-fill token input so user can see their saved token
+    if (response.authenticated && response.auth_token) {
+      tokenInput.value = response.auth_token;
+    }
   } else {
     updateAuthUI(false);
   }
@@ -77,7 +82,7 @@ authBtn.addEventListener('click', () => {
   chrome.tabs.create({ url: API_BASE + '/setup.html' });
 });
 
-// Manual token entry
+// Manual token entry — route through background to avoid Pomerium/CORS issues
 tokenSaveBtn.addEventListener('click', async () => {
   const token = tokenInput.value.trim();
   if (!token) return;
@@ -85,25 +90,59 @@ tokenSaveBtn.addEventListener('click', async () => {
   tokenSaveBtn.disabled = true;
   tokenSaveBtn.textContent = '...';
 
-  // Verify token with the server
   try {
-    const res = await fetch(API_BASE + '/api/auth/verify', {
-      headers: { 'Authorization': 'Bearer ' + token },
+    // Store the token so background can use it for the verify call
+    await chrome.storage.local.set({ auth_token: token });
+    console.log('[Leaderboard] Token saved, verifying...');
+
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        type: 'api_fetch',
+        url: API_BASE + '/api/auth/verify',
+        method: 'GET',
+      }, (resp) => {
+        console.log('[Leaderboard] Verify response:', resp);
+        resolve(resp);
+      });
     });
-    if (!res.ok) {
+
+    if (result && result.ok && result.data && result.data.email) {
+      const storeData = {
+        auth_token: token,
+        auth_email: result.data.email,
+      };
+      if (result.data.userId) storeData.auth_user_id = result.data.userId;
+      await chrome.storage.local.set(storeData);
+      // Also set cookie on dashboard domain so the website can use it
+      try {
+        await chrome.cookies.set({
+          url: API_BASE,
+          name: 'leaderboard_token',
+          value: token,
+          path: '/',
+          secure: true,
+          sameSite: 'lax',
+          expirationDate: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+        });
+      } catch (e) { console.log('[Leaderboard] Cookie set failed:', e); }
+      console.log('[Leaderboard] Token verified, signed in as', result.data.email);
+      updateAuthUI(true, result.data.email);
+      tokenSaveBtn.textContent = 'Saved!';
+      tokenSaveBtn.disabled = false;
+    } else if (result && result.status === 0) {
+      console.log('[Leaderboard] Network error during verify');
+      tokenInput.style.borderColor = '#f59e0b';
+      tokenSaveBtn.textContent = 'Network error';
+      setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; tokenInput.style.borderColor = ''; }, 2000);
+    } else {
+      console.log('[Leaderboard] Invalid token, response:', result);
+      await chrome.storage.local.remove(['auth_token', 'auth_email', 'auth_user_id']);
       tokenInput.style.borderColor = '#ef4444';
       tokenSaveBtn.textContent = 'Invalid';
       setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; tokenInput.style.borderColor = ''; }, 2000);
-      return;
     }
-    const data = await res.json();
-    await chrome.storage.local.set({
-      auth_token: token,
-      auth_email: data.email,
-      auth_user_id: data.userId,
-    });
-    updateAuthUI(true, data.email);
-  } catch (e) {
+  } catch (err) {
+    console.error('[Leaderboard] Token save error:', err);
     tokenSaveBtn.textContent = 'Error';
     setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; }, 2000);
   }

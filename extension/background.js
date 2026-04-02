@@ -35,32 +35,57 @@ async function getTokenCookie() {
   }
 }
 
+/** Verify a token with the server and store the result */
+async function verifyAndStore(token) {
+  try {
+    const apiBase = await getApiBase();
+    const res = await fetch(`${apiBase}/api/auth/verify`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const storeData = { auth_token: token, auth_email: data.email };
+      if (data.userId) storeData.auth_user_id = data.userId;
+      await chrome.storage.local.set(storeData);
+      // Ensure the dashboard cookie is set so the website can use the token
+      try {
+        await chrome.cookies.set({
+          url: apiBase,
+          name: 'leaderboard_token',
+          value: token,
+          path: '/',
+          secure: true,
+          sameSite: 'lax',
+          expirationDate: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+        });
+      } catch (e) { /* ignore */ }
+      return { authenticated: true, auth_token: token, auth_email: data.email, auth_user_id: data.userId };
+    }
+    // 401 = invalid token — clear stored credentials
+    if (res.status === 401) {
+      await chrome.storage.local.remove(['auth_token', 'auth_email', 'auth_user_id']);
+    }
+  } catch (e) { /* network error — keep existing stored state */ }
+  return null;
+}
+
 /** Check if we have a valid token (stored or from cookie) */
 async function checkAuth() {
   // First check storage
   const stored = await getStoredToken();
-  if (stored) return { authenticated: true, ...stored };
+  if (stored) {
+    // Re-verify to refresh user_id (in case user linked account on setup page)
+    const verified = await verifyAndStore(stored.auth_token);
+    if (verified) return verified;
+    // If verification failed due to network, still treat as authenticated
+    return { authenticated: true, ...stored };
+  }
 
   // Check cookie (may have been set by /setup page)
   const cookieToken = await getTokenCookie();
   if (cookieToken) {
-    // Verify token with server
-    try {
-      const apiBase = await getApiBase();
-      const res = await fetch(`${apiBase}/api/auth/verify`, {
-        headers: { 'Authorization': `Bearer ${cookieToken}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Store in chrome.storage for future use
-        await chrome.storage.local.set({
-          auth_token: cookieToken,
-          auth_email: data.email,
-          auth_user_id: data.userId,
-        });
-        return { authenticated: true, auth_token: cookieToken, auth_email: data.email, auth_user_id: data.userId };
-      }
-    } catch (e) { /* ignore */ }
+    const verified = await verifyAndStore(cookieToken);
+    if (verified) return verified;
   }
 
   return { authenticated: false };
@@ -167,11 +192,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           headers['Authorization'] = `Bearer ${stored.auth_token}`;
         }
 
+        console.log('[Leaderboard BG] api_fetch', msg.method, msg.url, 'hasToken:', !!stored?.auth_token);
+
         const res = await fetch(msg.url, {
           method: msg.method || 'POST',
           headers,
           body: msg.body ? JSON.stringify(msg.body) : undefined,
         });
+
+        console.log('[Leaderboard BG] api_fetch response:', res.status);
 
         if (res.status === 401) {
           sendResponse({ error: 'auth_expired', status: 401 });
@@ -181,6 +210,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const data = await res.json();
         sendResponse({ ok: true, data, status: res.status });
       } catch (e) {
+        console.error('[Leaderboard BG] api_fetch error:', e);
         sendResponse({ error: e.message, status: 0 });
       }
     })();

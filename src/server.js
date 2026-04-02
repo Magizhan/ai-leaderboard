@@ -32,33 +32,103 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ============================================================
-// Auth endpoints (Pomerium SSO → token)
+// Auth helpers
 // ============================================================
 
-// GET /api/me — returns Pomerium identity
-app.get('/api/me', (req, res) => {
-  const email = req.headers['x-pomerium-claim-email'] || '';
-  const name = req.headers['x-pomerium-claim-name'] || req.headers['x-pomerium-claim-given-name'] || '';
-  const groups = req.headers['x-pomerium-claim-groups'] || '';
+/**
+ * Extract leaderboard token from the request.
+ * Priority: Authorization header → query param → leaderboard_token cookie.
+ *
+ * - Extension background.js sends Authorization: Bearer <token>
+ * - Browser dashboard sends leaderboard_token cookie (automatic, no JS needed)
+ * - CLI/debug can use ?token= query param
+ */
+function extractToken(req) {
+  const header = req.headers['authorization'] || '';
+  if (header.startsWith('Bearer ')) return header.slice(7);
+  if (req.query?.token) return req.query.token;
+  const cookieHeader = req.headers['cookie'] || '';
+  const match = cookieHeader.match(/(?:^|;\s*)leaderboard_token=([^\s;]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Extract Pomerium SSO identity from proxy-injected headers.
+ * Returns { email, groups, user } or null.
+ */
+function getPomeriumIdentity(req) {
+  let email = req.headers['x-pomerium-claim-email'] || '';
+  let groups = req.headers['x-pomerium-claim-groups'] || '';
+  let user = req.headers['x-pomerium-claim-user'] || '';
+
   if (!email) {
-    return res.status(401).json({ error: 'Not authenticated. No Pomerium identity found.' });
+    const jwt = req.headers['x-pomerium-jwt-assertion'] || '';
+    if (jwt) {
+      try {
+        const parts = jwt.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+          email = payload.email || '';
+          groups = Array.isArray(payload.groups) ? payload.groups : [];
+          user = payload.user || payload.sub || '';
+        }
+      } catch (e) { /* invalid JWT, ignore */ }
+    }
+  } else {
+    groups = groups ? groups.split(',').map(g => g.trim()) : [];
   }
-  res.json({ email, name, groups: groups ? groups.split(',').map(g => g.trim()) : [] });
+
+  if (!email) return null;
+  if (typeof groups === 'string') groups = groups ? groups.split(',').map(g => g.trim()) : [];
+  return { email, groups, user };
+}
+
+/**
+ * Resolve the current user's identity from any available auth source.
+ * Tries token first (covers browser cookie + extension header), then Pomerium.
+ *
+ * Returns { email, record?, source } or null if no auth found.
+ *   - source: 'token' | 'pomerium'
+ *   - record: auth_tokens DB row (only when source is 'token')
+ */
+async function resolveAuth(req) {
+  // 1. Token auth (header, query, or cookie)
+  const token = extractToken(req);
+  if (token) {
+    const record = await auth.getByToken(token);
+    if (record) return { email: record.email, record, source: 'token' };
+    // Invalid token — don't fall through to Pomerium (avoids confused deputy)
+    return null;
+  }
+
+  // 2. Pomerium SSO headers
+  const identity = getPomeriumIdentity(req);
+  if (identity) return { email: identity.email, source: 'pomerium' };
+
+  return null;
+}
+
+// ============================================================
+// Auth endpoints
+// ============================================================
+
+// GET /api/me — returns identity (email) from any auth source
+app.get('/api/me', async (req, res) => {
+  const identity = await resolveAuth(req);
+  if (!identity) return res.status(401).json({ error: 'Not authenticated.' });
+  res.json({ email: identity.email, source: identity.source });
 });
 
-// POST /api/auth/setup — called from setup page after Pomerium SSO
-// Creates/returns a lifetime token and optionally claims a leaderboard user
+// POST /api/auth/setup — create/return token and optionally claim a leaderboard user
+// Requires auth (Pomerium for first-time, token for returning users)
 app.post('/api/auth/setup', async (req, res) => {
-  const email = req.headers['x-pomerium-claim-email'] || '';
-  if (!email) {
-    return res.status(401).json({ error: 'Pomerium authentication required.' });
-  }
+  const identity = await resolveAuth(req);
+  if (!identity) return res.status(401).json({ error: 'Authentication required.' });
 
   try {
-    // Get or create token for this email
-    const record = await auth.getOrCreateToken(email);
+    // If already authed via token, use that record; otherwise create one from email
+    let record = identity.record || await auth.getOrCreateToken(identity.email);
 
-    // If userId provided, claim that user
     const { userId, newUserName, newUserTeam } = req.body || {};
 
     if (userId) {
@@ -66,7 +136,6 @@ app.post('/api/auth/setup', async (req, res) => {
       if (result.error) return res.status(409).json(result);
       record.user_id = userId;
     } else if (newUserName) {
-      // Create a new leaderboard user and claim it
       const createRes = await worker.fetch(
         new Request(`http://localhost/api/users`, {
           method: 'POST',
@@ -83,7 +152,6 @@ app.post('/api/auth/setup', async (req, res) => {
       record.user_id = created.id;
     }
 
-    // Resolve userName if we have a userId
     let userName = null;
     if (record.user_id) {
       const users = await kv.get('users', 'json') || [];
@@ -117,10 +185,47 @@ app.get('/api/auth/verify', async (req, res) => {
   }
 });
 
+// POST /api/auth/unlink — remove user mapping (keep token, clear user_id)
+app.post('/api/auth/unlink', async (req, res) => {
+  const identity = await resolveAuth(req);
+  if (!identity) return res.status(401).json({ error: 'Authentication required.' });
+
+  try {
+    const record = identity.record || await auth.getByEmail(identity.email);
+    if (!record) return res.status(404).json({ error: 'No token found for this email.' });
+
+    await kv._pool.query('UPDATE auth_tokens SET user_id = NULL WHERE token = $1', [record.token]);
+    res.json({ ok: true, email: record.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/auth/whoami — returns current user info for dashboard identification
+app.get('/api/auth/whoami', async (req, res) => {
+  try {
+    const identity = await resolveAuth(req);
+    if (!identity) return res.json({ userId: null });
+
+    const record = identity.record || await auth.getByEmail(identity.email);
+    if (!record) return res.json({ userId: null, email: identity.email });
+
+    if (record.user_id) {
+      const users = await kv.get('users', 'json') || [];
+      const u = users.find(u => u.id === record.user_id);
+      return res.json({ userId: record.user_id, userName: u ? u.name : null, email: record.email });
+    }
+
+    res.json({ userId: null, email: record.email });
+  } catch (err) {
+    res.json({ userId: null });
+  }
+});
+
 // GET /api/auth/unclaimed-users — list users not yet claimed by any token
 app.get('/api/auth/unclaimed-users', async (req, res) => {
-  const email = req.headers['x-pomerium-claim-email'] || '';
-  if (!email) return res.status(401).json({ error: 'Pomerium authentication required.' });
+  const identity = await resolveAuth(req);
+  if (!identity) return res.status(401).json({ error: 'Authentication required.' });
 
   try {
     const users = await kv.get('users', 'json') || [];
@@ -131,16 +236,6 @@ app.get('/api/auth/unclaimed-users', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// ============================================================
-// Token extraction helper
-// ============================================================
-
-function extractToken(req) {
-  const header = req.headers['authorization'] || '';
-  if (header.startsWith('Bearer ')) return header.slice(7);
-  return req.query?.token || null;
-}
 
 // ============================================================
 // All other API routes → worker fetch handler

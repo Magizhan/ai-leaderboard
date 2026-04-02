@@ -6,6 +6,21 @@
   let currentTab = 'all';
   let boardType = 'session';
   let cachedData = null;
+  let currentUserId = null;
+
+  // Detect current user (server reads leaderboard_token cookie automatically)
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + '/api/auth/whoami');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.userId) {
+          currentUserId = data.userId;
+          if (cachedData) renderData(cachedData);
+        }
+      }
+    } catch (e) { /* no auth available, ignore */ }
+  })();
 
   // ============================================================
   // SETUP SECTION - collapsible, remember state
@@ -151,8 +166,8 @@
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const res = await fetch(API_BASE + path, {
-          headers: { 'Content-Type': 'application/json' },
           ...options,
+          headers: { 'Content-Type': 'application/json', ...options.headers },
         });
         const contentType = res.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
@@ -276,12 +291,15 @@
     const streakHtml = u.streak > 0 ? `<span class="lb-streak" title="${u.streak}-day streak">\u{1f525}${u.streak}</span>` : '';
     const nextRank = getNextRank(pct);
     const progressHtml = nextRank ? `<span class="rank-progress"><span class="rank-progress-fill" style="width:${Math.round(nextRank.progress * 100)}%;background:${pctColor(pct)};"></span></span>` : '';
+    const isMe = currentUserId && u.id === currentUserId;
+    const meClass = isMe ? ' my-row' : '';
+    const meTag = isMe ? '<span class="lb-me-tag">YOU</span>' : '';
 
     return `
-      <div class="lb-row clickable ${rowClass}${staleClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
+      <div class="lb-row clickable ${rowClass}${staleClass}${meClass}" data-uid="${safeId}" onclick="openDetail('${safeId}')">
         <div class="lb-position ${posClass}">#${pos}</div>
         <div class="lb-user-info">
-          <div class="lb-name">${fire}${escHtml(u.name)}</div>
+          <div class="lb-name">${fire}${escHtml(u.name)}${meTag}</div>
           <div class="lb-meta">
             <span class="lb-team-tag ${teamCls}">${escHtml(u.team)}</span>
             ${u.planType ? `<span class="lb-plan-tag ${u.planType === 'max5' ? 'max5' : 'max20'}">${u.planType === 'max5' ? 'M5' : 'M20'}</span>` : ''}
@@ -392,27 +410,34 @@
     const container = document.getElementById('myStatusCard');
     if (!container) return;
 
-    // Auto-detect: try localStorage name, then CF JWT email match
-    let myName = localStorage.getItem('claude_lb_name');
-    let me = myName ? data.users.find(u => u.name.toLowerCase() === myName.toLowerCase()) : null;
+    // Priority: 1) SSO-linked userId, 2) localStorage name, 3) CF JWT email match
+    let me = null;
+
+    if (currentUserId) {
+      me = data.users.find(u => u.id === currentUserId);
+    }
+
+    if (!me) {
+      const myName = localStorage.getItem('claude_lb_name');
+      if (myName) me = data.users.find(u => u.name.toLowerCase() === myName.toLowerCase());
+    }
 
     if (!me) {
       const email = getEmailFromJWT();
       if (email) {
-        // Match by first name from email (e.g., "magizhan@..." → find user "Mags" or "Magizhan")
         const emailName = email.split('@')[0].toLowerCase();
         me = data.users.find(u => u.name.toLowerCase().includes(emailName) || emailName.includes(u.name.toLowerCase()));
-        if (me) {
-          localStorage.setItem('claude_lb_name', me.name);
-          myName = me.name;
-        }
+        if (me) localStorage.setItem('claude_lb_name', me.name);
       }
     }
 
     if (!me) {
-      container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;cursor:pointer;" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Click here to set your name and see your personal status card</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:12px;font-size:0.8rem;color:var(--text-dim);background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;margin-bottom:16px;cursor:pointer;" onclick="window.location.href='/setup.html'">Click here to link your account and see your personal status card</div>`;
       return;
     }
+
+    // Persist for future visits without SSO
+    if (me) localStorage.setItem('claude_lb_name', me.name);
 
     const sorted = [...data.users].sort((a, b) => effectivePct(b, 'weeklyPct') - effectivePct(a, 'weeklyPct'));
     const myPos = sorted.findIndex(u => u.id === me.id) + 1;
@@ -470,7 +495,7 @@
         </div>
         ${nextRankHtml}
         ${financialHtml}
-        <span class="my-status-change" onclick="var n=prompt('Enter your leaderboard name:');if(n){localStorage.setItem('claude_lb_name',n);if(cachedData)renderData(cachedData);}">Not you? Change</span>
+        <span class="my-status-change" onclick="window.location.href='/setup.html'">Not you? Change</span>
       </div>
     </div>`;
   }

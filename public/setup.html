@@ -72,6 +72,11 @@
   }
   .btn:hover { box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); transform: translateY(-1px); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-danger {
+    background: transparent; border: 1px solid #ef4444; color: #fca5a5;
+    margin-top: 8px;
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.15); box-shadow: none; }
   .status { text-align: center; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
   .status.success { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: #86efac; }
   .status.error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
@@ -146,6 +151,7 @@
       </ol>
     </div>
     <a href="/" style="text-decoration:none;"><button class="btn">Go to Dashboard</button></a>
+    <button class="btn btn-danger" id="changeUserBtn" style="display:none;">Change Linked User</button>
   </div>
 
   <!-- SETUP SCREEN: shown when SSO is detected but user not yet mapped -->
@@ -189,7 +195,7 @@ let selectedUserId = null;
 // ============================================================
 // Show token screen (used by both already-linked and post-setup)
 // ============================================================
-function showTokenScreen(token, label) {
+function showTokenScreen(token, label, showChangeBtn = false) {
   document.getElementById('tokenScreen').classList.remove('hidden');
   document.getElementById('tokenScreenStatus').textContent = label;
   document.getElementById('tokenScreenValue').textContent = token;
@@ -203,6 +209,34 @@ function showTokenScreen(token, label) {
     });
   });
 
+  if (showChangeBtn) {
+    const changeBtn = document.getElementById('changeUserBtn');
+    changeBtn.style.display = 'block';
+    changeBtn.addEventListener('click', async () => {
+      if (!confirm('Unlink your current user? You can pick a new one after.')) return;
+      changeBtn.disabled = true;
+      changeBtn.textContent = 'Unlinking...';
+      try {
+        const res = await fetch(API_BASE + '/api/auth/unlink', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          // Hide token screen, show user picker
+          document.getElementById('tokenScreen').classList.add('hidden');
+          document.getElementById('setupScreen').classList.remove('hidden');
+          await initUserPicker();
+        } else {
+          alert(data.error || 'Failed to unlink');
+          changeBtn.disabled = false;
+          changeBtn.textContent = 'Change Linked User';
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+        changeBtn.disabled = false;
+        changeBtn.textContent = 'Change Linked User';
+      }
+    });
+  }
+
   setCookie(token);
 }
 
@@ -210,11 +244,11 @@ function showTokenScreen(token, label) {
 // Init
 // ============================================================
 async function init() {
-  // Step 1: Check Pomerium identity
+  // Step 1: Check identity (server reads token cookie + Pomerium headers)
   const meRes = await fetch(API_BASE + '/api/me');
   if (!meRes.ok) {
-    // No SSO — show manual token input
-    document.getElementById('emailBadge').textContent = 'SSO not detected';
+    // No auth at all — show manual token input
+    document.getElementById('emailBadge').textContent = 'Not signed in';
     document.getElementById('noSsoScreen').classList.remove('hidden');
     initManualTokenEntry();
     return;
@@ -222,7 +256,7 @@ async function init() {
   const me = await meRes.json();
   document.getElementById('emailBadge').textContent = me.email;
 
-  // Step 2: Check if already linked
+  // Step 2: Get or create token, check if already linked to a user
   const setupRes = await fetch(API_BASE + '/api/auth/setup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -231,8 +265,8 @@ async function init() {
   const setupData = await setupRes.json();
 
   if (setupData.token && setupData.userId) {
-    // Already mapped — show token screen
-    showTokenScreen(setupData.token, 'Linked to: ' + (setupData.userName || setupData.userId));
+    // Already mapped — show token screen with change option
+    showTokenScreen(setupData.token, 'Linked to: ' + (setupData.userName || setupData.userId), true);
     return;
   }
 
