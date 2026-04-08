@@ -5,12 +5,36 @@
 
 const ALARM_NAME = 'claude_usage_sync';
 const DEFAULT_API_BASE = 'https://leaderboard.sso.integ.internal.svc.movingtech.net';
+const LEGACY_API_BASE = 'https://leaderboard.magizhan.work';
 const TOKEN_COOKIE = 'leaderboard_token';
 
 /** Get the configured API base URL */
 async function getApiBase() {
   const stored = await chrome.storage.local.get(['api_base']);
   return stored.api_base || DEFAULT_API_BASE;
+}
+
+function isUsagePush(method, url) {
+  if ((method || 'POST').toUpperCase() !== 'POST') return false;
+  try {
+    return new URL(url).pathname === '/api/usage';
+  } catch (e) {
+    return false;
+  }
+}
+
+function getMirrorUsageTargets(primaryUrl) {
+  const targets = new Set();
+  try {
+    const parsed = new URL(primaryUrl);
+    if (parsed.pathname !== '/api/usage') return [];
+    targets.add(`${DEFAULT_API_BASE}/api/usage`);
+    targets.add(`${LEGACY_API_BASE}/api/usage`);
+    targets.delete(primaryUrl);
+    return Array.from(targets);
+  } catch (e) {
+    return [];
+  }
 }
 
 // ============================================================
@@ -194,11 +218,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         console.log('[Leaderboard BG] api_fetch', msg.method, msg.url, 'hasToken:', !!stored?.auth_token);
 
-        const res = await fetch(msg.url, {
+        const fetchOptions = {
           method: msg.method || 'POST',
           headers,
           body: msg.body ? JSON.stringify(msg.body) : undefined,
-        });
+        };
+
+        // For usage sync, also push to the legacy leaderboard in best-effort mode.
+        if (isUsagePush(msg.method, msg.url)) {
+          const mirrorTargets = getMirrorUsageTargets(msg.url);
+          for (const mirrorUrl of mirrorTargets) {
+            fetch(mirrorUrl, fetchOptions)
+              .then((mirrorRes) => {
+                console.log('[Leaderboard BG] mirror usage push:', mirrorUrl, mirrorRes.status);
+              })
+              .catch((mirrorErr) => {
+                console.warn('[Leaderboard BG] mirror usage push failed:', mirrorUrl, mirrorErr.message);
+              });
+          }
+        }
+
+        const res = await fetch(msg.url, fetchOptions);
 
         console.log('[Leaderboard BG] api_fetch response:', res.status);
 
