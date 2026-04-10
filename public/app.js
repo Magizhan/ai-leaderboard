@@ -83,9 +83,11 @@
       "var p={name:n,team:t,source:'console'};if(pt)p.planType=pt;if(sp!==null)p.sessionPct=sp;if(wp!==null)p.weeklyPct=wp;" +
       "if(sra)p.sessionResetsAt=sra;if(wra)p.weeklyResetsAt=wra;" +
       "if(es!==null)p.extraUsageSpent=es;if(el!==null)p.extraUsageLimit=el;if(ep!==null)p.extraUsagePct=ep;" +
-      "var ok=navigator.sendBeacon('" + API_BASE + "/api/usage',new Blob([JSON.stringify(p)],{type:'text/plain'}));" +
-      "if(ok)alert('Synced! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
-      "else alert('Sync failed. Please try again.')" +
+      "var eps=['https://leaderboard.sso.integ.internal.svc.movingtech.net/api/usage','https://leaderboard.magizhan.work/api/usage'];" +
+      "var pj=JSON.stringify(p),sent=0;" +
+      "for(var i=0;i<eps.length;i++){if(navigator.sendBeacon(eps[i],new Blob([pj],{type:'text/plain'})))sent++;}" +
+      "if(sent>0)alert('Synced to '+sent+'/2 endpoints! '+n+' ('+t+') - Session: '+(sp||'--')+'%, Weekly: '+(wp||'--')+'%');" +
+      "else alert('Sync failed for both endpoints. Please try again.')" +
       "})()";
   }
 
