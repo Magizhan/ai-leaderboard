@@ -12,8 +12,10 @@
 const API_BASE = process.env.API_BASE || 'http://localhost:8787';
 const TEST_USER = `_test_user_${Date.now()}`;
 const TEST_TEAM = 'NY';
+const TEST_EMAIL = `_test_${Date.now()}@test.local`;
 
 let testUserId = null;
+let testToken = null;
 let passed = 0;
 let failed = 0;
 const failures = [];
@@ -24,6 +26,7 @@ const failures = [];
 
 async function api(path, method = 'GET', body = null) {
   const opts = { method, headers: {} };
+  if (testToken) opts.headers['Authorization'] = `Bearer ${testToken}`;
   if (body) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -31,6 +34,20 @@ async function api(path, method = 'GET', body = null) {
   const res = await fetch(`${API_BASE}${path}`, opts);
   const data = await res.json().catch(() => null);
   return { status: res.status, data };
+}
+
+/** Create a test auth token (simulates Pomerium SSO) */
+async function setupTestToken() {
+  const res = await fetch(`${API_BASE}/api/auth/setup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Pomerium-Claim-Email': TEST_EMAIL,
+    },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json();
+  testToken = data.token;
 }
 
 function assert(condition, message) {
@@ -309,9 +326,11 @@ async function testSendBeacon() {
   console.log('\n▸ Usage — sendBeacon (text/plain body)');
 
   const beaconUser = `_test_beacon_${Date.now()}`;
+  const headers = { 'Content-Type': 'text/plain' };
+  if (testToken) headers['Authorization'] = `Bearer ${testToken}`;
   const res = await fetch(`${API_BASE}/api/usage`, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+    headers,
     body: JSON.stringify({ name: beaconUser, team: 'NY', sessionPct: 12, weeklyPct: 34, source: 'console' }),
   });
   const data = await res.json();
@@ -564,6 +583,8 @@ async function run() {
   console.log(`API: ${API_BASE}\n${'─'.repeat(50)}`);
 
   try {
+    await setupTestToken();
+    console.log(`Token: ${testToken ? testToken.slice(0, 8) + '...' : 'NONE'}`);
     await testUserCRUD();
     await testUsageBasic();
     await testMonotonicIncrease();

@@ -1,8 +1,9 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const API_BASE = 'https://leaderboard.magizhan.work';
+const DEFAULT_API_BASE = 'https://leaderboard.sso.integ.internal.svc.movingtech.net';
 const ALARM_NAME = 'claude_usage_sync';
+let API_BASE = DEFAULT_API_BASE;
 
 // ============================================================
 // DOM refs
@@ -25,6 +26,10 @@ const authDot        = document.getElementById('authDot');
 const authLabel      = document.getElementById('authLabel');
 const authDesc       = document.getElementById('authDesc');
 const authBtn        = document.getElementById('authBtn');
+const tokenRow       = document.getElementById('tokenRow');
+const tokenInput     = document.getElementById('tokenInput');
+const tokenSaveBtn   = document.getElementById('tokenSaveBtn');
+const tokenHint      = document.getElementById('tokenHint');
 
 dashLink.href = API_BASE;
 dashLink.addEventListener('click', (e) => {
@@ -45,36 +50,102 @@ function updateAuthUI(authenticated, email) {
     authDesc.textContent = email || '';
     authBtn.textContent = 'Re-auth';
     authBtn.style.display = 'block';
+    tokenRow.style.display = 'flex';
+    tokenHint.style.display = 'block';
+    tokenHint.textContent = 'Paste a new token to switch accounts';
   } else {
     authRow.className = 'auth-row unauthenticated';
     authDot.className = 'auth-dot red';
     authLabel.textContent = 'Not signed in';
-    authDesc.textContent = 'Sign in with your @juspay.in email';
-    authBtn.textContent = 'Sign In';
+    authDesc.textContent = 'Sign in via SSO or paste your token below';
+    authBtn.textContent = 'Sign In via SSO';
     authBtn.style.display = 'block';
+    tokenRow.style.display = 'flex';
+    tokenHint.style.display = 'block';
   }
 }
 
 chrome.runtime.sendMessage({ type: 'check_auth_status' }, (response) => {
   if (response) {
-    updateAuthUI(response.authenticated, response.email);
+    updateAuthUI(response.authenticated, response.auth_email);
+    // Pre-fill token input so user can see their saved token
+    if (response.authenticated && response.auth_token) {
+      tokenInput.value = response.auth_token;
+    }
   } else {
     updateAuthUI(false);
   }
 });
 
 authBtn.addEventListener('click', () => {
-  authBtn.disabled = true;
-  authBtn.textContent = 'Opening...';
-  chrome.runtime.sendMessage({ type: 'trigger_auth' }, (result) => {
-    authBtn.disabled = false;
-    if (result && result.success) {
-      updateAuthUI(true, result.email);
+  // Open the setup page directly — SSO happens there via Pomerium
+  chrome.tabs.create({ url: API_BASE + '/setup.html' });
+});
+
+// Manual token entry — route through background to avoid Pomerium/CORS issues
+tokenSaveBtn.addEventListener('click', async () => {
+  const token = tokenInput.value.trim();
+  if (!token) return;
+
+  tokenSaveBtn.disabled = true;
+  tokenSaveBtn.textContent = '...';
+
+  try {
+    // Store the token so background can use it for the verify call
+    await chrome.storage.local.set({ auth_token: token });
+    console.log('[Leaderboard] Token saved, verifying...');
+
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        type: 'api_fetch',
+        url: API_BASE + '/api/auth/verify',
+        method: 'GET',
+      }, (resp) => {
+        console.log('[Leaderboard] Verify response:', resp);
+        resolve(resp);
+      });
+    });
+
+    if (result && result.ok && result.data && result.data.email) {
+      const storeData = {
+        auth_token: token,
+        auth_email: result.data.email,
+      };
+      if (result.data.userId) storeData.auth_user_id = result.data.userId;
+      await chrome.storage.local.set(storeData);
+      // Also set cookie on dashboard domain so the website can use it
+      try {
+        await chrome.cookies.set({
+          url: API_BASE,
+          name: 'leaderboard_token',
+          value: token,
+          path: '/',
+          secure: true,
+          sameSite: 'lax',
+          expirationDate: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+        });
+      } catch (e) { console.log('[Leaderboard] Cookie set failed:', e); }
+      console.log('[Leaderboard] Token verified, signed in as', result.data.email);
+      updateAuthUI(true, result.data.email);
+      tokenSaveBtn.textContent = 'Saved!';
+      tokenSaveBtn.disabled = false;
+    } else if (result && result.status === 0) {
+      console.log('[Leaderboard] Network error during verify');
+      tokenInput.style.borderColor = '#f59e0b';
+      tokenSaveBtn.textContent = 'Network error';
+      setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; tokenInput.style.borderColor = ''; }, 2000);
     } else {
-      updateAuthUI(false);
-      authBtn.textContent = 'Retry';
+      console.log('[Leaderboard] Invalid token, response:', result);
+      await chrome.storage.local.remove(['auth_token', 'auth_email', 'auth_user_id']);
+      tokenInput.style.borderColor = '#ef4444';
+      tokenSaveBtn.textContent = 'Invalid';
+      setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; tokenInput.style.borderColor = ''; }, 2000);
     }
-  });
+  } catch (err) {
+    console.error('[Leaderboard] Token save error:', err);
+    tokenSaveBtn.textContent = 'Error';
+    setTimeout(() => { tokenSaveBtn.textContent = 'Save'; tokenSaveBtn.disabled = false; }, 2000);
+  }
 });
 
 // ============================================================

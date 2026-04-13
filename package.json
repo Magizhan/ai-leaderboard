@@ -1,14 +1,26 @@
 {
   "name": "claude-leaderboard",
   "version": "1.0.0",
+  "type": "module",
   "description": "Real-time Claude Usage Leaderboard Dashboard",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:docker": "docker compose up --build",
+    "start": "node src/server.js",
     "test": "node test/e2e.test.mjs",
+    "test:docker": "API_BASE=http://localhost:3000 node test/e2e.test.mjs",
     "test:prod": "API_BASE=https://leaderboard.magizhan.work node test/e2e.test.mjs",
     "predeploy": "node test/e2e.test.mjs",
     "deploy": "wrangler deploy",
-    "kv:create": "wrangler kv namespace create LEADERBOARD_KV"
+    "deploy:cf": "wrangler deploy",
+    "kv:create": "wrangler kv namespace create LEADERBOARD_KV",
+    "migrate:export": "node scripts/migrate-to-pg.mjs export --from https://leaderboard.magizhan.work",
+    "migrate:import": "node scripts/migrate-to-pg.mjs import --db postgresql://localhost:5432/ai_leaderboard",
+    "migrate:sync": "node scripts/migrate-to-pg.mjs sync --from https://leaderboard.magizhan.work --db postgresql://localhost:5432/ai_leaderboard"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

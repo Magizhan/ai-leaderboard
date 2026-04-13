@@ -379,6 +379,8 @@
   .lb-row.stale:hover { opacity: 0.8; }
   .lb-stale-tag { font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(239,68,68,0.15); color: #ef4444; margin-left: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .lb-stale-tag.inactive { background: rgba(100,100,120,0.15); color: #64748b; }
+  .lb-row.my-row { border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.08); }
+  .lb-me-tag { font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(59,130,246,0.2); color: #60a5fa; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle; }
 
   /* Streak */
   .lb-streak { font-size: 0.65rem; color: #ff6b35; font-weight: 700; margin-left: 4px; }
